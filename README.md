@@ -10,3 +10,4 @@ Some scripts to process the raw data and create a more easy to use organisation 
 
 ## Run jobs on Habanero
 The [cluster job](cluster_job) folder contain scripts to run batch jobs on the theory centre cluster Habanero to train batches on neural networks using different parameters to produce more statistically significant data and explore different parameters. 
+Infos on how to use Habanero can be found [here](https://confluence.columbia.edu/confluence/display/rcs/Habanero+HPC+Cluster+User+Documentation).
