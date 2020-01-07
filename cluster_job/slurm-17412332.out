@@ -1,0 +1,18 @@
+Using downloaded and verified file: ./files/MNIST/raw/train-images-idx3-ubyte.gz
+Extracting ./files/MNIST/raw/train-images-idx3-ubyte.gz
+Traceback (most recent call last):
+  File "../main.py", line 100, in <module>
+    run(args)
+  File "../main.py", line 59, in run
+    dataset = artificial_dataset.artificial_dataset(data_origin=args.data_origin)
+  File "/rigel/theory/users/ab4877/Ultrametric-benchmark/artificial_dataset.py", line 29, in __init__
+    self.train_data = sort_dataset.sort_dataset(dataset=data_origin, train=True)
+  File "/rigel/theory/users/ab4877/Ultrametric-benchmark/sort_dataset.py", line 38, in sort_dataset
+    (0.1307,), (0.3081,))
+  File "/rigel/home/ab4877/.local/lib/python3.5/site-packages/torchvision/datasets/mnist.py", line 68, in __init__
+    self.download()
+  File "/rigel/home/ab4877/.local/lib/python3.5/site-packages/torchvision/datasets/mnist.py", line 146, in download
+    self.extract_gzip(gzip_path=file_path, remove_finished=True)
+  File "/rigel/home/ab4877/.local/lib/python3.5/site-packages/torchvision/datasets/mnist.py", line 130, in extract_gzip
+    os.unlink(gzip_path)
+FileNotFoundError: [Errno 2] No such file or directory: './files/MNIST/raw/train-images-idx3-ubyte.gz'
