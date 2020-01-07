@@ -15,7 +15,7 @@ do
                 do
                         for value in {1..5}
                         do
-                                sbatch individualjobCIFAC100.sh ${minibatchsize} ${blocksize} ${temperature}
+                                sbatch individualjobCIFAR100.sh ${minibatchsize} ${blocksize} ${temperature}
                                 sleep 1
                         done
                 done
