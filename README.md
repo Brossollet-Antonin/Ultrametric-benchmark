@@ -8,3 +8,5 @@ The main.py file is used to run the tests. Numerous options can be passed as par
 The results analysis is not automatically done for the moment. Some codes to do some of the plots already produced are located in the [Data analysis](data_analysis) folder. Given the amount of plots we will have to produce now, we may have to automatize the process. 
 Some scripts to process the raw data and create a more easy to use organisation are located in the [Data processing](data_processing) folder. Things are not very userfriendly for the moment, sorry for that.. 
 
+## Run jobs on Habanero
+The [cluster job](cluster_job) folder contain scripts to run batch jobs on the theory centre cluster Habanero to train batches on neural networks using different parameters to produce more statistically significant data and explore different parameters. 
