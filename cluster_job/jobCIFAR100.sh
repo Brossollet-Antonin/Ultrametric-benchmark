@@ -22,13 +22,10 @@ do
 
          done
 done
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
 	#End of script
-	
-	
-	
