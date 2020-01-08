@@ -75,11 +75,11 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=100):
+    def __init__(self, block, num_blocks, input_channel, num_classes=100):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
-        self.conv1 = conv3x3(3,64)
+        self.conv1 = conv3x3(input_channel,64)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
@@ -107,17 +107,19 @@ class ResNet(nn.Module):
         return out
 
 
-def resnetN(type=50, num_classes=100):
+def resnetN(data_origin, type=50, num_classes=100):
+    input_channel = 1 if data_origin=='MNIST' else 3
+    
     if type == 18:
-        return ResNet(BasicBlock, [2,2,2,2], num_classes)
+        return ResNet(block=BasicBlock, num_blocks=[2,2,2,2], num_classes=num_classes, input_channel=input_channel)
     elif type == 34:
-        return ResNet(BasicBlock, [3,4,6,3], num_classes)
+        return ResNet(block=BasicBlock, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
     elif type == 50:
-        return ResNet(Bottleneck, [3,4,6,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
     elif type == 101:
-        return ResNet(Bottleneck, [3,4,23,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,4,23,3], num_classes=num_classes, input_channel=input_channel)
     else:
-        return ResNet(Bottleneck, [3,8,36,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,8,36,3], num_classes=num_classes, input_channel=input_channel)
 
 def ResNet18(num_classes=100):
     return ResNet(BasicBlock, [2,2,2,2], num_classes)

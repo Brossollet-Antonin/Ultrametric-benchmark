@@ -75,10 +75,10 @@ def run(args):
                         
                             
                         num_classes = 100 if args.data_origin=='CIFAR100' else 10 
-                        netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes)
+                        netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
                         netfc_original.to(device)
                         
-                        netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes)
+                        netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
                         netfc_shuffle.to(device)
                         
                         trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
