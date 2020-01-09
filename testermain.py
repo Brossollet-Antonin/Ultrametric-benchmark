@@ -36,16 +36,17 @@ import sequence_generator_temporal_noself as sequence_generator_temporal
 
 
 diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
-original_accuracy = np.array([[diagnos_original[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_original contains the accuracies at different levels
+original_accuracy = np.array([[diagnos_original[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
 nbr_test_samples = dataset.class_sz_test*(tree_branching**depth)    # number of test examples
 classes_correct = np.zeros(len(dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
 # Compting the number of correct responses per classes before the training
 for k in range(nbr_test_samples):
-    classes_correct[int(diagnos_original[1][k][0])] += 1     # The value in the array correspond to the prediction of the network for the i-th test example 
+    classes_correct[int(diagnos_original[1][k][0])] += 1     # The value in the array correspond to the prediction of the network for the k-th test example 
 original_classes_prediction = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
     
-train_data_rates=trainer.train_data()  #Stock rates (if not a random process) and data for training
+train_data_rates = trainer.train_data()  #Stock rates (if not a random process) and data for training
 train_data, rates, train_sequence = train_data_rates[0], train_data_rates[1], train_data_rates[2]
+original_autocorr_function = sequence_generator_temporal.sequence_autocor(train_data)
 for i in range(args.test_nbr):
     training_range = (i*test_stride, (i+1)*test_stride)     #Part of the sequence on which the training will be done
     algo.learning_ER(netfc_original, trainer, train_data_rates, mem_sz=memory_sz, 
@@ -78,6 +79,9 @@ diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
 shuffle_accuracy = np.array([[diagnos_shuffle[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
 classes_correct = np.zeros(len(dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
 # Compting the number of correct responses per classes before the training
+
+shuffle_autocorr_functions = []
+
 for k in range(nbr_test_samples):
     classes_correct[int(diagnos_shuffle[1][k][0])] +=1     # The value in the array correspond to the prediction of the network for the i-th test example 
 shuffle_classes_prediction = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
@@ -87,6 +91,7 @@ train_data, rates, train_sequence = train_data_rates[0], train_data_rates[1], tr
 for i in range(args.test_nbr):
     training_range = (i*test_stride, (i+1)*test_stride)
     control_data_shuffle = control.shuffle_block_partial(train_data, block_size_shuffle, training_range[1])
+    shuffle_autocorr_functions.append(sequence_generator_temporal.sequence_autocor(control_data_shuffle))
     control.shuffle_sequence(netfc_shuffle, trainer, control_data_shuffle, mem_sz=memory_sz, 
                              batch_sz=trainer.task_sz_nbr, lr=args.lr, momentum=0.5, training_range=training_range)
     diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)

@@ -40,6 +40,8 @@ np.save(savepath+save_folder+'/var_shuffle_classes_prediction', shuffle_classes_
 np.save(savepath+save_folder+'/var_original_accuracy', original_accuracy)
 np.save(savepath+save_folder+'/var_shuffle_accuracy', shuffle_accuracy)
 
+np.save(savepath+save_folder+'/autocorr_original', original_autocorr_function)
+np.save(savepath+save_folder+'/autocorr_shuffle', shuffle_autocorr_functions)
 
 filename = savepath + save_folder + "/data_shuffle"
 outfile = open(filename, 'wb')

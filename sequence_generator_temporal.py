@@ -67,7 +67,7 @@ def next_value(sequence, rates, tree_depth, branching):
     return int(base_next, branching)
     
 def um_sequence_generator(sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching):
-    # The following condition is in fact not that necessary to repsect if the energy barrier increase linearly
+    # The following condition is in fact not that necessary to respect if the energy barrier increase linearly
     #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
     sequence = [sequence_first]
     rates = setting_rates(energy_step, T, tree_depth, tree_branching)

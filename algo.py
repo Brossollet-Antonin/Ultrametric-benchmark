@@ -108,6 +108,31 @@ class training:
             return (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
         
         
+        elif self.training_type=="onefold split":
+            n_classes = self.dataset.branching**self.dataset.depth
+            examples_per_class = self.sequence_length // n_classes
+            train_data=[]
+            for ex_id in range(n_classes): # MNIST patterns are numbers from 0 to 9
+                for i in range(examples_per_class):
+                    inst_id = random.randint(self.dataset.class_sz_train)
+                    inst = self.dataset.train_data[ex_id][inst_id]
+                    train_data.append(inst)
+            return train_data
+
+
+        elif self.training_type=="twofold split":
+            n_classes = self.dataset.branching**self.dataset.depth
+            examples_per_class = self.sequence_length // n_classes
+            train_data=[]
+            for splt_id in range(n_classes//2): # MNIST patterns are numbers from 0 to 9
+                for i in range(examples_per_class):
+                    cl_id = random.randint(1)
+                    inst_id = random.randint(self.dataset.class_sz_train)
+                    inst = self.dataset.train_data[2*splt_id+ex_id][inst_id]
+                    train_data.append(inst)
+            return train_data
+            
+
         elif self.training_type=="permutedMNIST":
             pass    #TODO implement permutedMNIST
         else:
@@ -209,11 +234,3 @@ def learning_naive(net, training, train_data_prev, batch_sz, lr, momentum):
     running_loss += train.mem_SGD(net, mini_batch, lr, momentum, training.device)
     print("--- Finished Classic SGD training ---")
     return (train_data, rates, train_sequence)
-   
-    
-    
-    
-    
-
-               
-            

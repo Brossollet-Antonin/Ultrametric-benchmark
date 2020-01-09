@@ -19,7 +19,7 @@ import itertools
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-
+import pdb
 
 
 #Set the rates vector
@@ -169,8 +169,10 @@ def training_sequence(um_sequence, dataset):
   
     
 def sequence_autocor(um_sequence):
+    #pdb.set_trace()
     length = len(um_sequence)
     autocor = []
+    um_sequence = [seq[1] for seq in um_sequence]
     max_val = max(um_sequence)
     for dt in range(length):
         sumcor = 0

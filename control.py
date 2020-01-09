@@ -18,6 +18,8 @@ import sequence_generator_temporal_noself as sequence_generator_temporal
     
     
 def shuffle_sequence(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_range):
+    # THIS IS ACTUALLY learning_ER with a shuffled sequence.
+    # ToDo: either rename this method to clarify or factorize the code to have a single method
     #if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="random" or tranini:
     # For temporal and spatial correlation tests
     

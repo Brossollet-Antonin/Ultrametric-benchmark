@@ -33,6 +33,7 @@ model_params.add_argument('--nbrtest', type=int, default=10, dest='test_nbr', he
 
 # sequence parameters
 seq_params = parser.add_argument_group('Sequence Parameters')
+seq_params.add_argument('--seqtype', type=str, default='temporal', dest='sequence_type', choices=['temporal_correlation', 'spatial_correlation', 'random', 'uniform', 'onefold_split', 'twofold_split'], help='Method used to generate the training sequence')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.6], help='Temperature for the random walk (the energy step is by default equal to 1)')
@@ -62,36 +63,42 @@ def run(args):
     for minibatches in args.minibatches_list:
         for memory_sz in args.memory_list:
             for block_size_shuffle in args.block_size_shuffle_list:
-                    for T in args.temperature_list:                         
-                        savepath = "./Results/%s/%s/length%d_batches%d/" % (args.savefolder, args.data_origin, args.sequence_length, minibatches)
-                        save_folder = "T%.3f Memory%d block%d %.3f" % (T, memory_sz, block_size_shuffle, systime)
-                        os.makedirs(savepath + save_folder)
-                
-                        parameters = np.array([[T, depth, tree_branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
-                                                args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
-                                               ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size", 
-                                                "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
-                                                "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
-                        
-                            
-                        num_classes = 100 if args.data_origin=='CIFAR100' else 10 
-                        netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes)
-                        netfc_original.to(device)
-                        
-                        netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes)
-                        netfc_shuffle.to(device)
-                        
-                        trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
-                        task_sz_nbr=minibatches,      
-                        tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T, 
-                        tree_branching=tree_branching)
-                        
-                        exec(open("./testermain.py").read()) 
-                                    
-                        diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
-                        diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
+                for T in args.temperature_list:                         
+                    savepath = "./Results/%s/%s/%s/length%d_batches%d/" % (args.savefolder, args.data_origin, args.nnarchi, args.sequence_length, minibatches)
+                    #if block_size_shuffle == 0:
+                    #    save_folder = "T%.3f Memory%d original %.3f" % (T, memory_sz, block_size_shuffle, systime)
+                    #else:
+                    save_folder = "T%.3f Memory%d block%d %.3f" % (T, memory_sz, block_size_shuffle, systime)
+                    os.makedirs(savepath + save_folder)
             
-                        exec(open("./save_data.py").read())
+                    parameters = np.array([[T, depth, tree_branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
+                                            args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
+                                           ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size", 
+                                            "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
+                                            "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
+                    
+                        
+                    num_classes = 100 if args.data_origin=='CIFAR100' else 10 # if we deal with MNIST8 we will need to refine that
+                    n_in_channels = 1 if args.data_origin=='MNIST' else 3
+                    args.resnettype = 34 if args.data_origin=='MNIST' else args.resnettype
+                    netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, n_in_channels=n_in_channels)
+                    netfc_original.to(device)
+                    
+                    netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, n_in_channels=n_in_channels)
+                    netfc_shuffle.to(device)
+                    
+                    args.sequence_type = args.sequence_type.replace('_', ' ')
+                    trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
+                    task_sz_nbr=minibatches,      
+                    tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T, 
+                    tree_branching=tree_branching)
+                    
+                    exec(open("./testermain.py").read()) 
+                                
+                    diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
+                    diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
+        
+                    exec(open("./save_data.py").read())
             
     
 
