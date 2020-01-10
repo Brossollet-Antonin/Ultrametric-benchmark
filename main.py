@@ -107,12 +107,12 @@ def run(args):
                     tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T, 
                     tree_branching=tree_branching)
                     
-                    exec(open("./testermain.py").read()) 
+                    exec(open("./testermain.py", encoding="utf-8").read()) 
                                 
                     diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
                     diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
         
-                    exec(open("./save_data.py").read())
+                    exec(open("./save_data.py", encoding="utf-8").read())
             
     
 
