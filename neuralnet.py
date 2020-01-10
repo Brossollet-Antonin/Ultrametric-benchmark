@@ -137,7 +137,7 @@ def ResNet152(num_classes=100):
     return ResNet(Bottleneck, [3,8,36,3], num_classes)
 
 def test_resnet():
-    net = ResNetN(data_origin='CIFAR100', type=50, num_classes=100)
+    net = resnetN(data_origin='CIFAR100', type=50, num_classes=100)
     y = net(Variable(torch.randn(1,3,32,32)))
     print(y.size())
 
