@@ -34,6 +34,8 @@ class artificial_dataset:
                 self.class_sz_test = 1000
             else: 
                 self.class_sz_test = 100
+        else:
+            self.create()
         
     
     def create(self):

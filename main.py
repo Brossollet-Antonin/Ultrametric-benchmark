@@ -22,7 +22,7 @@ parser.add_argument('--savefolder', type=str, default='./', help="Folder to save
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
-data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100'])
+data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial'])
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -52,10 +52,31 @@ def run(args):
     
     device = torch.device('cuda') if args.cuda else torch.device('cpu')
     
-    if args.data_origin=='MNIST' or args.data_origin=='CIFAR10':
+    if args.data_origin == 'artificial_8':
         depth, tree_branching= 3, 2
-    elif args.data_origin=='CIFAR100':
+        num_classes = 2
+        n_axes, n_in_channels = 1, 1
+    if args.data_origin == 'artificial_16':
+        depth, tree_branching= 4, 2
+        num_classes = 2
+        n_axes, n_in_channels = 1, 1
+    if args.data_origin == 'artificial_32':
+        depth, tree_branching= 5, 2
+        num_classes = 2
+        n_axes, n_in_channels = 1, 1
+    elif args.data_origin == 'MNIST':
+        depth, tree_branching= 3, 2
+        num_classes = 10
+        n_axes, n_in_channels = 2, 1
+        args.resnettype = 34
+    elif args.data_origin == 'CIFAR10':
+        depth, tree_branching= 3, 2
+        num_classes = 10
+        n_axes, n_in_channels = 2, 3
+    elif args.data_origin == 'CIFAR100':
         depth, tree_branching= 6, 2
+        num_classes = 100
+        n_axes, n_in_channels = 2, 3
     
     dataset = artificial_dataset.artificial_dataset(data_origin=args.data_origin)
     data_branching = tree_branching
@@ -65,9 +86,6 @@ def run(args):
             for block_size_shuffle in args.block_size_shuffle_list:
                 for T in args.temperature_list:                         
                     savepath = "./Results/%s/%s/%s/length%d_batches%d/" % (args.savefolder, args.data_origin, args.nnarchi, args.sequence_length, minibatches)
-                    #if block_size_shuffle == 0:
-                    #    save_folder = "T%.3f Memory%d original %.3f" % (T, memory_sz, block_size_shuffle, systime)
-                    #else:
                     save_folder = "T%.3f Memory%d block%d %.3f" % (T, memory_sz, block_size_shuffle, systime)
                     os.makedirs(savepath + save_folder)
             
@@ -77,10 +95,6 @@ def run(args):
                                             "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
                                             "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
                     
-                        
-                    num_classes = 100 if args.data_origin=='CIFAR100' else 10 # if we deal with MNIST8 we will need to refine that
-                    n_in_channels = 1 if args.data_origin=='MNIST' else 3
-                    args.resnettype = 34 if args.data_origin=='MNIST' else args.resnettype
                     netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, n_in_channels=n_in_channels)
                     netfc_original.to(device)
                     
@@ -88,7 +102,7 @@ def run(args):
                     netfc_shuffle.to(device)
                     
                     args.sequence_type = args.sequence_type.replace('_', ' ')
-                    trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
+                    trainer = algo.training(args.sequence_type, 'reservoir sampling', dataset=dataset,
                     task_sz_nbr=minibatches,      
                     tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T, 
                     tree_branching=tree_branching)
