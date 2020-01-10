@@ -163,6 +163,7 @@ def um_sequence_generator_epoch(sequence_first, epoch, energy_step, T, tree_dept
 def training_sequence(um_sequence, dataset):
     iterable = [itertools.cycle(dataset.train_data[i]) for i in range(len(dataset.train_data))] 
     train_sequence=[]
+    
     for k in um_sequence:
         train_sequence.append(next(iterable[k]))
     return train_sequence

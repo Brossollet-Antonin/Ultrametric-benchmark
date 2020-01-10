@@ -5,27 +5,50 @@ Created on Tue Apr 30 16:09:45 2019
 @author: Antonin
 """
 
-
 import torch
 import random
 from copy import deepcopy
 import sort_dataset
-
-
+import pdb
 
 class artificial_dataset:
     
-    def __init__(self, data_origin, depth=0, branching=0, data_sz=0, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=1, noise_level=1):
+    def __init__(self, data_origin, data_sz=0, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=1, noise_level=1):
         self.data_origin = data_origin
-        self.depth = depth
         self.class_sz_train = class_sz_train
-        self.branching = branching
         self.data_sz = data_sz
         self.class_sz_test = class_sz_test
         self.ratio_type = ratio_type
         self.ratio_value = ratio_value
         self.noise_level = noise_level
-        if data_origin != 'artificial':
+
+        if data_origin == 'artificial_8':
+            self.depth, self.branching = 3, 2
+            self.num_classes = 2
+            self.n_axes, self.n_in_channels = 1, 1
+        if data_origin == 'artificial_16':
+            self.depth, self.branching = 4, 2
+            self.num_classes = 2
+            self.n_axes, self.n_in_channels = 1, 1
+        if data_origin == 'artificial_32':
+            self.depth, self.branching = 5, 2
+            self.num_classes = 2
+            self.n_axes, self.n_in_channels = 1, 1
+        elif data_origin == 'MNIST':
+            self.depth, self.branching = 3, 2
+            self.num_classes = 10
+            self.n_axes, self.n_in_channels = 2, 1
+            args.resnettype = 34
+        elif data_origin == 'CIFAR10':
+            self.depth, self.branching = 3, 2
+            self.num_classes = 10
+            self.n_axes, self.n_in_channels = 2, 3
+        elif data_origin == 'CIFAR100':
+            self.depth, self.branching = 6, 2
+            self.num_classes = 100
+            self.n_axes, self.n_in_channels = 2, 3
+
+        if 'artificial' not in data_origin:
             self.train_data = sort_dataset.sort_dataset(dataset=data_origin, train=True)
             self.test_data = sort_dataset.sort_dataset(dataset=data_origin, train=False)
             if data_origin=='MNIST':
@@ -101,19 +124,3 @@ class artificial_dataset:
             
         self.train_data = train_data
         self.test_data = test_data
-                
-         
-#artific=artificial_dataset(4,20,3,150)
-#data=artific.create()     
-#
-#
-#
-#
-#import rates_correlation
-#cor_matrix=rates_correlation.avg_cor(data, 5)
-
-       
-
-
-                
-    

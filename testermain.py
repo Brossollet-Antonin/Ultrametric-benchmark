@@ -37,7 +37,7 @@ import sequence_generator_temporal_noself as sequence_generator_temporal
 
 diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
 original_accuracy = np.array([[diagnos_original[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
-nbr_test_samples = dataset.class_sz_test*(tree_branching**depth)    # number of test examples
+nbr_test_samples = dataset.class_sz_test*(dataset.branching**dataset.depth)    # number of test examples
 classes_correct = np.zeros(len(dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
 # Compting the number of correct responses per classes before the training
 for k in range(nbr_test_samples):

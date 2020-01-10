@@ -27,8 +27,8 @@ class training:
     """
     def __init__(self, training_type, memory_sampling, dataset, task_sz_nbr=None,
                  sequence_first=0, sequence_length=60000, train_epoch=None, energy_step=3, T=1, 
-                 tree_depth=3, device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                 preprocessing=True, tree_branching=2, proba_transition=1e-3):
+                 device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+                 preprocessing=True, proba_transition=1e-3):
         self.task_sz_nbr = task_sz_nbr
         self.memory_sampling = memory_sampling
         self.dataset = dataset
@@ -37,11 +37,11 @@ class training:
         self.sequence_length = sequence_length
         self.energy_step = energy_step
         self.T = T
-        self.tree_depth = tree_depth
+        self.tree_depth = dataset.depth
         self.device = device
         self.train_epoch = train_epoch
         self.preprocessing = preprocessing
-        self.tree_branching = tree_branching
+        self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
     
     def train_data(self):
