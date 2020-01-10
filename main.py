@@ -11,7 +11,7 @@ import diagnosis
 import numpy as np
 import artificial_dataset
 import random
-import torch 
+import torch
 import neuralnet
 import algo
 import time
@@ -48,52 +48,52 @@ def run(args):
     test_stride = int(args.sequence_length/args.test_nbr)
     systime = time.time()
     random.seed(systime)
-    
+
     device = torch.device('cuda') if args.cuda else torch.device('cpu')
-    
+
     if args.data_origin=='MNIST' or args.data_origin=='CIFAR10':
         depth, tree_branching= 3, 2
     elif args.data_origin=='CIFAR100':
         depth, tree_branching= 6, 2
-    
+
     dataset = artificial_dataset.artificial_dataset(data_origin=args.data_origin)
     data_branching = tree_branching
-    
+
     for minibatches in args.minibatches_list:
         for memory_sz in args.memory_list:
             for block_size_shuffle in args.block_size_shuffle_list:
-                    for T in args.temperature_list:                         
+                    for T in args.temperature_list:
                         savepath = "./Results/%s/%s/length%d_batches%d/" % (args.savefolder, args.data_origin, args.sequence_length, minibatches)
                         save_folder = "T%.3f Memory%d block%d %.3f" % (T, memory_sz, block_size_shuffle, systime)
                         os.makedirs(savepath + save_folder)
-                
-                        parameters = np.array([[T, depth, tree_branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
+
+                        parameters = np.array([[T, depth, tree_branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz,
                                                 args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
-                                               ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size", 
-                                                "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
+                                               ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size",
+                                                "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size",
                                                 "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
-                        
-                            
-                        num_classes = 100 if args.data_origin=='CIFAR100' else 10 
+
+
+                        num_classes = 100 if args.data_origin=='CIFAR100' else 10
                         netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
                         netfc_original.to(device)
-                        
+
                         netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
                         netfc_shuffle.to(device)
-                        
+
                         trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
-                        task_sz_nbr=minibatches,      
-                        tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T, 
+                        task_sz_nbr=minibatches,
+                        tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T,
                         tree_branching=tree_branching)
-                        
-                        exec(open("../testermain.py").read()) 
-                                    
+
+                        exec(open("../testermain.py").read())
+
                         diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
                         diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
-            
+
                         exec(open("../save_data.py").read())
-            
-    
+
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
