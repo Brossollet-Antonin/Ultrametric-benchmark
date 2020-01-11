@@ -19,6 +19,7 @@ import time
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
+parser.add_argument('-v', '--verbose', dest='verbose', action='count', default=0)
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
@@ -53,6 +54,9 @@ def run(args):
     
     device = torch.device('cuda') if args.cuda else torch.device('cpu')
         
+    if args.verbose:
+        print('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size))
+
     dataset = artificial_dataset.artificial_dataset(
         data_origin = args.data_origin,
         data_sz=args.artif_seq_size,
@@ -62,6 +66,9 @@ def run(args):
         ratio_value=1,
         noise_level=1
         )
+
+    if args.verbose:
+        print('Done generating dataset {0:s}'.format(args.data_origin))
     
     for minibatches in args.minibatches_list:
         for memory_sz in args.memory_list:
@@ -77,6 +84,9 @@ def run(args):
                                             "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
                                             "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
                     
+                    if args.verbose:
+                        print('Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length))
+
                     netfc_original = neuralnet.Net_CNN(dataset) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, dataset=dataset)
                     netfc_original.to(device)
                     
@@ -95,6 +105,9 @@ def run(args):
                         T=T
                         )
                     
+                    if args.verbose:
+                        print('...done')
+
                     exec(
                         open("./testermain.py", encoding="utf-8").read()
                         ) 

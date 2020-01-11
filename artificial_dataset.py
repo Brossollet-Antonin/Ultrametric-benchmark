@@ -38,7 +38,6 @@ class artificial_dataset:
             self.depth, self.branching = 3, 2
             self.num_classes = 10
             self.n_axes, self.n_in_channels = 2, 1
-            args.resnettype = 34
         elif data_origin == 'CIFAR10':
             self.depth, self.branching = 3, 2
             self.num_classes = 10
