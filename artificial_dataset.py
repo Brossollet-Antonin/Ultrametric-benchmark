@@ -24,15 +24,15 @@ class artificial_dataset:
 
         if data_origin == 'artificial_8':
             self.depth, self.branching = 3, 2
-            self.num_classes = 2
+            self.num_classes = 8
             self.n_axes, self.n_in_channels = 1, 1
         if data_origin == 'artificial_16':
             self.depth, self.branching = 4, 2
-            self.num_classes = 2
+            self.num_classes = 16
             self.n_axes, self.n_in_channels = 1, 1
         if data_origin == 'artificial_32':
             self.depth, self.branching = 5, 2
-            self.num_classes = 2
+            self.num_classes = 32
             self.n_axes, self.n_in_channels = 1, 1
         elif data_origin == 'MNIST':
             self.depth, self.branching = 3, 2

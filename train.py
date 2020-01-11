@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.optim as optim
 
 
-
 def mem_SGD(net, mini_batch, lr, momentum, device):
     inputs, labels = mini_batch
     inputs, labels = inputs.to(device), labels.to(device=device)
@@ -18,6 +17,7 @@ def mem_SGD(net, mini_batch, lr, momentum, device):
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
     optimizer.zero_grad()
     outputs = net(inputs)
+
     loss = criterion(outputs, labels)
     loss.backward()
     optimizer.step()

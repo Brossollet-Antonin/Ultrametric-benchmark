@@ -14,7 +14,10 @@ import random
 import torch 
 import neuralnet
 import algo
+from datetime import datetime
 import time
+
+cwd = os.getcwd()
 
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
@@ -74,8 +77,9 @@ def run(args):
         for memory_sz in args.memory_list:
             for block_size_shuffle in args.block_size_shuffle_list:
                 for T in args.temperature_list:                         
-                    savepath = "./Results/%s/%s/%s/length%d_batches%d/" % (args.savefolder, args.data_origin, args.nnarchi, args.sequence_length, minibatches)
-                    save_folder = "T%.3f Memory%d block%d %.3f" % (T, memory_sz, block_size_shuffle, systime)
+                    savepath = cwd+"/Results/%s/%s/length%d_batches%d/" % (args.data_origin, args.nnarchi, args.sequence_length, minibatches)
+                    #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
+                    save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
                     os.makedirs(savepath + save_folder)
             
                     parameters = np.array([[T, dataset.depth, dataset.branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
