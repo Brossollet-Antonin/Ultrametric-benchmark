@@ -117,15 +117,15 @@ class ResNet(nn.Module):
 
 def resnetN(dataset, type=50):
     if type == 18:
-        return ResNet(BasicBlock, [2,2,2,2], dataset.num_classes, dataset.n_in_channels)
+        return ResNet(BasicBlock, [2,2,2,2], dataset)
     elif type == 34:
-        return ResNet(BasicBlock, [3,4,6,3], dataset.num_classes, dataset.n_in_channels)
+        return ResNet(BasicBlock, [3,4,6,3], dataset)
     elif type == 50:
-        return ResNet(Bottleneck, [3,4,6,3], dataset.num_classes, dataset.n_in_channels)
+        return ResNet(Bottleneck, [3,4,6,3], dataset)
     elif type == 101:
-        return ResNet(Bottleneck, [3,4,23,3], dataset.num_classes, dataset.n_in_channels)
+        return ResNet(Bottleneck, [3,4,23,3], dataset)
     else:
-        return ResNet(Bottleneck, [3,8,36,3], dataset.num_classes, dataset.n_in_channels)
+        return ResNet(Bottleneck, [3,8,36,3], dataset)
 
 def ResNet18(dataset):
     return ResNet(BasicBlock, [2,2,2,2], dataset)

@@ -80,7 +80,6 @@ def run(args):
                     savepath = cwd+"/Results/%s/%s/length%d_batches%d/" % (args.data_origin, args.nnarchi, args.sequence_length, minibatches)
                     #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
                     save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
-                    os.makedirs(savepath + save_folder)
             
                     parameters = np.array([[T, dataset.depth, dataset.branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
                                             args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
