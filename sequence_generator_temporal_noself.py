@@ -205,7 +205,7 @@ def make_ohe(y, n_labels):
     ohe[np.arange(len(y)),y] = 1
     return ohe
 
-def sequence_autocor(lbl_sequence, n_labels, nlags=100):
+def sequence_autocor(lbl_sequence, n_labels, nlags=200):
     length = len(lbl_sequence)
     lbl_ohe = make_ohe(lbl_sequence, n_labels)
     autocor = np.zeros(nlags)
