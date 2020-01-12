@@ -5,7 +5,6 @@ Created on Fri Jun 28 13:48:43 2019
 @author: Antonin
 """
 
-
 import algo 
 import torch
 import neuralnet
@@ -18,6 +17,9 @@ import diagnosis
 import sequence_generator_temporal_noself as sequence_generator_temporal
 
 import pdb
+
+
+
 
 diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
 

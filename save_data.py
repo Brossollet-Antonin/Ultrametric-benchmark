@@ -14,7 +14,12 @@ if args.verbose:
 
 os.makedirs(savepath + save_folder)
 
-filename = savepath + save_folder + "/original"
+filename = savepath + save_folder + "/train_data_orig.pickle"
+outfile = open(filename, 'wb')
+pickle.dump(train_data, outfile)
+outfile.close
+
+filename = savepath + save_folder + "/train_labels_orig.pickle"
 outfile = open(filename, 'wb')
 pickle.dump(train_labels, outfile)
 outfile.close()
@@ -24,12 +29,18 @@ seq_control_shuffle=[]
 for k in control_data_shuffle:
     seq_control_shuffle.append(k[1].item())
 
-filename = savepath + save_folder + "/shuffle"
+filename = savepath + save_folder + "/train_data_shfl.pickle"
+outfile = open(filename, 'wb')
+pickle.dump(control_data_shuffle, outfile)
+outfile.close
+
+filename = savepath + save_folder + "/train_labels_shfl.pickle"
 outfile = open(filename, 'wb')
 pickle.dump(train_labels_sfl, outfile)
 outfile.close()
 
-filename = savepath + save_folder + "/distribution_train"
+
+filename = savepath + save_folder + "/distribution_train.pickle"
 outfile = open(filename, 'wb')
 pickle.dump(compteur, outfile)
 outfile.close()
@@ -49,16 +60,6 @@ np.save(savepath+save_folder+'/autocorr_shuffle', shuffle_autocorr_functions)
 
 if args.verbose >= 2:
     print('Saved all arrays to {0:s} subfolders'.format(savepath+save_folder))
-
-filename = savepath + save_folder + "/data_shuffle"
-outfile = open(filename, 'wb')
-pickle.dump(control_data_shuffle, outfile)
-outfile.close
-
-filename = savepath + save_folder + "/train_data"
-outfile = open(filename, 'wb')
-pickle.dump(train_data, outfile)
-outfile.close
 
 if args.verbose >= 2:
     print('Saved train data to {0:s} subfolders'.format(savepath+save_folder))

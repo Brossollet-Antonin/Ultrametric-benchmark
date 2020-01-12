@@ -41,7 +41,7 @@ seq_params = parser.add_argument_group('Sequence Parameters')
 seq_params.add_argument('--seqtype', type=str, default='temporal_correlation', dest='sequence_type', choices=['temporal_correlation', 'spatial_correlation', 'random', 'uniform', 'onefold_split', 'twofold_split'], help='Method used to generate the training sequence')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
-seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.6], help='Temperature for the random walk (the energy step is by default equal to 1)')
+seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
 
 # neural network parameters
 nn_params = parser.add_argument_group('Neural Network Parameters')
@@ -86,7 +86,9 @@ def run(args):
                                            ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size", 
                                             "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
                                             "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
-                    
+                    # ToDo: - turn parameters into a dictionnary
+                    #       - export as JSON
+
                     if args.verbose:
                         print('Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length))
 
