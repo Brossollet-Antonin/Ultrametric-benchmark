@@ -5,17 +5,18 @@ Created on Wed Jun 26 10:53:11 2019
 @author: Antonin
 """
 
+import os
 import pickle
 import numpy as np
 
 if args.verbose:
     print('Entering data saving script.\nSaving to {0:s}'.format(savepath+save_folder))
 
-
+os.makedirs(savepath + save_folder)
 
 filename = savepath + save_folder + "/original"
 outfile = open(filename, 'wb')
-pickle.dump(train_sequence, outfile)
+pickle.dump(train_labels, outfile)
 outfile.close()
 
 
@@ -25,7 +26,7 @@ for k in control_data_shuffle:
 
 filename = savepath + save_folder + "/shuffle"
 outfile = open(filename, 'wb')
-pickle.dump(seq_control_shuffle, outfile)
+pickle.dump(train_labels_sfl, outfile)
 outfile.close()
 
 filename = savepath + save_folder + "/distribution_train"

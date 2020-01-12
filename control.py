@@ -110,18 +110,20 @@ def shuffle_block_stef(train_data, block_size):
     return train_data_shuffle
 
 
-def shuffle_block_partial(train_data, block_size, end): 
+def shuffle_block_partial(train_dataset, block_size, end): 
     # Shuffle the sequence by blocks up to a chosen ending point
+    train_data, rates, train_labels = train_dataset
     block_indices = [i for i in range(len(train_data[:end])//block_size)]
     random.shuffle(block_indices)
     block_indices += [i for i in range(len(train_data[:end])//block_size, len(train_data)//block_size)]     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
-    control_data_block = []
+    shuffled_data = []
+    shuffled_labels = []
     copied_train_data = deepcopy(train_data)
+    copied_train_labels = deepcopy(train_labels)
     for i in block_indices:
-        control_data_block += copied_train_data[i*block_size:(i+1)*block_size]
-    return control_data_block
-    
-    
+        shuffled_data += copied_train_data[i*block_size:(i+1)*block_size]
+        shuffled_labels += copied_train_labels[i*block_size:(i+1)*block_size]
+    return shuffled_data, rates, shuffled_labels
 
     
     

@@ -19,6 +19,7 @@ import itertools
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
+from statsmodels.tsa.stattools import acf
 import pdb
 
 
@@ -169,34 +170,56 @@ def training_sequence(um_sequence, dataset):
     return train_sequence
   
     
-def sequence_autocor(um_sequence):
-    #pdb.set_trace()
-    length = len(um_sequence)
-    autocor = []
-    um_sequence = [seq[1] for seq in um_sequence]
-    max_val = max(um_sequence)
-    for dt in range(length):
-        sumcor = 0
-        for i in range(length - dt):
-            if um_sequence[i] == um_sequence[i+dt]:
-                sumcor += 1
-            else:
-                sumcor += -1/max_val
-        autocor.append(sumcor/(length - dt))
-    return autocor
+# def sequence_autocor(um_sequence):
+#     #pdb.set_trace()
+#     length = len(um_sequence)
+#     autocor = []
+#     um_sequence = [seq[1] for seq in um_sequence]
+#     max_val = max(um_sequence)
+#     for dt in range(length):
+#         sumcor = 0
+#         for i in range(length - dt):
+#             if um_sequence[i] == um_sequence[i+dt]:
+#                 sumcor += 1
+#             else:
+#                 sumcor += -1/max_val
+#         autocor.append(sumcor/(length - dt))
+#     return autocor
 
-def sequence_autocor2(um_sequence):
-    length = len(um_sequence)
-    autocor = []
-    max_val = max(um_sequence)
-    for dt in range(0,length,10):
-        sumcor = 0
-        for i in range(length - dt):
-            if um_sequence[i] == um_sequence[i+dt]:
-                sumcor += 1
-            else:
-                sumcor += -1/max_val
-        autocor.append(sumcor/(length - dt))
+# def sequence_autocor2(um_sequence):
+#     length = len(um_sequence)
+#     autocor = []
+#     max_val = max(um_sequence)
+#     for dt in range(0,length,10):
+#         sumcor = 0
+#         for i in range(length - dt):
+#             if um_sequence[i] == um_sequence[i+dt]:
+#                 sumcor += 1
+#             else:
+#                 sumcor += -1/max_val
+#         autocor.append(sumcor/(length - dt))
+#     return autocor
+
+def make_ohe(y, n_labels):
+    ohe = np.zeros((len(y), n_labels))    
+    ohe[np.arange(len(y)),y] = 1
+    return ohe
+
+def sequence_autocor(lbl_sequence, n_labels, nlags=100):
+    length = len(lbl_sequence)
+    lbl_ohe = make_ohe(lbl_sequence, n_labels)
+    autocor = np.zeros(nlags)
+    
+    for lbl in range(n_labels):
+        autocor_lbl = acf(
+            lbl_ohe[:,lbl].tolist(),
+            unbiased=True,
+            nlags=nlags-1, #number of time points to evaluate autocorrelation for
+            qstat=False, # allows to return the Ljung-Box q statistic
+            fft=True, # this is the fastest method, but impact on accuracy should be assessed when possible
+            alpha=None # allows to compute confidence intervals
+            )
+        autocor = autocor + np.asarray(autocor_lbl)
     return autocor
 
 

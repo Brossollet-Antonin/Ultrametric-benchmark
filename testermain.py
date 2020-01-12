@@ -17,6 +17,8 @@ from copy import deepcopy
 import diagnosis
 import sequence_generator_temporal_noself as sequence_generator_temporal
 
+import pdb
+
 diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
 
 original_accuracy = np.array([[diagnos_original[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
@@ -30,13 +32,14 @@ for k in range(nbr_test_samples):
 original_classes_prediction = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
 
 if args.verbose:
-    print('Data generation...')    
+    print('Data generation...')
 train_data_rates = trainer.train_data()  #Stock rates (if not a random process) and data for training
-train_data, rates, train_sequence = train_data_rates[0], train_data_rates[1], train_data_rates[2]
+train_data, rates, train_labels = train_data_rates[0], train_data_rates[1], train_data_rates[2]
 if args.verbose:
     print('...done\n')
 # original_autocorr_function = sequence_generator_temporal.sequence_autocor(train_data)
-original_autocorr_function = []
+
+original_autocorr_function = sequence_generator_temporal.sequence_autocor(train_labels, n_labels=dataset.num_classes)
 for i in range(args.test_nbr):
     training_range = (i*test_stride, (i+1)*test_stride)     #Part of the sequence on which the training will be done
     if args.verbose:
@@ -84,12 +87,13 @@ for k in range(nbr_test_samples):
 shuffle_classes_prediction = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
     
 train_data_rates=trainer.train_data()  #Stock rates (if not a random process) and data for training
-train_data, rates, train_sequence = train_data_rates[0], train_data_rates[1], train_data_rates[2]
+train_data, rates, train_labels_sfl = train_data_rates[0], train_data_rates[1], train_data_rates[2]
 for i in range(args.test_nbr):
     training_range = (i*test_stride, (i+1)*test_stride)
-    control_data_shuffle = control.shuffle_block_partial(train_data, block_size_shuffle, training_range[1])
+    control_data_shuffle, _, control_labels_shuffle = control.shuffle_block_partial(train_data_rates, block_size_shuffle, training_range[1])
     # shuffle_autocorr_functions.append(sequence_generator_temporal.sequence_autocor(control_data_shuffle))
-    shuffle_autocorr_functions.append([])
+    
+    shuffle_autocorr_functions.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=dataset.num_classes))
     control.shuffle_sequence(netfc_shuffle, trainer, control_data_shuffle, mem_sz=memory_sz, 
                              batch_sz=trainer.task_sz_nbr, lr=args.lr, momentum=0.5, training_range=training_range)
     diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
@@ -109,7 +113,7 @@ for i in range(args.test_nbr):
 
 
 compteur = [0 for k in range(len(dataset.train_data))]
-for k in train_sequence:
+for k in train_labels_sfl:
     compteur[k] += 1
     
 #│exec(open("./sequence_plot_MNISTCIFAR.py").read())    
