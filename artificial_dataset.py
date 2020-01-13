@@ -13,7 +13,7 @@ import pdb
 
 class artificial_dataset:
     
-    def __init__(self, data_origin, data_sz=0, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=1, noise_level=1):
+    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=1, noise_level=1):
         self.data_origin = data_origin
         self.class_sz_train = class_sz_train
         self.data_sz = data_sz
@@ -22,17 +22,9 @@ class artificial_dataset:
         self.ratio_value = ratio_value
         self.noise_level = noise_level
 
-        if data_origin == 'artificial_8':
-            self.depth, self.branching = 3, 2
-            self.num_classes = 8
-            self.n_axes, self.n_in_channels = 1, 1
-        if data_origin == 'artificial_16':
-            self.depth, self.branching = 4, 2
-            self.num_classes = 16
-            self.n_axes, self.n_in_channels = 1, 1
-        if data_origin == 'artificial_32':
-            self.depth, self.branching = 5, 2
-            self.num_classes = 32
+        if data_origin == 'artificial':
+            self.depth, self.branching = tree_depth, 2
+            self.num_classes = self.branching**self.depth
             self.n_axes, self.n_in_channels = 1, 1
         elif data_origin == 'MNIST':
             self.depth, self.branching = 3, 2

@@ -18,6 +18,10 @@ import rates_correlation
 import preprocessing
 import itertools
 
+import numpy as np
+
+import pdb
+
 
 class training:
     """
@@ -121,15 +125,16 @@ class training:
 
 
         elif self.training_type=="twofold split":
+            pdb.set_trace()
             n_classes = self.dataset.branching**self.dataset.depth
             examples_per_class = self.sequence_length // n_classes
             train_data=[]
             for splt_id in range(n_classes//2): # MNIST patterns are numbers from 0 to 9
-                for i in range(examples_per_class):
-                    cl_id = random.randint(1)
-                    inst_id = random.randint(self.dataset.class_sz_train)
-                    inst = self.dataset.train_data[2*splt_id+ex_id][inst_id]
-                    train_data.append(inst)
+                cl_ids = np.random.randint(0, 2, size=2*examples_per_class)
+                inst_ids = np.random.randint(0, self.dataset.class_sz_train, size=2*examples_per_class)
+                inst = [self.dataset.train_data[2*splt_id+cl_ids[k]][inst_ids[k]] for k in range(2*examples_per_class)]
+                # inst = self.dataset.train_data[2*splt_id+cl_ids][inst_ids]
+                train_data.append(inst)
             return train_data
             
 

@@ -26,7 +26,8 @@ parser.add_argument('-v', '--verbose', dest='verbose', action='count', default=0
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
-data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial_8', 'artificial_16', 'artificial_32'])
+data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial', 'artificial', 'artificial'])
+data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 
 # model/hyperparameters parameters
@@ -63,6 +64,7 @@ def run(args):
     dataset = artificial_dataset.artificial_dataset(
         data_origin = args.data_origin,
         data_sz=args.artif_seq_size,
+        tree_depth = args.artif_tree_depth,
         class_sz_train=1000,
         class_sz_test=400,
         ratio_type='linear',
