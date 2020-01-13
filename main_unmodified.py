@@ -12,7 +12,7 @@ import numpy as np
 import artificial_dataset
 import random
 import torch
-import neuralnet_unmodified
+import neuralnet_unmodified as neuralnet
 import algo
 import time
 
