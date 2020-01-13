@@ -46,8 +46,13 @@ class artificial_dataset:
                 self.class_sz_test = 892    # The class 5 of MNIST as only 892 test samples
             elif data_origin=='CIFAR10':
                 self.class_sz_test = 1000
-            else: 
-                self.class_sz_test = 100
+            else:
+                if self.num_classes > 500:
+                    self.class_sz_test = 20000//self.num_classes
+                elif self.num_classes > 100:
+                    self.class_sz_test = 5000//self.num_classes
+                else:
+                    self.class_sz_test = 300
         else:
             self.create()
         
