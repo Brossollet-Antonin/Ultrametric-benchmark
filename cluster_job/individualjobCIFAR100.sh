@@ -12,4 +12,4 @@
 module load anaconda
 
 #Command to execute Python program
-python ../main.py --dataset CIFAR100 --nnarch ResNet --resnettype 50 --savefolder CIFAR100 --gpu --minibatch ${1} --blocksz ${2} -T ${3} 
+python ../main.py --dataset CIFAR100 --seqlength 10000000 --nnarch ResNet --resnettype 50 --savefolder CIFAR100 --gpu --minibatch ${1} --blocksz ${2} -T ${3} 
