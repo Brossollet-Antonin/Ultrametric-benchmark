@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.autograd import Variable 
+from torch.autograd import Variable
 
 
 # 2 hidden layers MLP with 256 ReLU units in each layers (similar to Chaudhry et al. (2019))
@@ -75,11 +75,11 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=100):
+    def __init__(self, block, num_blocks, input_channel, num_classes=100):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
-        self.conv1 = conv3x3(3,64)
+        self.conv1 = conv3x3(input_channel,64)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
@@ -107,17 +107,19 @@ class ResNet(nn.Module):
         return out
 
 
-def resnetN(type=50, num_classes=100):
+def resnetN(data_origin, type=50, num_classes=100):
+    input_channel = 1 if data_origin=='MNIST' else 3
+
     if type == 18:
-        return ResNet(BasicBlock, [2,2,2,2], num_classes)
+        return ResNet(block=BasicBlock, num_blocks=[2,2,2,2], num_classes=num_classes, input_channel=input_channel)
     elif type == 34:
-        return ResNet(BasicBlock, [3,4,6,3], num_classes)
+        return ResNet(block=BasicBlock, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
     elif type == 50:
-        return ResNet(Bottleneck, [3,4,6,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
     elif type == 101:
-        return ResNet(Bottleneck, [3,4,23,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,4,23,3], num_classes=num_classes, input_channel=input_channel)
     else:
-        return ResNet(Bottleneck, [3,8,36,3], num_classes)
+        return ResNet(block=Bottleneck, num_blocks=[3,8,36,3], num_classes=num_classes, input_channel=input_channel)
 
 def ResNet18(num_classes=100):
     return ResNet(BasicBlock, [2,2,2,2], num_classes)
@@ -135,7 +137,7 @@ def ResNet152(num_classes=100):
     return ResNet(Bottleneck, [3,8,36,3], num_classes)
 
 def test_resnet():
-    net = ResNet50()
+    net = resnetN(data_origin='CIFAR100', type=50, num_classes=100)
     y = net(Variable(torch.randn(1,3,32,32)))
     print(y.size())
 
@@ -149,32 +151,32 @@ class Net_FCRU(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size,hidden_size)
         self.fc3 = nn.Linear(hidden_size, output_size)
-        
+
     def forward(self, x):
         x = x.view(-1, input_size)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-    
+
     def layer2(self, x):
         x = x.view(-1, input_size)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
-    
+
     def layer1(self, x):
         x = x.view(-1, input_size)
         x = self.fc1(x)
         return x
-    
+
     def layer3(self, x):
         x = x.view(-1, input_size)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return x   
-    
+        return x
+
     def layer4(self, x):
         x = x.view(-1, input_size)
         x = F.relu(self.fc1(x))
@@ -182,8 +184,8 @@ class Net_FCRU(nn.Module):
         x = F.relu(self.fc3(x))
         x = self.fc4(x)
         return x
-    
-    
+
+
 # 2 hidden layers CNN
 
 class Net_CNN(nn.Module):
@@ -196,7 +198,7 @@ class Net_CNN(nn.Module):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84,100) if dataset=='CIFAR100' else nn.Linear(84,10)
         self.dataset = dataset
-    
+
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
@@ -205,7 +207,7 @@ class Net_CNN(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-    
+
 hidden_size = 100
 
 class Net_FCL(nn.Module):
@@ -213,22 +215,19 @@ class Net_FCL(nn.Module):
         super(Net_FCL, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size,output_size)
-        
+
     def forward(self, x):
         x = x.view(-1, input_size)
         x = self.fc1(x)
         x = self.fc2(x)
         return x
-    
-    
+
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-# net = Net_CNN('MNIST')        
+# net = Net_CNN('MNIST')
 # nbr_para = count_parameters(net)
 # print(nbr_para)
-    
-
-

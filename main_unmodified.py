@@ -12,17 +12,17 @@ import numpy as np
 import artificial_dataset
 import random
 import torch
-import neuralnet
+import neuralnet_unmodified as neuralnet
 import algo
 import time
 
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
-parser.add_argument('--savefolder', type=str, default='untitled', help="Folder to save the data")
+parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
-data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100'])
+data_params.add_argument('--dataset', type=str, dest='data_origin', default='MNIST', choices=['MNIST', 'CIFAR10', 'CIFAR100'])
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -34,13 +34,10 @@ model_params.add_argument('--nbrtest', type=int, default=10, dest='test_nbr', he
 # sequence parameters
 seq_params = parser.add_argument_group('Sequence Parameters')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
-seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
-seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.6], help='Temperature for the random walk (the energy step is by default equal to 1)')
+seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[1000], help='Size of the block used to shuffle the sequence')
+seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.15], help='Temperature for the random walk (the energy step is by default equal to 1)')
 
-# neural network parameters
-nn_params = parser.add_argument_group('Neural Network Parameters')
-nn_params.add_argument('--nnarchi', type=str, default='ResNet', choices=['CNN', 'ResNet'], help='Architure of the neural network used')
-nn_params.add_argument('--resnettype', type=int, default=50, choices=[18, 34, 50, 101, 152], help='Type of ResNet network to use')
+
 
 
 def run(args):
@@ -68,30 +65,30 @@ def run(args):
                         os.makedirs(savepath + save_folder)
 
                         parameters = np.array([[T, depth, tree_branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz,
-                                                args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
+                                                args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU'],
                                                ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size",
                                                 "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size",
-                                                "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
+                                                "Learning rate", "Dataset", "Random Seed", "CPU/GPU?"]])
 
 
-                        num_classes = 100 if args.data_origin=='CIFAR100' else 10
-                        netfc_original = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
+                        netfc_original = neuralnet.Net_CNN(dataset.data_origin)
                         netfc_original.to(device)
 
-                        netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, num_classes=num_classes, data_origin=dataset.data_origin)
+                        netfc_shuffle = neuralnet.Net_CNN(dataset.data_origin)
                         netfc_shuffle.to(device)
 
                         trainer = algo.training('temporal correlation', 'reservoir sampling', dataset=dataset,
                         task_sz_nbr=minibatches,
                         tree_depth=depth, preprocessing=False, device=device, sequence_length=args.sequence_length, energy_step=step, T=T,
                         tree_branching=tree_branching)
-                        
-                        exec(open("../testermain.py").read()) 
-                                    
+
+                        exec(open("../testermain.py").read())
+
                         diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
                         diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
-            
+
                         exec(open("../save_data.py").read())
+
 
 
 if __name__ == '__main__':
