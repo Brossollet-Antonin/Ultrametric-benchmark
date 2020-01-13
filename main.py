@@ -85,6 +85,9 @@ def run(args):
             for block_size_shuffle in args.block_size_shuffle_list:
                 for T in args.temperature_list:                         
                     savepath = cwd+"/Results/%s_%s/%s/length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_length, minibatches)
+                    if dataset.data_origin == 'artificial':
+                        savepath = cwd+"/Results/%s_%s/%s/length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_length, minibatches, args.artif_seq_size, dataset.ratio_value)
+
                     #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
                     save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
             
