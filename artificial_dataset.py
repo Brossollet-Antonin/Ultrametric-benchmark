@@ -59,6 +59,8 @@ class artificial_dataset:
         
         # List to stock the parents to allow the creation of the different
         parents_mem = [initial]
+        self.patterns = [[] for k in range(self.depth + 1)]
+        self.patterns[0].append(parents_mem)
         train_data = [[] for i in range(self.branching**self.depth)]
         test_data = [[] for i in range(self.branching**self.depth)]
         label = 0
@@ -70,6 +72,7 @@ class artificial_dataset:
                 b = 0
                 d -= 1
             next_parent = deepcopy(parents_mem[-1])
+
             if self.ratio_type == 'linear':
                 for s in range(self.ratio_value):             
                     ind_mod = random.randint(0, self.data_sz -1)
@@ -82,8 +85,10 @@ class artificial_dataset:
                 raise NotImplementedError("Supported modes are for the moment 'linear' and 'exponnential'")
             # Switch the value of the ind_mod digit
             
-            parents_mem.append(next_parent) 
+            parents_mem.append(next_parent)
             d += 1
+            self.patterns[d].append(next_parent)
+
             # If at the bottom of the tree, create the random samples
             if d == self.depth:
                 b += 1

@@ -31,7 +31,7 @@ def setting_rates(step, T, tree_depth, branching):
         a = R**k
         eps = a/(branching**(k-1))
         rates += (branching**(k-1))*[eps]
-    rates.insert(0,0)
+    rates.insert(0,0) # CAUTION: in this setting, alternation is forced, ie the sequence must change state from one example to the next
     rates = np.array(rates)
     rates = rates*(1/sum(rates))
     return rates

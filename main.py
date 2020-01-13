@@ -7,15 +7,20 @@ Created on Fri Jan 10 15:02:44 2020
 
 import argparse
 import os
-import diagnosis
-import numpy as np
-import artificial_dataset
+import pdb
+
 import random
-import torch 
-import neuralnet
-import algo
 from datetime import datetime
 import time
+
+import numpy as np
+import torch
+
+import diagnosis
+import artificial_dataset
+import neuralnet
+import algo
+
 
 cwd = os.getcwd()
 
@@ -68,7 +73,7 @@ def run(args):
         class_sz_train=1000,
         class_sz_test=400,
         ratio_type='linear',
-        ratio_value=1,
+        ratio_value=5,
         noise_level=1
         )
 
@@ -79,7 +84,7 @@ def run(args):
         for memory_sz in args.memory_list:
             for block_size_shuffle in args.block_size_shuffle_list:
                 for T in args.temperature_list:                         
-                    savepath = cwd+"/Results/%s/%s/length%d_batches%d/" % (args.data_origin, args.nnarchi, args.sequence_length, minibatches)
+                    savepath = cwd+"/Results/%s_%s/%s/length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_length, minibatches)
                     #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
                     save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
             
