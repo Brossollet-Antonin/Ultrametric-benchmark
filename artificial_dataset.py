@@ -13,7 +13,7 @@ import pdb
 
 class artificial_dataset:
     
-    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=1, noise_level=1):
+    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=5, noise_level=1):
         self.data_origin = data_origin
         self.class_sz_train = class_sz_train
         self.data_sz = data_sz
