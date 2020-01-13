@@ -22,13 +22,4 @@ do
 
          done
 done
-	
-	
-	
-	
-	
-	
-	#End of script
-	
-	
-	
+#End of script
