@@ -18,7 +18,7 @@ import time
 
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
-parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
+parser.add_argument('--savefolder', type=str, default='untitled', help="Folder to save the data")
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
