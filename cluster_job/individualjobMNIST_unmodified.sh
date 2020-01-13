@@ -11,4 +11,4 @@
 module load anaconda
 
 #Command to execute Python program
-python ../main_unmodified.py --dataset MNIST --nnarch ResNet --resnettype 50 --minibatch ${1} --blocksz ${2} -T ${3} 
+python ../main_unmodified.py --dataset MNIST --minibatch ${1} --blocksz ${2} -T ${3} 
