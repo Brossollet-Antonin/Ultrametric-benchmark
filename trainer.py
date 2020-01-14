@@ -176,7 +176,10 @@ def train(net, training, train_data_rates, mem_sz, batch_sz, lr, momentum, train
         memory_list = [train_data[0]]
         # Define mini-batches of size training.task_sz_nbr and SGD and update the memory for each of them
         while n + training.task_sz_nbr < training_range[1]:
-            mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
+            try:
+                mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
+            except:
+                pdb.set_trace()
             for data in train_data[n+1:n+training.task_sz_nbr]:
                 mini_batch[0] = torch.cat((mini_batch[0], data[0]))
                 mini_batch[1] = torch.cat((mini_batch[1], data[1]))
