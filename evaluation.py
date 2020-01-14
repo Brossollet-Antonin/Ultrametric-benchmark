@@ -42,7 +42,7 @@ def evaluate(net, dataset, device):
 
 
 
-def evaluate_hierarchical(net, trainer, device):
+def evaluate_hierarchical(trainer, device):
     # Return the accuracy, the predicted and GT and the distance between them for every hierachical level 
     # Creation of the testing sequence
     dataset = trainer.dataset
@@ -71,7 +71,7 @@ def evaluate_hierarchical(net, trainer, device):
             samples, labels = data
             if labels not in excluded_labels:
                 samples, labels = samples.to(device), labels.to(device)
-                outputs = net(samples)
+                outputs = trainer.network(samples)
                 _, predicted = torch.max(outputs.data, 1)
                 result[1][i][0] = predicted
                 result[1][i][1] = labels

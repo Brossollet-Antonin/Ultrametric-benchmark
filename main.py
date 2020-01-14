@@ -16,9 +16,11 @@ import time
 import numpy as np
 import torch
 
-from evaluation import evaluate_hierarchical
+from local_tools import verbose
+
 import artificial_dataset
 import neuralnet
+
 from trainer import Trainer
 
 
@@ -63,8 +65,7 @@ def run(args):
     
     device = torch.device('cuda') if args.cuda else torch.device('cpu')
         
-    if args.verbose:
-        print('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size))
+    verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args)
 
     dataset = artificial_dataset.artificial_dataset(
         data_origin = args.data_origin,
@@ -77,8 +78,7 @@ def run(args):
         noise_level=1
         )
 
-    if args.verbose:
-        print('Done generating dataset {0:s}'.format(args.data_origin))
+    verbose('Done generating dataset {0:s}'.format(args.data_origin), args)
     
     for minibatches in args.minibatches_list:
         for memory_sz in args.memory_list:
@@ -99,8 +99,10 @@ def run(args):
                     # ToDo: - turn parameters into a dictionnary
                     #       - export as JSON
 
-                    if args.verbose:
-                        print('Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length))
+                    verbose(
+                        'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
+                        args
+                        )
 
                     netfc_original = neuralnet.Net_CNN(dataset) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, dataset=dataset)
                     netfc_original.to(device)
@@ -110,18 +112,19 @@ def run(args):
                     
                     args.sequence_type = args.sequence_type.replace('_', ' ')
                     trainer = Trainer(
-                        args.sequence_type, 'reservoir sampling',
-                        dataset=dataset,
-                        task_sz_nbr=minibatches,
-                        preprocessing=False,
-                        device=device,
-                        sequence_length=args.sequence_length,
-                        energy_step=step,
-                        T=T
+                        dataset = dataset,
+                        network = netfc_original,
+                        training_type = args.sequence_type,
+                        memory_sampling = 'reservoir sampling',
+                        task_sz_nbr = minibatches,
+                        preprocessing = False,
+                        device = device,
+                        sequence_length = args.sequence_length,
+                        energy_step = step,
+                        T = T
                         )
                     
-                    if args.verbose:
-                        print('...done')
+                    verbose('...done', args)
 
                     exec(
                         open("./testermain.py", encoding="utf-8").read()

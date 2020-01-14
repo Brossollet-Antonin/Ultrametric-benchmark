@@ -36,14 +36,6 @@ def setting_rates(step, T, tree_depth, branching):
     rates = rates*(1/sum(rates))
     return rates
 
-
-#
-#def setting_rates(step, T, tree_depth, branching):
-#    rates = [5e-6, 5e-6, 1e-6, 1e-6, 1e-6, 1e-6]
-#    sumr = sum(rates)
-#    rates.insert(0,1-sumr)
-#    rates.insert(0,0)
-#    return rates
     
 def setting_rates_self(step, T, tree_depth, branching):
     rates = []

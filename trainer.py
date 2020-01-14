@@ -1,42 +1,65 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 17 13:51:20 2019
+Created on Tue Jan 14 10:24:07 2020
 
-@author: Antonin
+@author: Simon
 """
 
-import torch
+
+import pdb
+import itertools
 from copy import deepcopy
-import memory
-from train import mem_SGD
-import torchvision
+
 import random
+from random import shuffle
+from random import seed
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
+
+import memory
 import sort_dataset
 import sequence_generator_temporal_noself as sequence_generator_temporal
 import sequence_generator_spatial
 import rates_correlation
 import preprocessing
-import itertools
 
-import numpy as np
 
-import pdb
+def mem_SGD(net, mini_batch, lr, momentum, device):
+    inputs, labels = mini_batch
+    inputs, labels = inputs.to(device), labels.to(device=device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
+    optimizer.zero_grad()
+    outputs = net(inputs)
+
+    loss = criterion(outputs, labels)
+    loss.backward()
+    optimizer.step()
+    return loss.item()
 
 
 class Trainer:
     """
-    Define the test that the user wants to perform.
+    Defined by tuple (dataset, neural_network, sequence_type).
     Training type : random, temporal correlation, spatial correlation, permutedMNIST
     memory sampling : reservoir sampling, ring buffer
     """
-    def __init__(self, training_type, memory_sampling, dataset, task_sz_nbr=None,
+    def __init__(self, dataset, network, training_type, memory_sampling, task_sz_nbr=None,
                  sequence_first=0, sequence_length=60000, train_epoch=None, energy_step=3, T=1, 
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3):
+        
+        self.dataset = dataset
+        self.network = network
+        self.training_type = training_type
+
         self.task_sz_nbr = task_sz_nbr
         self.memory_sampling = memory_sampling
-        self.dataset = dataset
-        self.training_type = training_type
+        
         self.sequence_first = sequence_first
         self.sequence_length = sequence_length
         self.energy_step = energy_step
@@ -61,7 +84,7 @@ class Trainer:
                 train_data.append(next(iterator[j]))
                 j += 1
             random.shuffle(train_data)
-            return train_data
+            self.train_sequence = train_data
         
         elif self.training_type=="temporal correlation":
             if self.train_epoch is not None:
@@ -74,7 +97,7 @@ class Trainer:
                     self.sequence_first, self.sequence_length, self.energy_step,
                     self.T, self.tree_depth, self.tree_branching
                     )
-            return (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)
+            self.train_sequence = (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)
             
             
             
@@ -104,13 +127,13 @@ class Trainer:
                     rates_matrix = rates_correlation.rates_cor(data, self.T, 10)
                     train_sequence = sequence_generator_spatial.um_sequence_generator(
                         self.sequence_first, rates_matrix, self.sequence_length, data)
-            return (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
+            self.train_sequence = (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
 
         elif self.training_type=="uniform":
             train_sequence, rates_vector = sequence_generator_temporal.uniform_sequence_generator(
                 self.sequence_first, self.sequence_length, self.proba_transition, self.tree_depth, self.tree_branching
                 )
-            return (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
+            self.train_sequence = (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
         
         
         elif self.training_type=="onefold split":
@@ -129,7 +152,7 @@ class Trainer:
                 train_sequence.extend([ex_id for k in range(examples_per_class)])
                 train_data.extend(instances)
 
-            return train_data, rates, train_sequence
+            self.train_sequence = (train_data, rates, train_sequence)
 
 
         elif self.training_type=="twofold split":
@@ -151,74 +174,127 @@ class Trainer:
                 train_sequence.extend([2*splt_id+cl_ids[k] for k in range(2*examples_per_class)])
                 train_data.extend(instances)
 
-            return train_data, rates, train_sequence
+            self.train_sequence = (train_data, rates, train_sequence)
             
-
-        elif self.training_type=="permutedMNIST":
-            pass    #TODO implement permutedMNIST
         else:
             raise NotImplementedError("training type not supported")
             
 
-         
-        
-        
-def train(net, training, train_data_rates, mem_sz, batch_sz, lr, momentum, training_range):
-    if training.training_type=="temporal correlation" or training.training_type=="twofold split" or training.training_type=="onefold split" or training.training_type=="spatial correlation" or training.training_type=="random" or training.training_type=="uniform":
-        # For temporal and spatial correlation tests
-        n = training_range[0]
-        running_loss = 0.0
-        #train_data_rates=training.train_data()  #Stock rates (if not a random process) and data for training
-        train_data =  train_data_rates[0] if training.training_type=="temporal correlation" or training.training_type=="twofold split" or training.training_type=="onefold split" or training.training_type=="spatial correlation" or training.training_type=="uniform" else train_data_rates
-#        rates = train_data_rates[1] if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="uniform" else 'Random process, no rates involved'
-#        train_sequence = train_data_rates[2] if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="uniform" else 'Random process, no sequence involved'
-        # Initialize the memory with the first example of the serie. Should not really matter. Could also use a random one from the first mini batch
-        memory_list = [train_data[0]]
-        # Define mini-batches of size training.task_sz_nbr and SGD and update the memory for each of them
-        while n + training.task_sz_nbr < training_range[1]:
-            try:
-                mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
-            except:
-                pdb.set_trace()
-            for data in train_data[n+1:n+training.task_sz_nbr]:
-                mini_batch[0] = torch.cat((mini_batch[0], data[0]))
-                mini_batch[1] = torch.cat((mini_batch[1], data[1]))
-                
-            # Sample elements from memory at random and add it to the mini batch expect for the first iteration     
-            if n != 0 and mem_sz != 0:
-                # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
-                sample_memory = memory.sample_memory(memory_list, training.task_sz_nbr)
-                train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
-
-            else:
-                train_mini_batch = mini_batch
-            # Perform SGD on the mini_batch and memory 
-            running_loss += mem_SGD(net, train_mini_batch, lr, momentum, training.device)
-            # Update memory
-            memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if training.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
-            n += training.task_sz_nbr
-            if n % (1000*training.task_sz_nbr) == 999*training.task_sz_nbr:
-                print('[%d] loss: %.4f' % (n//training.task_sz_nbr + 1, running_loss/1000))
-                running_loss = 0.0
-                # Monitor what is inside the memory at a give time
-                #print(memory.inspect_memory(memory_list))
+    def train(self, mem_sz, batch_sz, lr, momentum, training_range):
+        if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
+            # For temporal and spatial correlation tests
+            n = training_range[0]
+            running_loss = 0.0
             
-        # Last mini batch shorter than the requiered length if necessary 
-#        mini_batch = deepcopy(train_data[n]) 
-#        for data in train_data[n+1:]:
-#            mini_batch[0] = torch.cat((mini_batch[0], data[0]))
-#            mini_batch[1] = torch.cat((mini_batch[1], data[1]))       # Same number of samples from the memory than from the last mini batch for consistency. Can make an other choice
-#        sample_memory = memory.sample_memory(memory_list, mini_batch[0].size(0))
-#        train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
-#
-#        running_loss += mem_SGD(net, train_mini_batch, lr, momentum, training.device)
-        print("--- Finished Experience Replay training on %s ---" % (training_range,))
-        #return (train_data, rates, train_sequence)
+            if self.training_type == 'random':
+                train_data = self.train_sequence
+            else:
+                train_data =  self.train_sequence[0]
 
+            memory_list = [train_data[0]]
+            # Define mini-batches of size training.task_sz_nbr and SGD and update the memory for each of them
+            while n + self.task_sz_nbr < training_range[1]:
+                try:
+                    mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
+                except:
+                    pdb.set_trace()
+                for data in train_data[n+1:n+self.task_sz_nbr]:
+                    mini_batch[0] = torch.cat((mini_batch[0], data[0]))
+                    mini_batch[1] = torch.cat((mini_batch[1], data[1]))
+                    
+                # Sample elements from memory at random and add it to the mini batch expect for the first iteration     
+                if n != 0 and mem_sz != 0:
+                    # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
+                    sample_memory = memory.sample_memory(memory_list, self.task_sz_nbr)
+                    train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
+
+                else:
+                    train_mini_batch = mini_batch
+                # Perform SGD on the mini_batch and memory 
+                running_loss += mem_SGD(net, train_mini_batch, lr, momentum, self.device)
+                # Update memory
+                memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
+                n += self.task_sz_nbr
+                if n % (1000*self.task_sz_nbr) == 999*self.task_sz_nbr:
+                    print('[%d] loss: %.4f' % (n//self.task_sz_nbr + 1, running_loss/1000))
+                    running_loss = 0.0
+
+                
+
+            print("--- Finished Experience Replay training on %s ---" % (training_range,))
+       
+        else:
+            raise NotImplementedError("training type not supported")
+
+
+    def evaluate(self):
+        # Return the accuracy, the predicted and real label for the whole test set and the difference between the two
+        # Creation of the testing sequence 
+        j = 0
+        test_sequence=[]
+        iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data))]
+        for i in range(len(self.dataset.test_data)):
+            for j in range(self.dataset.class_sz_test):
+                test_sequence.append(next(iterator[i]))
+        shuffle(test_sequence)
         
-    elif training.training_type=="permutedMNIST":
-        # TODO for permutedMNIST
-        pass
-    
-    else:
-        raise NotImplementedError("training type not supported")
+        correct = 0
+        total = 0
+        # Array which will contain the predicted output, the ground truth and the difference of the two
+        result = np.zeros((len(test_sequence), 3))
+        
+        with torch.no_grad():
+            for i, data in enumerate(test_sequence):
+                samples, labels = data
+                samples, labels = samples.to(self.device), labels.to(self.device)
+                outputs = self.network(samples)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+                result[i][0] = predicted
+                result[i][1] = labels
+        result[:, 2] = np.abs(result[:, 0] - result[:, 1])
+        return (100*correct/total, result)
+
+
+
+    def evaluate_hierarchical(self):
+        # Return the accuracy, the predicted and GT and the distance between them for every hierachical level 
+        # Creation of the testing sequence
+        if self.dataset.data_origin=='MNIST' or self.dataset.data_origin=='CIFAR10':
+            excluded_labels = [8, 9]
+        elif self.dataset.data_origin=='CIFAR100':
+            excluded_labels = range(64, 100)
+        
+        else:
+            excluded_labels = []    
+
+        j = 0
+        test_sequence=[]
+        iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data) - len(excluded_labels))]   # Create the test sequence with only labels on which the network as been trained on 
+        for i in range(len(self.dataset.test_data) - len(excluded_labels)):
+            for j in range(self.dataset.class_sz_test):
+                test_sequence.append(next(iterator[i]))
+        
+        shuffle(test_sequence)
+        
+        # Array which will contain the accuracies at the different hierarchical levels, 
+        # the predicted output, the ground truth and the difference of the two
+        result = [[], np.zeros((len(test_sequence), 3 + self.tree_depth))]
+        with torch.no_grad():
+            for i, data in enumerate(test_sequence):
+                samples, labels = data
+                if labels not in excluded_labels:
+                    samples, labels = samples.to(self.device), labels.to(self.device)
+                    outputs = self.network(samples)
+                    _, predicted = torch.max(outputs.data, 1)
+                    result[1][i][0] = predicted
+                    result[1][i][1] = labels
+        zero = np.zeros(len(test_sequence))
+        # Compute the difference between prediction and GT for every hierarchical level
+        for i in range(2, self.tree_depth + 3):
+            result[1][:, i] = np.abs((result[1][:, 0]//(self.tree_branching**(i-2))) 
+                                - (result[1][:, 1]//(self.tree_branching**(i-2))))
+            result[0].append((np.sum(result[1][:, i] == zero)/len(test_sequence))*100)
+        
+        return result
