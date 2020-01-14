@@ -3,7 +3,7 @@
 # Script to execute parameter exploration
 
 minibatcheslist="10"
-blocksizelist="100000"
+blocksizelist="1 10 100 1000 10000 100000"
 temperaturelist="0.6"
 
 
