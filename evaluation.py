@@ -5,12 +5,13 @@ Created on Tue May 21 10:59:41 2019
 @author: Antonin
 """
 
+import pdb
 import numpy as np
 from random import shuffle
 from random import seed
 import torch
 
-def test_error(net, dataset, device):
+def evaluate(net, dataset, device):
     # Return the accuracy, the predicted and real label for the whole test set and the difference between the two
     # Creation of the testing sequence 
     j = 0
@@ -41,7 +42,7 @@ def test_error(net, dataset, device):
 
 
 
-def hierarchical_error(net, trainer, device):
+def evaluate_hierarchical(net, trainer, device):
     # Return the accuracy, the predicted and GT and the distance between them for every hierachical level 
     # Creation of the testing sequence
     dataset = trainer.dataset

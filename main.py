@@ -16,10 +16,10 @@ import time
 import numpy as np
 import torch
 
-import diagnosis
+from evaluation import evaluate_hierarchical
 import artificial_dataset
 import neuralnet
-import algo
+from trainer import Trainer
 
 
 cwd = os.getcwd()
@@ -31,7 +31,7 @@ parser.add_argument('-v', '--verbose', dest='verbose', action='count', default=0
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
-data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial', 'artificial', 'artificial'])
+data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial'])
 data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 
@@ -86,7 +86,7 @@ def run(args):
                 for T in args.temperature_list:                         
                     savepath = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, minibatches)
                     if dataset.data_origin == 'artificial':
-                        savepath = cwd+"/Results/%s_%s/%s/length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_length, minibatches, args.artif_seq_size, dataset.ratio_value)
+                        savepath = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, minibatches, args.artif_seq_size, dataset.ratio_value)
 
                     #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
                     save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
@@ -109,7 +109,7 @@ def run(args):
                     netfc_shuffle.to(device)
                     
                     args.sequence_type = args.sequence_type.replace('_', ' ')
-                    trainer = algo.training(
+                    trainer = Trainer(
                         args.sequence_type, 'reservoir sampling',
                         dataset=dataset,
                         task_sz_nbr=minibatches,
@@ -127,8 +127,8 @@ def run(args):
                         open("./testermain.py", encoding="utf-8").read()
                         ) 
                                 
-                    diagnos_original = diagnosis.hierarchical_error(netfc_original, trainer, device)
-                    diagnos_shuffle = diagnosis.hierarchical_error(netfc_shuffle, trainer, device)
+                    diagnos_original = evaluate_hierarchical(netfc_original, trainer, device)
+                    diagnos_shuffle = evaluate_hierarchical(netfc_shuffle, trainer, device)
         
                     exec(
                         open("./save_data.py", encoding="utf-8").read()
