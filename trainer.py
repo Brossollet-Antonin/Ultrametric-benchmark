@@ -51,7 +51,7 @@ class Trainer:
     def __init__(self, dataset, network, training_type, memory_sampling, task_sz_nbr=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1, 
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                 preprocessing=True, proba_transition=1e-3):
+                 preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0):
         
         self.dataset = dataset
         self.network = network
@@ -70,6 +70,17 @@ class Trainer:
         self.preprocessing = preprocessing
         self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
+        self.dynamic_T_thr = dynamic_T_thr
+
+
+    def heuristic_temperature(self, threshold, rate_law, dT=0.1):
+        # Only relevant when self.training_type = 'temporal_correlation'
+        T = self.T
+        rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
+        while min(rates) < threshold:
+            T += dT
+            rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
+        return T
 
 
     def make_train_sequence(self):
@@ -87,6 +98,11 @@ class Trainer:
             self.train_sequence = train_data
         
         elif self.training_type=="temporal correlation":
+            if self.dynamic_T_thr > 0:
+                new_T = self.heuristic_temperature(self.dynamic_T_thr, rate_law='power')
+                print('Adapting temperature to be {0:.2f} to enforce minimum visitation constraint\nPrevious temperature was {1:.2f}'.format(new_T, self.T))
+                self.T = new_T
+
             seqgen = sequence_generator_temporal.TempCorr_SequenceGenerator()
             train_sequence, rates_vector = seqgen.generate_labels(
                 self.sequence_first,

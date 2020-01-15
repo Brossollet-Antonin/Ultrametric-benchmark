@@ -125,7 +125,8 @@ def run(args):
                         min_visit = args.min_state_visit,
                         sequence_length = args.sequence_length,
                         energy_step = step,
-                        T = T
+                        T = T,
+                        self.dynamic_T_thr = args.T_adaptive
                         )
                     
                     verbose('...done', args)

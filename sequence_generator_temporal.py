@@ -119,10 +119,12 @@ class TempCorr_SequenceGenerator(SequenceGenerator):
     def __init__(self): 
         super().__init__()
 
-    def generate_labels(self, sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching, minimum_classcount = 0, rate_law = 'power', force_switch=True):
+    def generate_labels(self, sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching,
+        minimum_classcount = 0, rate_law = 'power', force_switch=True, dynamic_T=0):
         # The following condition is in fact not that necessary to repsect if the energy barrier increase linearly
         #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
         sequence = [sequence_first]
+        
         rates = setting_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
         print('Transition rates vector :', rates)
         seq_id = 0
