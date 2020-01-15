@@ -52,6 +52,7 @@ seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', n
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
 seq_params.add_argument('--force_switch', type=int, default=1, help='When true, the training sequence cannot remain at the same value from one state to the next through time')
 seq_params.add_argument('--min_state_visit', type=int, default=0, help='Indicated the number of times each state must be visited in the generated training sequence (no constraint by default)')
+seq_params.add_argument('--T_adaptive', type=float, default=0, help='When specified, a temperature is computed so that a all states have an inbound transition probability above the given threshold')
 
 # neural network parameters
 nn_params = parser.add_argument_group('Neural Network Parameters')
@@ -132,9 +133,12 @@ def run(args):
                     exec(
                         open("./ultrametric_analysis.py", encoding="utf-8").read()
                         ) 
-                                
-                    diagnos_original = evaluate_hierarchical(netfc_original, trainer, device)
-                    diagnos_shuffle = evaluate_hierarchical(netfc_shuffle, trainer, device)
+                    
+                    trainer.network = netfc_original            
+                    diagnos_original = trainer.evaluate_hierarchical()
+
+                    trainer.network = netfc_shuffle
+                    diagnos_shuffle = trainer.evaluate_hierarchical()
         
                     exec(
                         open("./data_saver.py", encoding="utf-8").read()

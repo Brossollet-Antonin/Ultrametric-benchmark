@@ -14,6 +14,8 @@ import memory
 import torch
 import sequence_generator_temporal
 
+from trainer import mem_SGD
+
     
     
 def shuffle_sequence(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_range):
@@ -44,7 +46,7 @@ def shuffle_sequence(net, training, control_data, mem_sz, batch_sz, lr, momentum
         else:
             train_mini_batch = mini_batch
         # Perform SGD on the mini_batch and memory 
-        running_loss += train.mem_SGD(net, train_mini_batch, lr, momentum, training.device)
+        running_loss += mem_SGD(net, train_mini_batch, lr, momentum, training.device)
         # Update memory
         memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if training.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
         n += training.task_sz_nbr

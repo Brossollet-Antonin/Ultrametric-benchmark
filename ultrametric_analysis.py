@@ -20,7 +20,7 @@ import sequence_generator_temporal
 
 
 
-
+trainer.network = netfc_original
 diagnos_original = trainer.evaluate_hierarchical()
 
 original_accuracy = np.array([[diagnos_original[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
@@ -79,6 +79,7 @@ print("--- Start shuffle training ---")
 # Shuffle the training sequence in block of a choosen length (try to use a length of blocks that divise the length of the 
 # sequence to be sure to train on the full sequence, have one small block to take that into account is not implemented # TODO)
 
+trainer.network = netfc_shuffle
 diagnos_shuffle = trainer.evaluate_hierarchical()
 shuffle_accuracy = np.array([[diagnos_shuffle[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
 classes_correct = np.zeros(len(dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
@@ -94,7 +95,7 @@ trainer.make_train_sequence()  #Stock rates (if not a random process) and data f
 train_data, rates, train_labels_sfl = trainer.train_sequence
 for i in range(args.test_nbr):
     training_range = (i*test_stride, (i+1)*test_stride)
-    control_data_shuffle, _, control_labels_shuffle = control.shuffle_block_partial(train_data_rates, block_size_shuffle, training_range[1])
+    control_data_shuffle, _, control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
     
     shuffle_autocorr_functions.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=dataset.num_classes))
     control.shuffle_sequence(netfc_shuffle, trainer, control_data_shuffle, mem_sz=memory_sz, 
