@@ -5,6 +5,7 @@ Created on Tue Jan 14 17:39:14 2020
 @author: Simon
 """
 
+import numpy as np
 
 def verbose(message, args, lvl=1):
 	if args.verbose >= lvl:

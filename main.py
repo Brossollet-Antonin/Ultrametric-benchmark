@@ -130,14 +130,14 @@ def run(args):
                     verbose('...done', args)
 
                     exec(
-                        open("./testermain.py", encoding="utf-8").read()
+                        open("./ultrametric_analysis.py", encoding="utf-8").read()
                         ) 
                                 
                     diagnos_original = evaluate_hierarchical(netfc_original, trainer, device)
                     diagnos_shuffle = evaluate_hierarchical(netfc_shuffle, trainer, device)
         
                     exec(
-                        open("./save_data.py", encoding="utf-8").read()
+                        open("./data_saver.py", encoding="utf-8").read()
                         )
             
     

@@ -97,6 +97,7 @@ def sequence_autocor(lbl_sequence, n_labels, nlags=200):
     return autocor
 
 
+## Abstract SequenceGenerator parent class ##
 class SequenceGenerator:
     def __init__(self):
         return

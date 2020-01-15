@@ -12,7 +12,6 @@ import numpy as np
 import torch
 
 from local_tools import verbose
-import testing
 import control
 from trainer import Trainer
 import neuralnet
@@ -36,7 +35,7 @@ original_classes_prediction = np.array([[classes_correct, 0]])   # This array wi
 
 verbose('Data generation...', args)
 trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
-pdb.set_trace()
+
 train_data, rates, train_labels = trainer.train_sequence
 
 verbose('...done\n', args)

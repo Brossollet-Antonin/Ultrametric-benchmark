@@ -7,8 +7,7 @@ Created on Mon Apr 22 16:09:01 2019
 
 
 import random 
-import train
-import testing
+
 from copy import deepcopy
 import numpy as np
 import memory

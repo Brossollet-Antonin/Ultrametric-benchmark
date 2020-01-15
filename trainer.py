@@ -205,7 +205,7 @@ class Trainer:
                 else:
                     train_mini_batch = mini_batch
                 # Perform SGD on the mini_batch and memory 
-                running_loss += mem_SGD(net, train_mini_batch, lr, momentum, self.device)
+                running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
                 # Update memory
                 memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
                 n += self.task_sz_nbr
@@ -292,3 +292,37 @@ class Trainer:
             result[0].append((np.sum(result[1][:, i] == zero)/len(test_sequence))*100)
         
         return result
+
+    def testing_final(self):
+        # Define which label to exclude in the testing phase (for simplicity, to have a simple tree structure, certain labels have to be excluded
+        # depending on the branching and depth of the tree)
+        if self.dataset.data_origin=='MNIST' or self.dataset.data_origin=='CIFAR10':
+            excluded_labels = [8, 9]
+        elif self.dataset.data_origin=='CIFAR100':
+            excluded_labels = range(64, 100)
+        
+        else:
+            excluded_labels = []
+        # Creation of the testing sequence 
+        j = 0
+        test_sequence=[]
+        iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data))]
+        for i in range(len(self.dataset.test_data)):
+            for j in range(self.dataset.class_sz_test):
+                test_sequence.append(next(iterator[i]))
+        shuffle(test_sequence)
+        
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in test_sequence:
+                samples, labels = data
+                if labels not in excluded_labels:
+                    samples, labels = samples.to(self.device), labels.to(self.device)
+                    outputs = self.network(samples)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+        print('Accuracy of the network on the %d test images: %.2f %%' % (total,
+        100 * correct / total))
+        return (100*correct/total, test_sequence)
