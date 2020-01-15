@@ -7,17 +7,20 @@ Created on Mon Apr 22 16:09:01 2019
 
 
 import random 
-import train
-import testing
+
 from copy import deepcopy
 import numpy as np
 import memory
 import torch
-import sequence_generator_temporal_noself as sequence_generator_temporal
+import sequence_generator_temporal
+
+from trainer import mem_SGD
 
     
     
 def shuffle_sequence(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_range):
+    # THIS IS ACTUALLY learning_ER with a shuffled sequence.
+    # ToDo: either rename this method to clarify or factorize the code to have a single method
     #if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="random" or tranini:
     # For temporal and spatial correlation tests
     
@@ -43,7 +46,7 @@ def shuffle_sequence(net, training, control_data, mem_sz, batch_sz, lr, momentum
         else:
             train_mini_batch = mini_batch
         # Perform SGD on the mini_batch and memory 
-        running_loss += train.mem_SGD(net, train_mini_batch, lr, momentum, training.device)
+        running_loss += mem_SGD(net, train_mini_batch, lr, momentum, training.device)
         # Update memory
         memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if training.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
         n += training.task_sz_nbr
@@ -108,18 +111,20 @@ def shuffle_block_stef(train_data, block_size):
     return train_data_shuffle
 
 
-def shuffle_block_partial(train_data, block_size, end): 
+def shuffle_block_partial(train_dataset, block_size, end): 
     # Shuffle the sequence by blocks up to a chosen ending point
+    train_data, rates, train_labels = train_dataset
     block_indices = [i for i in range(len(train_data[:end])//block_size)]
     random.shuffle(block_indices)
     block_indices += [i for i in range(len(train_data[:end])//block_size, len(train_data)//block_size)]     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
-    control_data_block = []
+    shuffled_data = []
+    shuffled_labels = []
     copied_train_data = deepcopy(train_data)
+    copied_train_labels = deepcopy(train_labels)
     for i in block_indices:
-        control_data_block += copied_train_data[i*block_size:(i+1)*block_size]
-    return control_data_block
-    
-    
+        shuffled_data += copied_train_data[i*block_size:(i+1)*block_size]
+        shuffled_labels += copied_train_labels[i*block_size:(i+1)*block_size]
+    return shuffled_data, rates, shuffled_labels
 
     
     

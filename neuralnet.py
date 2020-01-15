@@ -9,7 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.autograd import Variable
+
+from torch.autograd import Variable 
+import pdb
 
 
 # 2 hidden layers MLP with 256 ReLU units in each layers (similar to Chaudhry et al. (2019))
@@ -75,17 +77,24 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, input_channel, num_classes=100):
+    def __init__(self, block, num_blocks, dataset):
+
         super(ResNet, self).__init__()
+        self.dataset = dataset
         self.in_planes = 64
 
-        self.conv1 = conv3x3(input_channel,64)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.conv1 = conv3x3(dataset.n_in_channels, self.in_planes)
+
+        if dataset.n_axes == 1:
+            self.bn1 = nn.BatchNorm1d(self.in_planes)
+        else:
+            self.bn1 = nn.BatchNorm2d(self.in_planes)
+
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        self.linear = nn.Linear(512*block.expansion, dataset.num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -96,6 +105,7 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        #pdb.set_trace()
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
@@ -107,41 +117,19 @@ class ResNet(nn.Module):
         return out
 
 
-def resnetN(data_origin, type=50, num_classes=100):
-    input_channel = 1 if data_origin=='MNIST' else 3
 
+def resnetN(dataset, type=50):
     if type == 18:
-        return ResNet(block=BasicBlock, num_blocks=[2,2,2,2], num_classes=num_classes, input_channel=input_channel)
+        return ResNet(BasicBlock, [2,2,2,2], dataset)
     elif type == 34:
-        return ResNet(block=BasicBlock, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
+        return ResNet(BasicBlock, [3,4,6,3], dataset)
     elif type == 50:
-        return ResNet(block=Bottleneck, num_blocks=[3,4,6,3], num_classes=num_classes, input_channel=input_channel)
+        return ResNet(Bottleneck, [3,4,6,3], dataset)
     elif type == 101:
-        return ResNet(block=Bottleneck, num_blocks=[3,4,23,3], num_classes=num_classes, input_channel=input_channel)
+        return ResNet(Bottleneck, [3,4,23,3], dataset)
     else:
-        return ResNet(block=Bottleneck, num_blocks=[3,8,36,3], num_classes=num_classes, input_channel=input_channel)
+        return ResNet(Bottleneck, [3,8,36,3], dataset)
 
-def ResNet18(num_classes=100):
-    return ResNet(BasicBlock, [2,2,2,2], num_classes)
-
-def ResNet34(num_classes=100):
-    return ResNet(BasicBlock, [3,4,6,3], num_classes)
-
-def ResNet50(num_classes=100):
-    return ResNet(Bottleneck, [3,4,6,3], num_classes)
-
-def ResNet101(num_classes=100):
-    return ResNet(Bottleneck, [3,4,23,3], num_classes)
-
-def ResNet152(num_classes=100):
-    return ResNet(Bottleneck, [3,8,36,3], num_classes)
-
-def test_resnet():
-    net = resnetN(data_origin='CIFAR100', type=50, num_classes=100)
-    y = net(Variable(torch.randn(1,3,32,32)))
-    print(y.size())
-
-# test_resnet()
 
 
 
@@ -191,18 +179,34 @@ class Net_FCRU(nn.Module):
 class Net_CNN(nn.Module):
     def __init__(self, dataset):
         super(Net_CNN, self).__init__()
-        self.conv1 = nn.Conv2d(1,6,5) if dataset=='MNIST' else nn.Conv2d(3,6,5)
-        self.pool = nn.MaxPool2d(2,2)
-        self.conv2 = nn.Conv2d(6,16,5)
-        self.fc1 = nn.Linear(16*4*4, 120) if dataset=='MNIST' else nn.Linear(16*5*5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84,100) if dataset=='CIFAR100' else nn.Linear(84,10)
         self.dataset = dataset
+        if dataset.data_origin=='MNIST':
+            self.in_axis_dim = 28
+        elif dataset.data_origin=='CIFAR10' or dataset.data_origin=='CIFAR100':
+            self.in_axis_dim = 32
+        elif 'artificial' in dataset.data_origin:
+            self.in_axis_dim = dataset.data_sz
+        if dataset.n_axes == 2:
+            self.conv1 = nn.Conv2d(dataset.n_in_channels,6,5)
+            self.pool = nn.MaxPool2d(2,2)
+            self.conv2 = nn.Conv2d(6,16,5)
+        else:
+            self.conv1 = nn.Conv1d(dataset.n_in_channels,6,5)
+            self.pool = nn.MaxPool1d(2)
+            self.conv2 = nn.Conv1d(6,16,5)
 
+        out_of_conv_axis_dim = ((self.in_axis_dim - 4)//2 - 4)//2
+        self.fc1 = nn.Linear(16*out_of_conv_axis_dim**self.dataset.n_axes, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84,dataset.num_classes)
+    
     def forward(self, x):
+
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16*4*4) if self.dataset=='MNIST' else x.view(-1, 16*5*5)
+        out_of_conv_axis_dim = ((self.in_axis_dim - 4)//2 - 4)//2
+
+        x = x.view(-1, 16*out_of_conv_axis_dim**self.dataset.n_axes)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
