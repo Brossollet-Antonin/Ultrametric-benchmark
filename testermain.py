@@ -16,7 +16,7 @@ import testing
 import control
 from trainer import Trainer
 import neuralnet
-import sequence_generator_temporal_noself as sequence_generator_temporal
+import sequence_generator_temporal
 
 
 

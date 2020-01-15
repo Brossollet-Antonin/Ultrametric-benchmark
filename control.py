@@ -13,7 +13,7 @@ from copy import deepcopy
 import numpy as np
 import memory
 import torch
-import sequence_generator_temporal_noself as sequence_generator_temporal
+import sequence_generator_temporal
 
     
     

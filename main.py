@@ -50,6 +50,8 @@ seq_params.add_argument('--seqtype', type=str, default='temporal_correlation', d
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
+seq_params.add_argument('--force_switch', type=int, default=1, help='When true, the training sequence cannot remain at the same value from one state to the next through time')
+seq_params.add_argument('--min_state_visit', type=int, default=0, help='Indicated the number of times each state must be visited in the generated training sequence (no constraint by default)')
 
 # neural network parameters
 nn_params = parser.add_argument_group('Neural Network Parameters')
@@ -119,6 +121,7 @@ def run(args):
                         task_sz_nbr = minibatches,
                         preprocessing = False,
                         device = device,
+                        min_visit = args.min_state_visit,
                         sequence_length = args.sequence_length,
                         energy_step = step,
                         T = T

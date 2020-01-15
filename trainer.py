@@ -22,7 +22,7 @@ import torchvision
 
 import memory
 import sort_dataset
-import sequence_generator_temporal_noself as sequence_generator_temporal
+import sequence_generator_temporal
 import sequence_generator_spatial
 import rates_correlation
 import preprocessing
@@ -49,7 +49,7 @@ class Trainer:
     memory sampling : reservoir sampling, ring buffer
     """
     def __init__(self, dataset, network, training_type, memory_sampling, task_sz_nbr=None,
-                 sequence_first=0, sequence_length=60000, train_epoch=None, energy_step=3, T=1, 
+                 sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1, 
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3):
         
@@ -66,11 +66,11 @@ class Trainer:
         self.T = T
         self.tree_depth = dataset.depth
         self.device = device
-        self.train_epoch = train_epoch
+        self.min_visit = min_visit
         self.preprocessing = preprocessing
         self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
-    
+
 
     def make_train_sequence(self):
         
@@ -87,53 +87,47 @@ class Trainer:
             self.train_sequence = train_data
         
         elif self.training_type=="temporal correlation":
-            if self.train_epoch is not None:
-                train_sequence, rates_vector = sequence_generator_temporal.um_sequence_generator_epoch(
-                    self.sequence_first, self.train_epoch, self.energy_step,
-                    self.T, self.tree_depth, self.dataset, self.tree_branching
-                    )
-            else:
-                train_sequence, rates_vector = sequence_generator_temporal.um_sequence_generator(
-                    self.sequence_first, self.sequence_length, self.energy_step,
-                    self.T, self.tree_depth, self.tree_branching
-                    )
-            self.train_sequence = (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)
+            seqgen = sequence_generator_temporal.TempCorr_SequenceGenerator()
+            train_sequence, rates_vector = seqgen.generate_labels(
+                self.sequence_first,
+                self.sequence_length,
+                self.energy_step,
+                self.T,
+                self.tree_depth,
+                self.tree_branching,
+                self.min_visit
+            )
+            self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
             
             
             
         elif self.training_type=="spatial correlation":
-            if self.preprocessing:
-                if self.train_epoch is not None:
-                    data = sort_dataset.sort_dataset(dataset='MNIST', train=True)
-                    preprocessor = preprocessing.train_preproc()
-                    rates_matrix = preprocessing.rates_preproc(preprocessor, data, self.T, 10)
-                    train_sequence = sequence_generator_spatial.um_sequence_generator_epoch(
-                        self.sequence_first, rates_matrix, self.train_epoch, data)
-                else:
-                    data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
-                    preprocessor = preprocessing.train_preproc()
-                    rates_matrix = preprocessing.rates_preproc(preprocessor, data, self.T, 10)
-                    train_sequence = sequence_generator_spatial.um_sequence_generator(
-                        self.sequence_first, rates_matrix, self.sequence_length, data)
             
+            data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
+            if self.preprocessing:
+                preprocessor = preprocessing.train_preproc()
+                rates_matrix = preprocessing.rates_preproc(preprocessor, data, self.T, 10)
             else:
-                if self.train_epoch is not None:
-                    data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
-                    rates_matrix = rates_correlation.rates_cor(data, self.T, 10)
-                    train_sequence = sequence_generator_spatial.um_sequence_generator_epoch(
-                        self.sequence_first, rates_matrix, self.train_epoch, data)
-                else:
-                    data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
-                    rates_matrix = rates_correlation.rates_cor(data, self.T, 10)
-                    train_sequence = sequence_generator_spatial.um_sequence_generator(
-                        self.sequence_first, rates_matrix, self.sequence_length, data)
+                data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
+                rates_matrix = rates_correlation.rates_cor(data, self.T, 10)
+
+            train_sequence = sequence_generator_spatial.um_sequence_generator(
+                self.sequence_first,
+                rates_matrix,
+                self.sequence_length,
+                data,
+                minimum_classcount = self.min_visit
+            )
+            
             self.train_sequence = (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
 
+
         elif self.training_type=="uniform":
-            train_sequence, rates_vector = sequence_generator_temporal.uniform_sequence_generator(
+            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator()
+            train_sequence, rates_vector = seqgen.uniform_sequence_generator(
                 self.sequence_first, self.sequence_length, self.proba_transition, self.tree_depth, self.tree_branching
                 )
-            self.train_sequence = (sequence_generator_temporal.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
+            self.train_sequence = (seqgen.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
         
         
         elif self.training_type=="onefold split":
