@@ -126,7 +126,7 @@ def run(args):
                         sequence_length = args.sequence_length,
                         energy_step = step,
                         T = T,
-                        self.dynamic_T_thr = args.T_adaptive
+                        dynamic_T_thr = args.T_adaptive
                         )
                     
                     verbose('...done', args)
