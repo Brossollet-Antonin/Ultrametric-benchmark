@@ -22,8 +22,7 @@ import torchvision
 
 import memory
 import sort_dataset
-import sequence_generator_temporal
-import sequence_generator_spatial
+import sequencegenerator as sg
 import rates_correlation
 import preprocessing
 
@@ -76,10 +75,10 @@ class Trainer:
     def heuristic_temperature(self, threshold, rate_law, dT=0.1):
         # Only relevant when self.training_type = 'temporal_correlation'
         T = self.T
-        rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
+        rates = sg.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
         while min(rates) < threshold:
             T += dT
-            rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
+            rates = sg.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
         return T
 
 
@@ -103,15 +102,17 @@ class Trainer:
                 print('Adapting temperature to be {0:.2f} to enforce minimum visitation constraint\nPrevious temperature was {1:.2f}'.format(new_T, self.T))
                 self.T = new_T
 
-            seqgen = sequence_generator_temporal.TempCorr_SequenceGenerator()
-            train_sequence, rates_vector = seqgen.generate_labels(
-                self.sequence_first,
-                self.sequence_length,
+            seqgen = sg.TempCorr_SequenceGenerator(
                 self.energy_step,
                 self.T,
                 self.tree_depth,
                 self.tree_branching,
                 self.min_visit
+                )
+
+            train_sequence, rates_vector = seqgen.generate_labels(
+                self.sequence_first,
+                self.sequence_length
             )
             self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
             
@@ -127,19 +128,19 @@ class Trainer:
                 data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
                 rates_matrix = rates_correlation.rates_cor(data, self.T, 10)
 
-            train_sequence = sequence_generator_spatial.um_sequence_generator(
+            seqgen = sg.SpatialCorr_SequenceGenerator(rates_matrix)
+
+            train_sequence = seqgen.generate_labels(
                 self.sequence_first,
-                rates_matrix,
                 self.sequence_length,
-                data,
-                minimum_classcount = self.min_visit
+                self.min_visit
             )
             
-            self.train_sequence = (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
+            self.train_sequence = (seqgen.generate_data(train_sequence), rates_matrix, train_sequence)
 
 
         elif self.training_type=="uniform":
-            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator()
+            seqgen = sg.Uniform_SequenceGenerator()
             train_sequence, rates_vector = seqgen.uniform_sequence_generator(
                 self.sequence_first, self.sequence_length, self.proba_transition, self.tree_depth, self.tree_branching
                 )

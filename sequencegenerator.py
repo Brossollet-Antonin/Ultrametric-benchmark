@@ -5,13 +5,6 @@ Created on Mon May  6 17:42:18 2019
 @author: Antonin
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 12 18:27:21 2019
-
-@author: Antonin
-"""
-
 
 import numpy as np
 import random
@@ -22,6 +15,7 @@ from copy import deepcopy
 from statsmodels.tsa.stattools import acf
 import pdb
 
+import sort_dataset
 from local_tools import base_conv, verbose, make_ohe
 
 #Set the rates vector
@@ -46,37 +40,6 @@ def setting_rates(step, T, tree_depth, branching, rate_law='power', force_switch
     rates = np.array(rates)
     rates = rates*(1/sum(rates))
     return rates
-    
-
-def next_value(sequence, rates, tree_depth, branching):
-    i = sequence[-1]
-    base_prev = '0'*(tree_depth-len(base_conv(i, branching))) + base_conv(i, branching)
-    
-    lim = 0
-    randomnum = random.random()
-    j = 0
-    for k,r in enumerate(rates):
-        lim += r
-        if randomnum <= lim:
-            j = k
-            break
-    indices = (0,0)
-    if j == 0:
-        indices = (0, 0)
-        return int(base_prev,branching)
-    elif j in range(1, branching): 
-        return int(base_prev[:-1] + str((int(base_prev[-1])+j)%branching), branching)
-#        indices = (0, 1)
-#        return int(bin_prev[:len(bin_prev)-indices[0]-1] + str((int(bin_prev[len(bin_prev)-indices[0]-1])+1)%2),2)
-    for p in range(tree_depth):    
-        if j // branching**p == 1 :
-            indices = (p, j%(branching**p))
-            break
-
-    base_next = base_prev[:len(base_prev)-indices[0]-1] + str((int(base_prev[len(base_prev)-indices[0]-1])+1)%branching) + \
-                '0'*(tree_depth - len(base_prev[:len(base_prev)-indices[0]]) - len(base_conv(indices[1], branching))) + base_conv(indices[1], branching)
-
-    return int(base_next, branching)
 
 
 def sequence_autocor(lbl_sequence, n_labels, nlags=200):
@@ -99,8 +62,12 @@ def sequence_autocor(lbl_sequence, n_labels, nlags=200):
 
 ## Abstract SequenceGenerator parent class ##
 class SequenceGenerator:
-    def __init__(self):
-        return
+    def __init__(self, energy_step, T, tree_depth, tree_branching, min_visit):
+        self.energy_step = energy_step,
+        self.T = T
+        self.tree_depth = tree_depth
+        self.tree_branching = tree_branching
+        self.min_visit = min_visit
 
     def generate_labels():
         pass
@@ -113,51 +80,133 @@ class SequenceGenerator:
             train_sequence.append(next(iterable[k]))
         return train_sequence
 
+    def next_value(self, sequence, rates):
+        i = sequence[-1]
+        base_prev = '0'*(self.tree_depth-len(base_conv(i, self.tree_branching))) + base_conv(i, self.tree_branching)
+        
+        lim = 0
+        randomnum = random.random()
+        j = 0
+        for k,r in enumerate(rates):
+            lim += r
+            if randomnum <= lim:
+                j = k
+                break
+        indices = (0,0)
+        if j == 0:
+            indices = (0, 0)
+            return int(base_prev, self.tree_branching)
+        elif j in range(1, self.tree_branching): 
+            return int(base_prev[:-1] + str((int(base_prev[-1])+j)%self.tree_branching), self.tree_branching)
+    #        indices = (0, 1)
+    #        return int(bin_prev[:len(bin_prev)-indices[0]-1] + str((int(bin_prev[len(bin_prev)-indices[0]-1])+1)%2),2)
+        for p in range(self.tree_depth):    
+            if j // self.tree_branching**p == 1 :
+                indices = (p, j%(self.tree_branching**p))
+                break
+
+        base_next = base_prev[:len(base_prev)-indices[0]-1] + str((int(base_prev[len(base_prev)-indices[0]-1])+1)%self.tree_branching) + \
+                    '0'*(self.tree_depth - len(base_prev[:len(base_prev)-indices[0]]) - len(base_conv(indices[1], self.tree_branching))) + base_conv(indices[1], self.tree_branching)
+
+        return int(base_next, self.tree_branching)
+
 
 
 class TempCorr_SequenceGenerator(SequenceGenerator):
-    def __init__(self): 
+    def __init__(self, rate_law='power', force_switch=True): 
         super().__init__()
+        self.rate_law = rate_law
+        self.force_switch = force_switch
+        self.rates = setting_rates(self.energy_step, self.T, self.tree_depth, self.tree_branching, self.rate_law, self.force_switch)
 
-    def generate_labels(self, sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching,
-        minimum_classcount = 0, rate_law = 'power', force_switch=True, dynamic_T=0):
+    def generate_labels(self, sequence_first, sequence_length, minimum_classcount = 0):
         # The following condition is in fact not that necessary to repsect if the energy barrier increase linearly
         #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
         sequence = [sequence_first]
         
-        rates = setting_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
         print('Transition rates vector :', rates)
         seq_id = 0
 
-        class_counter = np.array([0 for i in range(2**tree_depth)])
+        class_counter = np.array([0 for i in range(2**self.tree_depth)])
         minvisit_not_satisfied = minimum_classcount
 
         while (seq_id < sequence_length) or minvisit_not_satisfied:
-            next_value_seq = next_value(sequence, rates, tree_depth, tree_branching)
+            next_value_seq = self.next_value(sequence, self.rates)
             sequence.append(next_value_seq)
             seq_id += 1
             if minimum_classcount:
                 class_counter[next_value_seq] += 1
-                minvisit_not_satisfied = ((class_counter < epoch*5000).any())
+                minvisit_not_satisfied = ((class_counter < minimum_classcount).any())
 
-        return (sequence,rates)
+        return (sequence, self.rates)
 
+
+class SpatialCorr_SequenceGenerator(SequenceGenerator):
+
+    def __init__(self, rates_matrix):
+        super().__init__()
+        self.rates_matrix = rates_matrix
+
+    def next_value(self, sequence):
+        i = sequence[-1]
+        rates_vector = self.rates_matrix[i]
+        lim = 0
+        randomnum = random.random()
+        for j,k in enumerate(rates_vector):
+            lim += k 
+            if randomnum <= lim:
+                return j
+    
+    def generate_labels(self, sequence_first, sequence_length, minimum_classcount = 0):
+        sequence = [sequence_first]
+        
+        print('Transition rates matrix :', self.rates_matrix)
+        seq_id = 0
+
+        class_counter = np.array([0 for i in range(10)])
+        minvisit_not_satisfied = minimum_classcount
+
+        while (seq_id < sequence_length) or minvisit_not_satisfied:
+            next_value_seq = self.next_value(sequence, self.rates)
+            sequence.append(next_value_seq)
+            seq_id += 1
+            if minimum_classcount:
+                class_counter[next_value_seq] += 1
+                minvisit_not_satisfied = ((class_counter < minimum_classcount).any())
+        return sequence 
+
+    def generate_data(self, sequence):
+        compteur = np.array([0 for i in range(10)])
+        for k in sequence:
+            compteur[k] += 1
+        size_labels_MNIST=np.array([5923, 6742, 5958, 6131, 5842, 5421, 5918, 6265, 5851, 5949])
+        quotient = compteur//size_labels_MNIST
+        nbr_clone = max(quotient) + 1
+        print("Number of clones: ", nbr_clone)
+        
+        data = sort_dataset.sort_MNIST(train=True)
+        iterable = [iter(data[i]) for i in range(len(data))] 
+        train_sequence=[]
+        for k in sequence:
+            train_sequence.append(next(iterable[k]))
+        return train_sequence
 
 
 class Uniform_SequenceGenerator(SequenceGenerator):
-    def __init__(self): 
+    def __init__(self, proba_transition): 
         super().__init__()
+        self.proba_transition = proba_transition
+        self.rates = [proba_transition]*(self.tree_branching**self.tree_depth - 2)
 
-    def generate_labels(sequence_first, sequence_length, proba_transition, tree_depth, tree_branching):
+    def generate_labels(self, sequence_first, sequence_length):
         sequence = [sequence_first]
-        rates = [proba_transition]*(tree_branching**tree_depth - 2)
-        assert(sum(rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
-        rates.insert(0, 1-sum(rates))
+        assert(sum(self.rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
+        rates.insert(0, 1-sum(self.rates))
         rates.insert(0,0)
-        print('Transition rates vector :', rates)
+        print('Transition rates vector :', self.rates)
         for i in range(sequence_length):
-            sequence.append(next_value(sequence, rates, tree_depth, tree_branching))
-        return (sequence,rates)
+            sequence.append(self.next_value(sequence, self.rates))
+        return (sequence, self.rates)
 
 
 def sequence_autocor_soft(sequence, branching, tree_depth, correlation_type, ratio=2):

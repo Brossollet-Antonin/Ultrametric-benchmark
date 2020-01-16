@@ -47,8 +47,8 @@ outfile.close()
 
 np.save(savepath+save_folder+"/parameters", parameters)
 
-np.save(savepath + save_folder + "/diagnostic_original", diagnos_original)
-np.save(savepath + save_folder + "/diagnostic_shuffle", diagnos_shuffle)
+np.save(savepath + save_folder + "/evaluation_original", eval_original)
+np.save(savepath + save_folder + "/evaluation_shuffle", eval_shuffle)
 
 np.save(savepath+save_folder+'/var_original_classes_prediction', original_classes_prediction)
 np.save(savepath+save_folder+'/var_shuffle_classes_prediction', shuffle_classes_prediction)
