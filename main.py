@@ -65,9 +65,9 @@ def run(args):
     test_stride = int(args.sequence_length/args.test_nbr)
     systime = time.time()
     random.seed(systime)
-    
+
     device = torch.device('cuda') if args.cuda else torch.device('cpu')
-        
+
     verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args)
 
     dataset = artificial_dataset.artificial_dataset(
@@ -82,22 +82,22 @@ def run(args):
         )
 
     verbose('Done generating dataset {0:s}'.format(args.data_origin), args)
-    
+
     for minibatches in args.minibatches_list:
         for memory_sz in args.memory_list:
             for block_size_shuffle in args.block_size_shuffle_list:
-                for T in args.temperature_list:                         
+                for T in args.temperature_list:
                     savepath = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, minibatches)
                     if dataset.data_origin == 'artificial':
                         savepath = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, minibatches, args.artif_seq_size, dataset.ratio_value)
 
                     #save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
-                    save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%s"))
-            
-                    parameters = np.array([[T, dataset.depth, dataset.branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz, 
+                    save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
+
+                    parameters = np.array([[T, dataset.depth, dataset.branching, args.sequence_length, minibatches, block_size_shuffle, args.test_nbr, step, memory_sz,
                                             args.lr, args.data_origin, systime, 'GPU' if args.cuda else 'CPU', args.nnarchi],
-                                           ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size", 
-                                            "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size", 
+                                           ["Temperature", "Tree Depth", "Tree Branching", "Sequence Length", "Minibatches Size",
+                                            "Size Blocks Shuffle", "Number of tests", "Energy Step", "Replay Memory Size",
                                             "Learning rate", "Dataset", "Random Seed", "CPU/GPU?", "NN architecture"]])
                     # ToDo: - turn parameters into a dictionnary
                     #       - export as JSON
@@ -109,10 +109,10 @@ def run(args):
 
                     netfc_original = neuralnet.Net_CNN(dataset) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, dataset=dataset)
                     netfc_original.to(device)
-                    
+
                     netfc_shuffle = neuralnet.Net_CNN(dataset) if args.nnarchi=='CNN' else neuralnet.resnetN(type=args.resnettype, dataset=dataset)
                     netfc_shuffle.to(device)
-                    
+
                     args.sequence_type = args.sequence_type.replace('_', ' ')
                     trainer = Trainer(
                         dataset = dataset,
@@ -128,24 +128,24 @@ def run(args):
                         T = T,
                         dynamic_T_thr = args.T_adaptive
                         )
-                    
+
                     verbose('...done', args)
 
                     exec(
                         open("./ultrametric_analysis.py", encoding="utf-8").read()
-                        ) 
-                    
-                    trainer.network = netfc_original            
+                        )
+
+                    trainer.network = netfc_original
                     diagnos_original = trainer.evaluate_hierarchical()
 
                     trainer.network = netfc_shuffle
                     diagnos_shuffle = trainer.evaluate_hierarchical()
-        
+
                     exec(
                         open("./data_saver.py", encoding="utf-8").read()
                         )
-            
-    
+
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
