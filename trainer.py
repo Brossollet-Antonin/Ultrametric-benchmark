@@ -49,17 +49,17 @@ class Trainer:
     memory sampling : reservoir sampling, ring buffer
     """
     def __init__(self, dataset, network, training_type, memory_sampling, task_sz_nbr=None,
-                 sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1, 
+                 sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0):
-        
+
         self.dataset = dataset
         self.network = network
         self.training_type = training_type
 
         self.task_sz_nbr = task_sz_nbr
         self.memory_sampling = memory_sampling
-        
+
         self.sequence_first = sequence_first
         self.sequence_length = sequence_length
         self.energy_step = energy_step
@@ -73,10 +73,11 @@ class Trainer:
         self.dynamic_T_thr = dynamic_T_thr
 
 
-    def heuristic_temperature(self, threshold, rate_law, dT=0.1):
+    def heuristic_temperature(self, rate_law, dT=0.01):
         # Only relevant when self.training_type = 'temporal_correlation'
-        T = self.T
+        T = 0.01
         rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
+        threshold = 10/self.sequence_length
         while min(rates) < threshold:
             T += dT
             rates = sequence_generator_temporal.setting_rates(self.energy_step, T, self.tree_depth, self.tree_branching, rate_law, force_switch=False)
@@ -84,7 +85,7 @@ class Trainer:
 
 
     def make_train_sequence(self):
-        
+
         if self.training_type=="random":
             j = 0
             train_data=[]
@@ -96,10 +97,11 @@ class Trainer:
                 j += 1
             random.shuffle(train_data)
             self.train_sequence = train_data
-        
+
         elif self.training_type=="temporal correlation":
             if self.dynamic_T_thr > 0:
-                new_T = self.heuristic_temperature(self.dynamic_T_thr, rate_law='power')
+                #new_T = self.heuristic_temperature(self.dynamic_T_thr, rate_law='power')
+                new_T = self.heuristic_temperature(rate_law='power')
                 print('Adapting temperature to be {0:.2f} to enforce minimum visitation constraint\nPrevious temperature was {1:.2f}'.format(new_T, self.T))
                 self.T = new_T
 
@@ -114,11 +116,11 @@ class Trainer:
                 self.min_visit
             )
             self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
-            
-            
-            
+
+
+
         elif self.training_type=="spatial correlation":
-            
+
             data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
             if self.preprocessing:
                 preprocessor = preprocessing.train_preproc()
@@ -134,7 +136,7 @@ class Trainer:
                 data,
                 minimum_classcount = self.min_visit
             )
-            
+
             self.train_sequence = (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
 
 
@@ -143,9 +145,9 @@ class Trainer:
             train_sequence, rates_vector = seqgen.uniform_sequence_generator(
                 self.sequence_first, self.sequence_length, self.proba_transition, self.tree_depth, self.tree_branching
                 )
-            self.train_sequence = (seqgen.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)        
-        
-        
+            self.train_sequence = (seqgen.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)
+
+
         elif self.training_type=="onefold split":
             n_classes = self.dataset.branching**self.dataset.depth
             examples_per_class = self.sequence_length // n_classes
@@ -185,17 +187,17 @@ class Trainer:
                 train_data.extend(instances)
 
             self.train_sequence = (train_data, rates, train_sequence)
-            
+
         else:
             raise NotImplementedError("training type not supported")
-            
+
 
     def train(self, mem_sz, batch_sz, lr, momentum, training_range):
         if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
             n = training_range[0]
             running_loss = 0.0
-            
+
             if self.training_type == 'random':
                 train_data = self.train_sequence
             else:
@@ -211,8 +213,8 @@ class Trainer:
                 for data in train_data[n+1:n+self.task_sz_nbr]:
                     mini_batch[0] = torch.cat((mini_batch[0], data[0]))
                     mini_batch[1] = torch.cat((mini_batch[1], data[1]))
-                    
-                # Sample elements from memory at random and add it to the mini batch expect for the first iteration     
+
+                # Sample elements from memory at random and add it to the mini batch expect for the first iteration
                 if n != 0 and mem_sz != 0:
                     # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
                     sample_memory = memory.sample_memory(memory_list, self.task_sz_nbr)
@@ -220,7 +222,7 @@ class Trainer:
 
                 else:
                     train_mini_batch = mini_batch
-                # Perform SGD on the mini_batch and memory 
+                # Perform SGD on the mini_batch and memory
                 running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
                 # Update memory
                 memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
@@ -229,17 +231,17 @@ class Trainer:
                     print('[%d] loss: %.4f' % (n//self.task_sz_nbr + 1, running_loss/1000))
                     running_loss = 0.0
 
-                
+
 
             print("--- Finished Experience Replay training on %s ---" % (training_range,))
-       
+
         else:
             raise NotImplementedError("training type not supported")
 
 
     def evaluate(self):
         # Return the accuracy, the predicted and real label for the whole test set and the difference between the two
-        # Creation of the testing sequence 
+        # Creation of the testing sequence
         j = 0
         test_sequence=[]
         iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data))]
@@ -247,12 +249,12 @@ class Trainer:
             for j in range(self.dataset.class_sz_test):
                 test_sequence.append(next(iterator[i]))
         shuffle(test_sequence)
-        
+
         correct = 0
         total = 0
         # Array which will contain the predicted output, the ground truth and the difference of the two
         result = np.zeros((len(test_sequence), 3))
-        
+
         with torch.no_grad():
             for i, data in enumerate(test_sequence):
                 samples, labels = data
@@ -269,26 +271,26 @@ class Trainer:
 
 
     def evaluate_hierarchical(self):
-        # Return the accuracy, the predicted and GT and the distance between them for every hierachical level 
+        # Return the accuracy, the predicted and GT and the distance between them for every hierachical level
         # Creation of the testing sequence
         if self.dataset.data_origin=='MNIST' or self.dataset.data_origin=='CIFAR10':
             excluded_labels = [8, 9]
         elif self.dataset.data_origin=='CIFAR100':
             excluded_labels = range(64, 100)
-        
+
         else:
-            excluded_labels = []    
+            excluded_labels = []
 
         j = 0
         test_sequence=[]
-        iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data) - len(excluded_labels))]   # Create the test sequence with only labels on which the network as been trained on 
+        iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data) - len(excluded_labels))]   # Create the test sequence with only labels on which the network as been trained on
         for i in range(len(self.dataset.test_data) - len(excluded_labels)):
             for j in range(self.dataset.class_sz_test):
                 test_sequence.append(next(iterator[i]))
-        
+
         shuffle(test_sequence)
-        
-        # Array which will contain the accuracies at the different hierarchical levels, 
+
+        # Array which will contain the accuracies at the different hierarchical levels,
         # the predicted output, the ground truth and the difference of the two
         result = [[], np.zeros((len(test_sequence), 3 + self.tree_depth))]
         with torch.no_grad():
@@ -303,10 +305,10 @@ class Trainer:
         zero = np.zeros(len(test_sequence))
         # Compute the difference between prediction and GT for every hierarchical level
         for i in range(2, self.tree_depth + 3):
-            result[1][:, i] = np.abs((result[1][:, 0]//(self.tree_branching**(i-2))) 
+            result[1][:, i] = np.abs((result[1][:, 0]//(self.tree_branching**(i-2)))
                                 - (result[1][:, 1]//(self.tree_branching**(i-2))))
             result[0].append((np.sum(result[1][:, i] == zero)/len(test_sequence))*100)
-        
+
         return result
 
     def testing_final(self):
@@ -316,10 +318,10 @@ class Trainer:
             excluded_labels = [8, 9]
         elif self.dataset.data_origin=='CIFAR100':
             excluded_labels = range(64, 100)
-        
+
         else:
             excluded_labels = []
-        # Creation of the testing sequence 
+        # Creation of the testing sequence
         j = 0
         test_sequence=[]
         iterator = [iter(self.dataset.test_data[k]) for k in range(len(self.dataset.test_data))]
@@ -327,7 +329,7 @@ class Trainer:
             for j in range(self.dataset.class_sz_test):
                 test_sequence.append(next(iterator[i]))
         shuffle(test_sequence)
-        
+
         correct = 0
         total = 0
         with torch.no_grad():
