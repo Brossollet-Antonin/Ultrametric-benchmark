@@ -9,57 +9,45 @@ import os
 import pickle
 import numpy as np
 
-if args.verbose:
-    print('Entering data saving script.\nSaving to {0:s}'.format(savepath+save_folder))
 
-os.makedirs(savepath + save_folder)
+def save_results(rs, save_path):
 
-filename = savepath + save_folder + "/train_data_orig.pickle"
-outfile = open(filename, 'wb')
-pickle.dump(train_data, outfile)
-outfile.close
+	os.makedirs(save_path)
 
-filename = savepath + save_folder + "/train_labels_orig.pickle"
-outfile = open(filename, 'wb')
-pickle.dump(train_labels, outfile)
-outfile.close()
+	outfile = open(save_path + "/train_data_orig.pickle", 'wb')
+	pickle.dump(rs.train_data_orig, outfile)
+	outfile.close
+
+	outfile = open(save_path + "/train_labels_orig.pickle", 'wb')
+	pickle.dump(rs.train_labels_orig, outfile)
+	outfile.close()
 
 
-seq_control_shuffle=[]
-for k in control_data_shuffle:
-    seq_control_shuffle.append(k[1].item())
+	outfile = open(save_path + "/train_data_shfl.pickle", 'wb')
+	pickle.dump(rs.train_data_shfl, outfile)
+	outfile.close
 
-filename = savepath + save_folder + "/train_data_shfl.pickle"
-outfile = open(filename, 'wb')
-pickle.dump(control_data_shuffle, outfile)
-outfile.close
+	outfile = open(save_path + "/train_labels_shfl.pickle", 'wb')
+	pickle.dump(rs.train_labels_shfl, outfile)
+	outfile.close()
 
-filename = savepath + save_folder + "/train_labels_shfl.pickle"
-outfile = open(filename, 'wb')
-pickle.dump(train_labels_sfl, outfile)
-outfile.close()
+	outfile = open(save_path + "/distribution_train.pickle", 'wb')
+	pickle.dump(rs.classes_count, outfile)
+	outfile.close()
 
+	outfile = open(save_path+"/parameters.pickle", 'wb')
+	pickle.dump(rs.parameters, outfile)
+	outfile.close()
 
-filename = savepath + save_folder + "/distribution_train.pickle"
-outfile = open(filename, 'wb')
-pickle.dump(compteur, outfile)
-outfile.close()
+	np.save(save_path + "/evaluation_original", rs.eval_orig)
+	np.save(save_path + "/evaluation_shuffled", rs.eval_shfl)
 
-np.save(savepath+save_folder+"/parameters", parameters)
+	np.save(save_path+'/var_original_classes_prediction', rs.classes_pred_orig)
+	np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl)
+	np.save(save_path+'/var_original_accuracy', rs.acc_orig)
+	np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl)
 
-np.save(savepath + save_folder + "/diagnostic_original", diagnos_original)
-np.save(savepath + save_folder + "/diagnostic_shuffle", diagnos_shuffle)
+	np.save(save_path+'/autocorr_original', rs.atc_orig)
+	np.save(save_path+'/autocorr_shuffle', rs.atc_shfl)
 
-np.save(savepath+save_folder+'/var_original_classes_prediction', original_classes_prediction)
-np.save(savepath+save_folder+'/var_shuffle_classes_prediction', shuffle_classes_prediction)
-np.save(savepath+save_folder+'/var_original_accuracy', original_accuracy)
-np.save(savepath+save_folder+'/var_shuffle_accuracy', shuffle_accuracy)
-
-np.save(savepath+save_folder+'/autocorr_original', original_autocorr_function)
-np.save(savepath+save_folder+'/autocorr_shuffle', shuffle_autocorr_functions)
-
-if args.verbose >= 2:
-    print('Saved all arrays to {0:s} subfolders'.format(savepath+save_folder))
-
-if args.verbose >= 2:
-    print('Saved train data to {0:s} subfolders'.format(savepath+save_folder))
+	print('Saved all results to {0:s} subfolders'.format(save_path))

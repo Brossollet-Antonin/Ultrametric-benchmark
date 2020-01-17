@@ -6,10 +6,15 @@ Created on Tue Apr 30 16:09:45 2019
 """
 
 import torch
+import numpy as np
 import random
 from copy import deepcopy
 import sort_dataset
 import pdb
+
+
+def count_differences(seq1, seq2):
+    return np.sum([0.25*(seq1[k] - seq2[k])**2 for k in range(len(seq1))])
 
 class artificial_dataset:
     
@@ -30,14 +35,17 @@ class artificial_dataset:
             self.depth, self.branching = 3, 2
             self.num_classes = 10
             self.n_axes, self.n_in_channels = 2, 1
+            self.data_sz = (28**2)*3
         elif data_origin == 'CIFAR10':
             self.depth, self.branching = 3, 2
             self.num_classes = 10
             self.n_axes, self.n_in_channels = 2, 3
+            self.data_sz = (32**2)*3
         elif data_origin == 'CIFAR100':
             self.depth, self.branching = 6, 2
             self.num_classes = 100
             self.n_axes, self.n_in_channels = 2, 3
+            self.data_sz = (32**2)*3
 
         if 'artificial' not in data_origin:
             self.train_data = sort_dataset.sort_dataset(dataset=data_origin, train=True)
@@ -53,10 +61,11 @@ class artificial_dataset:
                 self.class_sz_test = 5000//self.num_classes
             else:
                 self.class_sz_test = 300
-            self.create()
-        
+            #self.create()
+            self.create_power()
+
     
-    def create(self):
+    def create(self, shuffle_labels=False):
         # Creating an initial random tensor of size data_sz, of +1 and -1
         initial = torch.randint(2,(self.data_sz,), dtype=torch.float)
         initial = initial*2.0 -1.0
@@ -95,6 +104,8 @@ class artificial_dataset:
 
             # If at the bottom of the tree, create the random samples
             if d == self.depth:
+
+            # ToDo: Add option to shuffle all leaves randomly to destroy link between temporal and spatial correlations
                 b += 1
                 # Creating train set
                 for k in range(self.class_sz_train):
@@ -121,6 +132,61 @@ class artificial_dataset:
                     
                 label += 1 
                 d -= 1
-            
+        
         self.train_data = train_data
         self.test_data = test_data
+        if shuffle_labels:
+            random.shuffle(self.train_data)
+            random.shuffle(self.test_data)
+
+
+    def create_power(self, shuffle_labels=True):
+
+        # Creating an initial random tensor of size data_sz, of +1 and -1
+        initial = torch.randint(2,(self.data_sz,), dtype=torch.float)
+        initial = initial*2.0 -1.0
+        
+        self.patterns = [[] for d in range(self.depth+1)]
+        self.patterns[0].append(initial)
+
+        for d in range(1, self.depth+1):
+            for pat_id in range(self.branching**d):
+                template = deepcopy(self.patterns[d-1][pat_id//2])
+                self.patterns[d].append(template)
+                for s in range(self.ratio_value):             
+                    ind_mod = random.randint(0, self.data_sz -1)
+                    self.patterns[d][pat_id][ind_mod] = self.patterns[d][pat_id][ind_mod]*(-1)
+
+        train_data = [[] for i in range(self.branching**self.depth)]
+        test_data = [[] for i in range(self.branching**self.depth)]
+
+        for label in range(self.branching**self.depth):
+            template = self.patterns[self.depth][label]
+            for k in range(self.class_sz_train):
+                new_example_train = deepcopy(template)
+                # Add noise
+                for s in range(self.noise_level):
+                    ind_mod_ex_train = random.randint(0, self.data_sz -1)
+                    new_example_train[ind_mod_ex_train] = new_example_train[ind_mod_ex_train]*(-1)
+                # Add mini batch size and number of channel to have a correctly formated tensor for training
+                new_example_train = torch.unsqueeze(new_example_train, 0)
+                new_example_train = torch.unsqueeze(new_example_train, 0)
+                train_data[label].append([new_example_train, torch.tensor([label])])
+
+            for k in range(self.class_sz_test):
+                new_example_test = deepcopy(template)
+                # Add noise
+                for s in range(self.noise_level):
+                    ind_mod_ex_test = random.randint(0, self.data_sz -1)
+                    new_example_test[ind_mod_ex_test] = new_example_test[ind_mod_ex_test]*(-1)
+                # Add mini batch size and number of channel to have a correctly formated tensor for training
+                new_example_test = torch.unsqueeze(new_example_test, 0)
+                new_example_test = torch.unsqueeze(new_example_test, 0)
+                test_data[label].append([new_example_test, torch.tensor([label])])
+        
+        self.train_data = train_data
+        self.test_data = test_data
+
+        if shuffle_labels:
+            random.shuffle(self.train_data)
+            random.shuffle(self.test_data)

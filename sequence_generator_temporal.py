@@ -145,19 +145,28 @@ class TempCorr_SequenceGenerator(SequenceGenerator):
 
 
 class Uniform_SequenceGenerator(SequenceGenerator):
-    def __init__(self): 
+    def __init__(self, proba_transition, tree_branching, tree_depth, self_transition=True): 
         super().__init__()
+        self.self_transition = self_transition
+        self.tree_branching = tree_branching
+        self.tree_depth = tree_depth
+        if self_transition:
+            self.rates = [proba_transition]*(tree_branching**tree_depth - 1)
+        else:
+            self.rates = [proba_transition]*(tree_branching**tree_depth - 2)
 
-    def generate_labels(sequence_first, sequence_length, proba_transition, tree_depth, tree_branching):
+    def generate_labels(self, sequence_first, sequence_length):
         sequence = [sequence_first]
-        rates = [proba_transition]*(tree_branching**tree_depth - 2)
-        assert(sum(rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
-        rates.insert(0, 1-sum(rates))
-        rates.insert(0,0)
-        print('Transition rates vector :', rates)
+        assert(sum(self.rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
+        if self.self_transition:
+            self.rates.insert(0, 1-sum(self.rates))
+        else:
+            self.rates.insert(0, 1-sum(self.rates))
+            self.rates.insert(0,0)
+        print('Transition rates vector :', self.rates)
         for i in range(sequence_length):
-            sequence.append(next_value(sequence, rates, tree_depth, tree_branching))
-        return (sequence,rates)
+            sequence.append(next_value(sequence, self.rates, self.tree_depth, self.tree_branching))
+        return (sequence, self.rates)
 
 
 def sequence_autocor_soft(sequence, branching, tree_depth, correlation_type, ratio=2):

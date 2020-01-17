@@ -214,17 +214,44 @@ class Net_CNN(nn.Module):
 
 hidden_size = 100
 
+
 class Net_FCL(nn.Module):
-    def __init__(self):
+    def __init__(self, dataset, hidden_size):
         super(Net_FCL, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size,output_size)
+        self.dataset = dataset
+        self.input_size = self.dataset.data_sz
+        self.hidden_size = hidden_size
+
+        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+        self.fc2 = nn.Linear(self.hidden_size, dataset.num_classes)
 
     def forward(self, x):
-        x = x.view(-1, input_size)
+        x = x.view(-1, self.input_size)
         x = self.fc1(x)
         x = self.fc2(x)
         return x
+
+
+# class Net_FCL(nn.Module):
+#     def __init__(self, dataset, hidden_sizes):
+#         super(Net_FCL, self).__init__()
+#         self.dataset = dataset
+#         self.input_size = self.dataset.data_sz
+#         self.hidden_sizes = hidden_sizes
+#         self.fc = []
+
+#         self.fc.append(nn.Linear(self.input_size, hidden_sizes[0]))
+#         if len(hidden_sizes) > 1:
+#             for hid_id in range(len(hidden_sizes)-1):
+#                 self.fc.append(nn.Linear(hidden_sizes[hid_id], hidden_sizes[hid_id+1]))
+
+#         self.fc.append(nn.Linear(hidden_sizes[-1], dataset.num_classes))
+
+#     def forward(self, x):
+#         x = x.view(-1, self.input_size)
+#         for hidden in self.fc:
+#             x = hidden(x)
+#         return x
 
 
 

@@ -29,6 +29,9 @@ import preprocessing
 
 
 def mem_SGD(net, mini_batch, lr, momentum, device):
+    # Instanciates optimizer and computes the loss for mini_batch
+    # Backpropagates
+    # Returns avg loss on mini-batch
     inputs, labels = mini_batch
     inputs, labels = inputs.to(device), labels.to(device=device)
     criterion = nn.CrossEntropyLoss()
@@ -48,17 +51,20 @@ class Trainer:
     Training type : random, temporal correlation, spatial correlation, permutedMNIST
     memory sampling : reservoir sampling, ring buffer
     """
-    def __init__(self, dataset, network, training_type, memory_sampling, task_sz_nbr=None,
+    def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, batch_sz=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0):
 
         self.dataset = dataset
         self.network = network
+        self.network_orig = network
+        self.network_shfl = network
         self.training_type = training_type
 
-        self.task_sz_nbr = task_sz_nbr
+        self.batch_sz = batch_sz
         self.memory_sampling = memory_sampling
+        self.memory_size = memory_sz
 
         self.sequence_first = sequence_first
         self.sequence_length = sequence_length
@@ -86,7 +92,7 @@ class Trainer:
 
     def make_train_sequence(self):
 
-        if self.training_type=="random":
+        if self.training_type=="random": # actually not random, this should be renamed 'stair' or something
             j = 0
             train_data=[]
             iterator = [itertools.cycle(self.dataset.train_data[k]) for k in range(len(self.dataset.train_data))]
@@ -141,11 +147,12 @@ class Trainer:
 
 
         elif self.training_type=="uniform":
-            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator()
-            train_sequence, rates_vector = seqgen.uniform_sequence_generator(
-                self.sequence_first, self.sequence_length, self.proba_transition, self.tree_depth, self.tree_branching
+            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator(self.proba_transition, self.tree_branching, self.tree_depth)
+            train_sequence, rates_vector = seqgen.generate_labels(
+                self.sequence_first,
+                self.sequence_length
                 )
-            self.train_sequence = (seqgen.training_sequence(train_sequence, self.dataset), rates_vector, train_sequence)
+            self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
 
 
         elif self.training_type=="onefold split":
@@ -192,7 +199,7 @@ class Trainer:
             raise NotImplementedError("training type not supported")
 
 
-    def train(self, mem_sz, batch_sz, lr, momentum, training_range):
+    def train(self, mem_sz, lr, momentum, training_range):
         if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
             n = training_range[0]
@@ -204,20 +211,20 @@ class Trainer:
                 train_data =  self.train_sequence[0]
 
             memory_list = [train_data[0]]
-            # Define mini-batches of size training.task_sz_nbr and SGD and update the memory for each of them
-            while n + self.task_sz_nbr < training_range[1]:
+            # Define mini-batches of size training.batch_sz and SGD and update the memory for each of them
+            while n + self.batch_sz < training_range[1]:
                 try:
                     mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
                 except:
                     pdb.set_trace()
-                for data in train_data[n+1:n+self.task_sz_nbr]:
+                for data in train_data[n+1:n+self.batch_sz]: # !! ToDo: optimize this step !!
                     mini_batch[0] = torch.cat((mini_batch[0], data[0]))
                     mini_batch[1] = torch.cat((mini_batch[1], data[1]))
 
                 # Sample elements from memory at random and add it to the mini batch expect for the first iteration
                 if n != 0 and mem_sz != 0:
                     # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
-                    sample_memory = memory.sample_memory(memory_list, self.task_sz_nbr)
+                    sample_memory = memory.sample_memory(memory_list, self.batch_sz)
                     train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
 
                 else:
@@ -226,9 +233,9 @@ class Trainer:
                 running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
                 # Update memory
                 memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
-                n += self.task_sz_nbr
-                if n % (1000*self.task_sz_nbr) == 999*self.task_sz_nbr:
-                    print('[%d] loss: %.4f' % (n//self.task_sz_nbr + 1, running_loss/1000))
+                n += self.batch_sz
+                if n % (1000*self.batch_sz) == 999*self.batch_sz:
+                    print('[%d] loss: %.4f' % (n//self.batch_sz + 1, running_loss/1000))
                     running_loss = 0.0
 
 
