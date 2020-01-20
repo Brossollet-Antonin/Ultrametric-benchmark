@@ -21,6 +21,34 @@ from trainer import mem_SGD
     
     
 def train(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_range):
+    """
+    Train a network on the specified training protocol.
+
+    Parameters
+    ----------
+    net : neural network
+        The neural network to train.
+    training  
+        Trainer object parametrizing the training protocol.
+    control_data
+        Data used to do the training.
+    mem_sz : int
+        Size of the memory.
+    batch_sz : int
+        Size of the mini-batches for the training.
+    lr : int
+        Learning rate.
+    momentum : int
+        Momentum for the SGD.
+    training_range : list
+        Range of the data to train on. training_range[0] is the begining 
+        sample, training_range[1] is the end sample
+
+    Returns
+    -------
+    None.
+
+    """
     # THIS IS ACTUALLY learning_ER with a shuffled sequence.
     # ToDo: either rename this method to clarify or factorize the code to have a single method
     #if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="random" or tranini:
@@ -74,6 +102,22 @@ def train(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_
 
 
 def shuffle_block(train_data, block_size):
+    """
+    Block shuffle a data sequence.
+
+    Parameters
+    ----------
+    train_data : list of torch.Tensor
+        List of the ordered samples used in the training process.
+    block_size : int
+        Size of the block for the shuffle.
+
+    Returns
+    -------
+    control_data_block : list of torch.Tensor
+        List of the samples shuffled by blocks.
+
+    """
     # Return a sequence shuffled by block to see the effect of a cut off in the long scale temporal correlation
     block_indices = [i for i in range(len(train_data)//block_size)]
     random.shuffle(block_indices)
@@ -85,7 +129,22 @@ def shuffle_block(train_data, block_size):
     
 
 def shuffle_block_stef(train_data, block_size):
-    # Return a sequence shuffled by block using the different method from Stefano and Marcus for the shuffle 
+    """
+    Block shuffle a data sequence using Stefano & Marcus method.
+
+    Parameters
+    ----------
+    train_data : list of torch.Tensor
+        List of the ordered samples used in the training process.
+    block_size : int
+        Size of the block for the shuffle.
+
+    Returns
+    -------
+    control_data_block : list of torch.Tensor
+        List of the samples shuffled by blocks.
+
+    """    
     nb = len(train_data)//block_size    #number of blocks
     ns = 10*nb      #number of shuffles that will be done
     train_data_shuffle = deepcopy(train_data)
@@ -101,7 +160,26 @@ def shuffle_block_stef(train_data, block_size):
 
 
 def shuffle_block_partial(train_dataset, block_size, end): 
-    # Shuffle the sequence by blocks up to a chosen ending point
+    """
+    Block shuffle a data sequence up to a certain point.
+    
+    The part of the sequence aft
+
+    Parameters
+    ----------
+    train_data : list of torch.Tensor
+        List of the ordered samples used in the training process.
+    block_size : int
+        Size of the block for the shuffle.
+    end: int 
+        Indice of the last sample of the sequence to shuffle 
+    
+    Returns
+    -------
+    control_data_block : list of torch.Tensor
+        List of the samples shuffled by blocks.
+
+    """    
     train_data, rates, train_labels = train_dataset
     block_indices = list(range(len(train_data[:end])//block_size))
     random.shuffle(block_indices)
