@@ -18,7 +18,7 @@ def count_differences(seq1, seq2):
 
 class artificial_dataset:
     
-    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=5, noise_level=1):
+    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=5, noise_level=1, shuffle_classes=True):
         self.data_origin = data_origin
         self.class_sz_train = class_sz_train
         self.data_sz = data_sz
@@ -26,6 +26,7 @@ class artificial_dataset:
         self.ratio_type = ratio_type
         self.ratio_value = ratio_value
         self.noise_level = noise_level
+        self.shuffle_classes = shuffle_classes
 
         if data_origin == 'artificial':
             self.depth, self.branching = tree_depth, 2
@@ -62,7 +63,7 @@ class artificial_dataset:
             else:
                 self.class_sz_test = 300
             #self.create()
-            self.create_power()
+            self.create_power(self.shuffle_classes)
 
     
     def create(self, shuffle_labels=False):

@@ -37,6 +37,7 @@ data_params = parser.add_argument_group('Dataset Parameters')
 data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial'])
 data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
+data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
 
 # model/hyperparameters parameters
@@ -80,7 +81,8 @@ def run(args):
 		class_sz_test=400,
 		ratio_type='linear',
 		ratio_value=8,
-		noise_level=3
+		noise_level=3,
+		shuffle_classes=args.artif_shuffle_classes
 		)
 
 	verbose('Done generating dataset {0:s}'.format(args.data_origin), args)
