@@ -23,7 +23,25 @@ class ResultSet:
 
 
 def ultrametric_analysis(trainer, args, block_size_shuffle):
+    """
+    Run full analysis defined by the parameters
 
+    Parameters
+    ----------
+    trainer 
+        Contains the training protocole parameters and data.
+    args
+        Arguments given by users to run the simulation.
+    block_size_shuffle : int
+        Size of the blocks used for the shuffle.
+
+    Returns
+    -------
+    rs
+        Class containing the different results.
+
+    """
+    
     rs = ResultSet()
 
     trainer.network = trainer.network_orig

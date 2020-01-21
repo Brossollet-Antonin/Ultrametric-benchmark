@@ -18,7 +18,79 @@ def count_differences(seq1, seq2):
 
 class artificial_dataset:
     
-    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, class_sz_test=0, ratio_type='linear', ratio_value=5, noise_level=1, shuffle_classes=True):
+    """Contains artifical dataset parameters and data.
+
+    Parameters
+    ----------
+    data_origin : str
+        Dataset used.
+    data_sz : int, default=1
+        Length of data vectors generated for an artifical dataset.
+    tree_depth : int, default=3
+        Depth of the ultrametric tree used to generate artificial dataset.
+    class_sz_train : int, default=0
+        Number of samples generated for each label for the training dataset
+        an artificial dataset.
+    class_sz_test : int, default=0
+        Number of samples generated for each label for the testing dataset for
+        an artificial dataset.
+    ratio_type : str, default='linear'
+        Method used to generate the artificial dataset, specified how many bits
+        will be flipped between each level of the ultrametric tree.
+    ratio_value : int, default=5
+        Number of flipped bits between each level of the tree. If
+        ratio_type='linear' ratio_value bits will be flipped, if
+        ratio_type='exponnential' (1/ratio_value)**depth bits will be flipped.
+    noise_level : int, default=1
+        Noise level to generate the samples for each class. noise_level bits 
+        will be flipped randomly to generate each sample of the class.
+
+    Attributes
+    ----------
+    data_origin : str
+        Dataset used.
+    data_sz : int
+        Length of data vectors generated for an artifical dataset.
+    depth : int
+        Depth of the ultrametric tree used to generate artificial dataset.
+    class_sz_train : int
+        Number of samples generated for each label for the training dataset for 
+        an artificial dataset.
+    class_sz_test : int
+        Number of samples generated for each label for the testing dataset for 
+        an artificial dataset.
+    ratio_type : str
+        Method used to generate the artificial dataset, specified how many bits
+        will be flipped between each level of the ultrametric tree.
+    ratio_value : int
+        Number of flipped bits between each level of the tree. If 
+        ratio_type='linear' ratio_value bits will be flipped, if 
+        ratio_type='exponnential' (1/ratio_value)**depth bits will be flipped.
+    noise_level : int
+        Noise level to generate the samples for each class. noise_level bits 
+        will be flipped randomly to generate each sample of the class.
+    branching : int
+        Branching ratio of the ultrametric dataset associated with the dataset.
+    num_classes : int
+        Number of classes in the dataset.
+    n_axes : int
+        Number of axes of the data (e.g. 2 for 2D images).
+    n_in_channels : int
+        Number of input channels (e.g. 1 for B&W images, 3 for color images).
+    train_data : list of list of torch.Tensor
+        List containing the lists of tensors of the train data of the dataset, 
+        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2 
+        class of the dataset).
+    test_data : list of list of torch.Tensor
+        List containing the lists of tensors of the test data of the dataset, 
+        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2 
+        class of the dataset).
+        
+    """
+
+    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, 
+                 class_sz_test=0, ratio_type='linear', ratio_value=5, 
+                 noise_level=1, shuffle_classes=True):
         self.data_origin = data_origin
         self.class_sz_train = class_sz_train
         self.data_sz = data_sz
@@ -65,12 +137,12 @@ class artificial_dataset:
             #self.create()
             self.create_power(self.shuffle_classes)
 
-    
-    def create(self, shuffle_labels=False):
+
+    def create(self, shuffle_labels=False):        
         # Creating an initial random tensor of size data_sz, of +1 and -1
         initial = torch.randint(2,(self.data_sz,), dtype=torch.float)
         initial = initial*2.0 -1.0
-        
+
         # List to stock the parents to allow the creation of the different
         parents_mem = [initial]
         self.patterns = [[] for k in range(self.depth + 1)]
@@ -88,17 +160,17 @@ class artificial_dataset:
             next_parent = deepcopy(parents_mem[-1])
 
             if self.ratio_type == 'linear':
-                for s in range(self.ratio_value):             
+                for s in range(self.ratio_value):
                     ind_mod = random.randint(0, self.data_sz -1)
                     next_parent[ind_mod] = next_parent[ind_mod]*(-1)
-            elif self.ratio_type == 'exponnential': 
+            elif self.ratio_type == 'exponnential':
                 for s in range(int(self.data_sz*(1/self.ratio_value)**(d+1))):
                     ind_mod = random.randint(0, self.data_sz -1)
-                    next_parent[ind_mod] = next_parent[ind_mod]*(-1)                    
+                    next_parent[ind_mod] = next_parent[ind_mod]*(-1)
             else:
                 raise NotImplementedError("Supported modes are for the moment 'linear' and 'exponnential'")
             # Switch the value of the ind_mod digit
-            
+
             parents_mem.append(next_parent)
             d += 1
             self.patterns[d].append(next_parent)
@@ -130,10 +202,10 @@ class artificial_dataset:
                     new_example_test = torch.unsqueeze(new_example_test, 0)
                     new_example_test = torch.unsqueeze(new_example_test, 0)
                     test_data[label].append([new_example_test, torch.tensor([label])])
-                    
-                label += 1 
+
+                label += 1
                 d -= 1
-        
+
         self.train_data = train_data
         self.test_data = test_data
         if shuffle_labels:
@@ -142,11 +214,26 @@ class artificial_dataset:
 
 
     def create_power(self, shuffle_labels=True):
+        """
+        Generate the artificial dataset. 
+
+        Parameters
+        ----------
+        shuffle_labels : Bool, default=True
+            True if the labels of the created dataset have to be shuffled after
+            being created (to destroy the link between temporal and spacial
+            correlations).
+
+        Returns
+        -------
+        None.
+
+        """
 
         # Creating an initial random tensor of size data_sz, of +1 and -1
         initial = torch.randint(2,(self.data_sz,), dtype=torch.float)
         initial = initial*2.0 -1.0
-        
+
         self.patterns = [[] for d in range(self.depth+1)]
         self.patterns[0].append(initial)
 
@@ -154,7 +241,7 @@ class artificial_dataset:
             for pat_id in range(self.branching**d):
                 template = deepcopy(self.patterns[d-1][pat_id//2])
                 self.patterns[d].append(template)
-                for s in range(self.ratio_value):             
+                for s in range(self.ratio_value):
                     ind_mod = random.randint(0, self.data_sz -1)
                     self.patterns[d][pat_id][ind_mod] = self.patterns[d][pat_id][ind_mod]*(-1)
 
@@ -184,7 +271,7 @@ class artificial_dataset:
                 new_example_test = torch.unsqueeze(new_example_test, 0)
                 new_example_test = torch.unsqueeze(new_example_test, 0)
                 test_data[label].append([new_example_test, torch.tensor([label])])
-        
+
         self.train_data = train_data
         self.test_data = test_data
 

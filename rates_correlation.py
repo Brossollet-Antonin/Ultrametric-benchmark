@@ -59,6 +59,30 @@ artificiel
 
 
 def rates_cor(data, T, nbr_avg):
+    """
+    
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+    T : TYPE
+        DESCRIPTION.
+    nbr_avg : TYPE
+        DESCRIPTION.
+
+    Raises
+    ------
+    ValueError
+        DESCRIPTION.
+
+    Returns
+    -------
+    rates_matrix : TYPE
+        DESCRIPTION.
+
+    """
+    
     cor_matrix = avg_cor(data, nbr_avg)
     rates_matrix = np.zeros(cor_matrix.shape)
     for i in range(cor_matrix.shape[0]):
