@@ -9,6 +9,7 @@ import os
 import pickle
 import numpy as np
 
+#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
 def save_results(rs, save_path):
     """
@@ -62,7 +63,7 @@ def save_results(rs, save_path):
     np.save(save_path+'/var_original_accuracy', rs.acc_orig)
     np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl)
 
-    np.save(save_path+'/autocorr_original', rs.atc_orig)
-    np.save(save_path+'/autocorr_shuffle', rs.atc_shfl)
+    # np.save(save_path+'/autocorr_original', rs.atc_orig)
+    # np.save(save_path+'/autocorr_shuffle', rs.atc_shfl)
 
     print('Saved all results to {0:s} subfolders'.format(save_path))
