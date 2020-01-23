@@ -9,7 +9,7 @@ import os
 import pickle
 import numpy as np
 import json
-
+import pdb
 
 def save_results(rs, save_path):
     """
@@ -30,21 +30,17 @@ def save_results(rs, save_path):
 
     os.makedirs(save_path)
 
-    outfile = open(save_path + "/train_labels_orig.pickle", 'wb')
-    pickle.dump(rs.train_labels_orig, outfile)
-    outfile.close()
+    with open(save_path + "/train_labels_orig.pickle", 'wb') as outfile:
+        pickle.dump(rs.train_labels_orig, outfile)
 
-    outfile = open(save_path + "/train_labels_shfl.pickle", 'wb')
-    pickle.dump(rs.train_labels_shfl, outfile)
-    outfile.close()
+    with open(save_path + "/train_labels_shfl.pickle", 'wb') as outfile:
+        pickle.dump(rs.train_labels_shfl, outfile)
 
-    outfile = open(save_path + "/distribution_train.pickle", 'wb')
-    pickle.dump(rs.classes_count, outfile)
-    outfile.close()
+    with open(save_path + "/distribution_train.pickle", 'wb') as outfile:
+        pickle.dump(rs.classes_count, outfile)
 
-    outfile = open(save_path+"/parameters.pickle", 'wb')
-    json.dump(rs.parameters, outfile)
-    outfile.close()
+    with open(save_path+"/parameters.json", 'w') as outfile:
+        json.dump(rs.parameters, outfile)
 
     np.save(save_path + "/evaluation_original", rs.eval_orig)
     np.save(save_path + "/evaluation_shuffled", rs.eval_shfl)
@@ -79,21 +75,14 @@ def save_results_multiblocks(rs, save_root):
 
     """
 
-    outfile = open(save_path + "/train_data_orig.pickle", 'wb')
-    pickle.dump(rs.train_data_orig, outfile)
-    outfile.close()
+    with open(save_path + "/train_labels_orig.pickle", 'wb') as outfile:
+        pickle.dump(rs.train_labels_orig, outfile)
 
-    outfile = open(save_path + "/train_labels_orig.pickle", 'wb')
-    pickle.dump(rs.train_labels_orig, outfile)
-    outfile.close()
+    with open(save_path + "/distribution_train.pickle", 'wb') as outfile:
+        pickle.dump(rs.classes_count, outfile)
 
-    outfile = open(save_path + "/distribution_train.pickle", 'wb')
-    pickle.dump(rs.classes_count, outfile)
-    outfile.close()
-
-    outfile = open(save_path+"/parameters.pickle", 'wb')
-    pickle.dump(rs.parameters, outfile)
-    outfile.close()
+    with open(save_path+"/parameters.json", 'w') as outfile:
+        json.dump(rs.parameters, outfile)
 
     np.save(save_path + "/evaluation_original", rs.eval_orig)
     np.save(save_path+'/var_original_classes_prediction', rs.classes_pred_orig)
@@ -106,17 +95,12 @@ def save_results_multiblocks(rs, save_root):
         save_path = save_root + save_folder
         os.makedirs(save_path)
 
-        outfile = open(save_path + "/train_data_shfl.pickle", 'wb')
-        pickle.dump(rs.train_data_shfl, outfile)
-        outfile.close()
+        with open(save_path + "/train_labels_shfl.pickle", 'wb') as outfile:
+            pickle.dump(rs.train_labels_shfl[block_size_shuffle], outfile)
 
-        outfile = open(save_path + "/train_labels_shfl.pickle", 'wb')
-        pickle.dump(rs.train_labels_shfl, outfile)
-        outfile.close()
-
-        np.save(save_path + "/evaluation_shuffled", rs.eval_shfl)
-        np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl)
-        np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl)
+        np.save(save_path + "/evaluation_shuffled", rs.eval_shfl[block_size_shuffle])
+        np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl[block_size_shuffle])
+        np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl[block_size_shuffle])
 
     print('Saved all results to {0:s} subfolders'.format(save_path))
 
