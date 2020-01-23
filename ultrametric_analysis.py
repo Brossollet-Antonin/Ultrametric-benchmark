@@ -44,6 +44,7 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
     """
     
     rs = ResultSet()
+    rs.classes_templates = trainer.dataset.patterns
 
     trainer.network = trainer.network_orig
     rs.eval_orig = trainer.evaluate_hierarchical()
@@ -61,7 +62,7 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
     verbose('Data generation...', args)
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
 
-    rs.train_data_orig, rates, rs.train_labels_orig = trainer.train_sequence
+    rs.train_labels_orig = trainer.train_sequence
 
     verbose('...done\n', args)
 
@@ -126,10 +127,10 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
     for i in range(args.test_nbr):
         training_range = (i*args.test_stride, (i+1)*args.test_stride)
         _time_shfl_start = time.time()
-        control_data_shuffle, _, control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
+        control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
         _time_shfl_stop = time.time()
         #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
-        control.train(trainer.network_shfl, trainer, control_data_shuffle, mem_sz=trainer.memory_size,
+        control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
                                  batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
         _time_training_stop = time.time()
         rs.eval_shfl = trainer.evaluate_hierarchical()
@@ -159,7 +160,7 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
         #         _dtime_rest[-1]
         #     )
         # )
-    rs.train_data_shfl, rs.train_labels_shfl = control_data_shuffle, control_labels_shuffle
+    rs.train_labels_shfl = control_labels_shuffle
 
     rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
     for k in rs.train_labels_orig:
@@ -181,7 +182,8 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
 def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
     rs = ResultSet()
-    rs.atc_shfl = {block_size: [] for block_size in block_sizes}
+    rs.classes_templates = trainer.dataset.patterns
+
     rs.train_data_shfl = {block_size: [] for block_size in block_sizes}
     rs.train_labels_shfl = {block_size: [] for block_size in block_sizes}
 
@@ -200,11 +202,9 @@ def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
     verbose('Data generation...', args)
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
-    rs.train_data_orig, rates, rs.train_labels_orig = trainer.train_sequence
+    rs.train_labels_orig = trainer.train_sequence
 
     verbose('...done\n', args)
-
-    rs.atc_orig = sequence_generator_temporal.sequence_autocor(rs.train_labels_orig, n_labels=trainer.dataset.num_classes)
 
 
     for i in range(args.test_nbr):
@@ -260,11 +260,11 @@ def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
         for test_id in range(args.test_nbr):
             training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)
-            control_data_shuffle, _, control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
+            control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
 
             rs.atc_shfl[block_size_shuffle].append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
 
-            control.train(trainer.network_shfl, trainer, control_data_shuffle, mem_sz=trainer.memory_size,
+            control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
                                      batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
             rs.eval_shfl[block_size_shuffle] = trainer.evaluate_hierarchical()
             shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accur  acy
@@ -279,7 +279,7 @@ def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
             verbose('Accuracy of the (shuffle) network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, shuffle_accuracy_current[0][0]), args)
 
-        rs.train_data_shfl[block_size_shuffle], rs.train_labels_shfl[block_size_shuffle] = control_data_shuffle, control_labels_shuffle
+        rs.train_labels_shfl[block_size_shuffle] = control_labels_shuffle
 
     rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
     for k in rs.train_labels_orig:

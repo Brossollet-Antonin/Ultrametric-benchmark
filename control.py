@@ -18,9 +18,21 @@ from operator import add
 import pdb
 from trainer import mem_SGD
 
+ 
+def generate_batch(train_sequence, itr, batch_sz, first_train_id):
+        train_labels = train_sequence[first_train_id:first_train_id+batch_sz]
+        first_couple = next(itr[train_labels[0]])
+        train_data = first_couple[0]
+        train_tensorlabels = first_couple[1]
+        for seq_locid in range(1,batch_sz):
+            next_couple = next(itr[train_labels[seq_locid]])
+            train_data = torch.cat((train_data, next_couple[0]))
+            train_tensorlabels = torch.cat((train_tensorlabels, next_couple[1]))
+        
+        return [train_data, train_tensorlabels]
+
     
-    
-def train(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_range):
+def train(net, training, control_labels, mem_sz, batch_sz, lr, momentum, training_range):
     """
     Train a network on the specified training protocol.
 
@@ -54,34 +66,34 @@ def train(net, training, control_data, mem_sz, batch_sz, lr, momentum, training_
     #if training.training_type=="temporal correlation" or training.training_type=="spatial correlation" or training.training_type=="random" or tranini:
     # For temporal and spatial correlation tests
     
-    n = training_range[0]
+    first_train_id = training_range[0]
     running_loss = 0.0
 #    control_data =  deepcopy(train_data)
 #    random.shuffle(control_data)
 #    length_data = len(control_data)        # maybe torch.size(0) if we stock the data in a tensor...
     # Initialize the memory with the first example of the serie. Should not really matter. Could also use a random one from the first mini batch
-    memory_list = [control_data[0]]
+    memory_list = [next(training.data_iterator[control_labels[0]])]
     # Define mini-batches of size training.batch_sz and SGD and update the memory for each of them
-    while n + training.batch_sz < training_range[1]:
-        mini_batch = deepcopy(control_data[n])        # control_data[n] is a two elements lists containing tensors
-        for data in control_data[n+1:n+training.batch_sz]:
-            mini_batch[0] = torch.cat((mini_batch[0], data[0]))
-            mini_batch[1] = torch.cat((mini_batch[1], data[1]))
+    while first_train_id + training.batch_sz < training_range[1]:
+        mini_batch = generate_batch(control_labels, training.data_iterator, training.batch_sz, first_train_id) # control_data[n] is a two elements lists containing tensors
             
         # Sample elements from memory at random and add it to the mini batch expect for the first iteration     
-        if n != 0:
+        if first_train_id != 0:
             sample_memory = memory.sample_memory(memory_list, training.batch_sz)
-            train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
+            train_mini_batch = [
+                torch.cat((mini_batch[0], sample_memory[0])),
+                torch.cat((mini_batch[1], sample_memory[1]))
+            ]
 
         else:
             train_mini_batch = mini_batch
         # Perform SGD on the mini_batch and memory 
         running_loss += mem_SGD(net, train_mini_batch, lr, momentum, training.device)
         # Update memory
-        memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if training.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
-        n += training.batch_sz
-        if n % (1000*training.batch_sz) == 999*training.batch_sz:
-            print('[%d] loss: %.4f' % (n//training.batch_sz + 1, running_loss/1000))
+        memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if training.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
+        first_train_id += training.batch_sz
+        if first_train_id % (1000*training.batch_sz) == 999*training.batch_sz:
+            print('[%d] loss: %.4f' % (first_train_id//training.batch_sz + 1, running_loss/1000))
             running_loss = 0.0
         
 #    # Last mini batch shorter than the requiered length if necessary 
@@ -159,7 +171,7 @@ def shuffle_block_stef(train_data, block_size):
     return train_data_shuffle
 
 
-def shuffle_block_partial(train_dataset, block_size, end): 
+def shuffle_block_partial(train_labels, block_size, end): 
     """
     Block shuffle a data sequence up to a certain point.
     
@@ -180,10 +192,9 @@ def shuffle_block_partial(train_dataset, block_size, end):
         List of the samples shuffled by blocks.
 
     """    
-    train_data, rates, train_labels = train_dataset
-    block_indices = list(range(len(train_data[:end])//block_size))
+    block_indices = list(range(len(train_labels[:end])//block_size))
     random.shuffle(block_indices)
-    block_indices += list(range(len(train_data[:end])//block_size, len(train_data)//block_size))     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
+    block_indices += list(range(len(train_labels[:end])//block_size, len(train_labels)//block_size))     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
     #shuffled_data = []
     #shuffled_labels = []
     #copied_train_data = deepcopy(train_data)
@@ -200,10 +211,9 @@ def shuffle_block_partial(train_dataset, block_size, end):
     #    shuffled_data += copied_train_data[i*block_size:(i+1)*block_size]
     #    shuffled_labels += copied_train_labels[i*block_size:(i+1)*block_size]
 
-    shuffled_data = [train_data[k] for k in idx_shuffled]
     shuffled_labels = [train_labels[k] for k in idx_shuffled]
 
-    return shuffled_data, rates, shuffled_labels
+    return shuffled_labels
 
     
     

@@ -90,6 +90,20 @@ class Trainer:
         return T
 
 
+    def generate_batch(self, first_train_id):
+        
+        train_labels = self.train_sequence[first_train_id:first_train_id+self.batch_sz]
+        first_couple = next(self.data_iterator[train_labels[0]])
+        train_data = first_couple[0]
+        train_tensorlabels = first_couple[1]
+        for seq_locid in range(1,self.batch_sz):
+            next_couple = next(self.data_iterator[train_labels[seq_locid]])
+            train_data = torch.cat((train_data, next_couple[0]))
+            train_tensorlabels = torch.cat((train_tensorlabels, next_couple[1]))
+        
+        return [train_data, train_tensorlabels]
+
+
     def make_train_sequence(self):
 
         if self.training_type=="random": # actually not random, this should be renamed 'stair' or something
@@ -121,7 +135,8 @@ class Trainer:
                 self.tree_branching,
                 self.min_visit
             )
-            self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
+            self.train_sequence = train_sequence
+            self.rates_vector = rates_vector
 
 
 
@@ -143,16 +158,20 @@ class Trainer:
                 minimum_classcount = self.min_visit
             )
 
-            self.train_sequence = (sequence_generator_spatial.training_sequence(train_sequence), rates_matrix, train_sequence)
+            self.train_sequence = train_sequence
+            self.rates_vector = rates_vector
 
 
         elif self.training_type=="uniform":
             seqgen = sequence_generator_temporal.Uniform_SequenceGenerator(self.proba_transition, self.tree_branching, self.tree_depth)
+
             train_sequence, rates_vector = seqgen.generate_labels(
                 self.sequence_first,
                 self.sequence_length
                 )
-            self.train_sequence = (seqgen.generate_data(train_sequence, self.dataset), rates_vector, train_sequence)
+
+            self.train_sequence = train_sequence
+            self.rates_vector = rates_vector
 
 
         elif self.training_type=="onefold split":
@@ -171,7 +190,8 @@ class Trainer:
                 train_sequence.extend([ex_id for k in range(examples_per_class)])
                 train_data.extend(instances)
 
-            self.train_sequence = (train_data, rates, train_sequence)
+            self.train_sequence = train_sequence
+            self.rates_vector = rates_vector
 
 
         elif self.training_type=="twofold split":
@@ -193,51 +213,48 @@ class Trainer:
                 train_sequence.extend([2*splt_id+cl_ids[k] for k in range(2*examples_per_class)])
                 train_data.extend(instances)
 
-            self.train_sequence = (train_data, rates, train_sequence)
+            self.train_sequence = train_sequence
+            self.rates_vector = rates_vector
 
         else:
             raise NotImplementedError("training type not supported")
+        
+        self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
     def train(self, mem_sz, lr, momentum, training_range):
         if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
-            n = training_range[0]
+            first_train_id = training_range[0]
             running_loss = 0.0
 
-            if self.training_type == 'random':
-                train_data = self.train_sequence
-            else:
-                train_data =  self.train_sequence[0]
-
-            memory_list = [train_data[0]]
+            memory_list = [next(self.data_iterator[self.train_sequence[0]])]
             # Define mini-batches of size training.batch_sz and SGD and update the memory for each of them
-            while n + self.batch_sz < training_range[1]:
+            while first_train_id + self.batch_sz < training_range[1]:
                 try:
-                    mini_batch = deepcopy(train_data[n])        # train_data[n] is a two elements lists containing tensors
+                    mini_batch = self.generate_batch(first_train_id)
+                    # mini_batch = deepcopy(train_data[first_train_id])        # train_data[first_train_id] is a two elements lists containing tensors
                 except:
                     pdb.set_trace()
-                for data in train_data[n+1:n+self.batch_sz]: # !! ToDo: optimize this step !!
-                    mini_batch[0] = torch.cat((mini_batch[0], data[0]))
-                    mini_batch[1] = torch.cat((mini_batch[1], data[1]))
 
                 # Sample elements from memory at random and add it to the mini batch expect for the first iteration
-                if n != 0 and mem_sz != 0:
+                if first_train_id != 0 and mem_sz != 0:
                     # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
                     sample_memory = memory.sample_memory(memory_list, self.batch_sz)
-                    train_mini_batch = [torch.cat((mini_batch[0], sample_memory[0])), torch.cat((mini_batch[1], sample_memory[1]))]
-
+                    train_mini_batch = [
+                        torch.cat((mini_batch[0], sample_memory[0])),
+                        torch.cat((mini_batch[1], sample_memory[1]))
+                    ]
                 else:
                     train_mini_batch = mini_batch
                 # Perform SGD on the mini_batch and memory
                 running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
                 # Update memory
-                memory_list = memory.reservoir(memory_list, mem_sz, n, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, n, mini_batch)
-                n += self.batch_sz
-                if n % (1000*self.batch_sz) == 999*self.batch_sz:
-                    print('[%d] loss: %.4f' % (n//self.batch_sz + 1, running_loss/1000))
+                memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
+                first_train_id += self.batch_sz
+                if first_train_id % (1000*self.batch_sz) == 999*self.batch_sz:
+                    print('[%d] loss: %.4f' % (first_train_id//self.batch_sz + 1, running_loss/1000))
                     running_loss = 0.0
-
 
 
             print("--- Finished Experience Replay training on %s ---" % (training_range,))

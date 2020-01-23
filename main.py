@@ -42,7 +42,7 @@ data_params.add_argument('--proba_transition', type=float, default=0.1)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
-model_params.add_argument('--lr', type=int, default=0.01, help='Learning rate')
+model_params.add_argument('--lr', type=int, default=0.05, help='Learning rate')
 model_params.add_argument('--minibatch', type=int, dest='minibatches_list', nargs='*', default=[10], help='Size of the training mini-batches')
 model_params.add_argument('--memory', type=int, dest='memory_list', nargs='*', default=[0], help='Size of the memory for replay training')
 model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', help='Number of data points to get during training (number of test of the dataset')
