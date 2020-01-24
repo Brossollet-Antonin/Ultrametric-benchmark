@@ -99,81 +99,81 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
         verbose('Accuracy of the network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, original_accuracy_current[0][0]), args)
 
 
+    if trainer.training_type!="uniform":
+        verbose("--- Start shuffle training ---", args)
+        # Shuffle the training sequence in block of a choosen length (try to use a length of blocks that divise the length of the
+        # sequence to be sure to train on the full sequence, have one small block to take that into account is not implemented # TODO)
 
-    verbose("--- Start shuffle training ---", args)
-    # Shuffle the training sequence in block of a choosen length (try to use a length of blocks that divise the length of the
-    # sequence to be sure to train on the full sequence, have one small block to take that into account is not implemented # TODO)
-
-    trainer.network = trainer.network_shfl
-    rs.eval_shfl = trainer.evaluate_hierarchical()
-    rs.acc_shfl = np.array([[rs.eval_shfl[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
-    classes_correct = np.zeros(len(trainer.dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
-    # Compting the number of correct responses per classes before the training
-
-    #rs.atc_shfl = []
-
-    for k in range(nbr_test_samples):
-        classes_correct[int(rs.eval_shfl[1][k][0])] +=1     # The value in the array correspond to the prediction of the network for the i-th test example
-    rs.classes_pred_shfl = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
-
-    # trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
-    
-    _dtime_shfl = []
-    _dtime_atc = []
-    _dtime_train = []
-    _dtime_eval = []
-    _dtime_rest = []
-
-    for i in range(args.test_nbr):
-        training_range = (i*args.test_stride, (i+1)*args.test_stride)
-        _time_shfl_start = time.time()
-        control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
-        _time_shfl_stop = time.time()
-        #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
-        control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
-                                 batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
-        _time_training_stop = time.time()
+        trainer.network = trainer.network_shfl
         rs.eval_shfl = trainer.evaluate_hierarchical()
-        _time_eval_stop = time.time()
-        shuffle_accuracy_current = rs.eval_shfl[0][0]      # Recover the standard accur  acy
-        shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (i+1)*args.test_stride]])
-        rs.acc_shfl = np.append(rs.acc_shfl, shuffle_accuracy_current, axis=0)
+        rs.acc_shfl = np.array([[rs.eval_shfl[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
+        classes_correct = np.zeros(len(trainer.dataset.test_data))     # Array of size the number of classes to stock the current count of prediction
+        # Compting the number of correct responses per classes before the training
 
-        classes_correct = np.zeros(len(trainer.dataset.test_data))
+        #rs.atc_shfl = []
+
         for k in range(nbr_test_samples):
-            classes_correct[int(rs.eval_shfl[1][k][0])] +=1
-        classes_correct = np.array([[classes_correct, (i+1)*args.test_stride]])
-        rs.classes_pred_shfl = np.append(rs.classes_pred_shfl, classes_correct, axis=0)
+            classes_correct[int(rs.eval_shfl[1][k][0])] +=1     # The value in the array correspond to the prediction of the network for the i-th test example
+        rs.classes_pred_shfl = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
 
-        verbose('Accuracy of the (shuffle) network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, shuffle_accuracy_current[0][0]), args)
-        _time_loop_stop = time.time()
+        # trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
         
-        _dtime_shfl.append(_time_shfl_stop - _time_shfl_start)
-        _dtime_train.append(_time_training_stop - _time_shfl_stop)
-        _dtime_eval.append(_time_eval_stop - _time_training_stop)
-        _dtime_rest.append(_time_loop_stop - _time_eval_stop)
-        # print(
-        #     'Shuffling time: {0:.2f} - Training time: {1:.2f} - Eval time: {2:.2f} - Misc time: {3:.2f}'.format(
-        #         _dtime_shfl[-1],
-        #         _dtime_train[-1],
-        #         _dtime_eval[-1],
-        #         _dtime_rest[-1]
-        #     )
-        # )
-    rs.train_labels_shfl = control_labels_shuffle
+        _dtime_shfl = []
+        _dtime_atc = []
+        _dtime_train = []
+        _dtime_eval = []
+        _dtime_rest = []
+
+        for i in range(args.test_nbr):
+            training_range = (i*args.test_stride, (i+1)*args.test_stride)
+            _time_shfl_start = time.time()
+            control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
+            _time_shfl_stop = time.time()
+            #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
+            control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
+                                     batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
+            _time_training_stop = time.time()
+            rs.eval_shfl = trainer.evaluate_hierarchical()
+            _time_eval_stop = time.time()
+            shuffle_accuracy_current = rs.eval_shfl[0][0]      # Recover the standard accur  acy
+            shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (i+1)*args.test_stride]])
+            rs.acc_shfl = np.append(rs.acc_shfl, shuffle_accuracy_current, axis=0)
+
+            classes_correct = np.zeros(len(trainer.dataset.test_data))
+            for k in range(nbr_test_samples):
+                classes_correct[int(rs.eval_shfl[1][k][0])] +=1
+            classes_correct = np.array([[classes_correct, (i+1)*args.test_stride]])
+            rs.classes_pred_shfl = np.append(rs.classes_pred_shfl, classes_correct, axis=0)
+
+            verbose('Accuracy of the (shuffle) network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, shuffle_accuracy_current[0][0]), args)
+            _time_loop_stop = time.time()
+            
+            _dtime_shfl.append(_time_shfl_stop - _time_shfl_start)
+            _dtime_train.append(_time_training_stop - _time_shfl_stop)
+            _dtime_eval.append(_time_eval_stop - _time_training_stop)
+            _dtime_rest.append(_time_loop_stop - _time_eval_stop)
+            # print(
+            #     'Shuffling time: {0:.2f} - Training time: {1:.2f} - Eval time: {2:.2f} - Misc time: {3:.2f}'.format(
+            #         _dtime_shfl[-1],
+            #         _dtime_train[-1],
+            #         _dtime_eval[-1],
+            #         _dtime_rest[-1]
+            #     )
+            # )
+        rs.train_labels_shfl = control_labels_shuffle
+        
+        print(
+            'AVERAGE COMP TIMES:\nShuffling time: {0:.2f} - Training time: {1:.2f} - Eval time: {2:.2f} - Misc time: {3:.2f}'.format(
+                np.mean(_dtime_shfl),
+                np.mean(_dtime_train),
+                np.mean(_dtime_eval),
+                np.mean(_dtime_rest)
+            )
+        )
 
     rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
     for k in rs.train_labels_orig:
         rs.classes_count[k] += 1
-
-    print(
-        'AVERAGE COMP TIMES:\nShuffling time: {0:.2f} - Training time: {1:.2f} - Eval time: {2:.2f} - Misc time: {3:.2f}'.format(
-            np.mean(_dtime_shfl),
-            np.mean(_dtime_train),
-            np.mean(_dtime_eval),
-            np.mean(_dtime_rest)
-        )
-    )
 
     return rs
 

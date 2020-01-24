@@ -8,6 +8,7 @@ Created on Wed Jun 26 10:53:11 2019
 import os
 import pickle
 import numpy as np
+import json
 import pdb
 
 class ResultSet:
@@ -263,7 +264,7 @@ class ResultSet_Multi:
 		self.dataroot = dataroot
 		self.datapaths = datapaths
 		
-	def load_analytics(self, load_data=False, load_atc=False):
+	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True):
 
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
@@ -364,7 +365,7 @@ class ResultSet_Multi:
 			self.var_pred_orig[params] = []
 			self.var_pred_shfl[params] = []
 
-			if laod_data:
+			if load_data:
 				self.train_data_orig[params] = []
 				self.train_data_shfl[params] = []
 
@@ -375,41 +376,35 @@ class ResultSet_Multi:
 			for datapath in datapath_list:
 				os.chdir(self.dataroot+'/'+datapath)
 
-				file = open('train_labels_orig.pickle', 'rb')
-				self.train_labels_orig[params].append(pickle.load(file))
-				file.close()
+				with open('train_labels_orig.pickle', 'rb') as file:
+					self.train_labels_orig[params].append(pickle.load(file))
 
-				file = open('train_labels_shfl.pickle', 'rb')
-				self.train_labels_shfl[params].append(pickle.load(file))
-				file.close()
-
-				file = open('distribution_train.pickle', 'rb')
-				self.dstr_train[params].append(pickle.load(file))
-				file.close()
+				with open('distribution_train.pickle', 'rb') as file:
+					self.dstr_train[params].append(pickle.load(file))
 				
-				file = open('parameters.pickle', 'rb')
-				self.params[params].append(pickle.load(file))
-				file.close()
+				with open('parameters.json', 'r') as file:
+					self.params[params].append(json.load(file))
 
 				self.eval_orig[params].append(np.load('evaluation_original.npy', allow_pickle=True))
-				self.eval_shfl[params].append(np.load('evaluation_shuffled.npy', allow_pickle=True))
-				
 				self.var_acc_orig[params].append(np.load('var_original_accuracy.npy'))
-				self.var_acc_shfl[params].append(np.load('var_shuffle_accuracy.npy'))
-
 				self.var_pred_orig[params].append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
-				self.var_pred_shfl[params].append(np.load('var_shuffle_classes_prediction.npy', allow_pickle=True))
+
+				if load_shuffle:
+					with open('train_labels_shfl.pickle', 'rb') as file:
+						self.train_labels_shfl[params].append(pickle.load(file))
+					self.eval_shfl[params].append(np.load('evaluation_shuffled.npy', allow_pickle=True))
+					self.var_acc_shfl[params].append(np.load('var_shuffle_accuracy.npy'))
+					self.var_pred_shfl[params].append(np.load('var_shuffle_classes_prediction.npy', allow_pickle=True))
 
 				if load_data:
 					print("Loading data for {0:s}...".format(datapath))
 
-					file = open('train_data_orig.pickle', 'rb')
-					self.train_data_orig[params].append(pickle.load(file))
-					file.close()
+					with open('train_data_orig.pickle', 'rb') as file:
+						self.train_data_orig[params].append(pickle.load(file))
 
-					file = open('train_data_shfl.pickle', 'rb')
-					self.train_data_shfl[params].append(pickle.load(file))
-					file.close()
+					with open('train_data_shfl.pickle', 'rb') as file:
+						self.train_data_shfl[params].append(pickle.load(file))
+					
 					print("...done")
 
 				if load_atc:
@@ -419,4 +414,4 @@ class ResultSet_Multi:
 		if not load_data:
 			print("load_data set to False. Data sequences not loaded.")
 		if not load_atc:
-			rint("load_atc set to False. Autocorrelations not loaded.")
+			print("load_atc set to False. Autocorrelations not loaded.")

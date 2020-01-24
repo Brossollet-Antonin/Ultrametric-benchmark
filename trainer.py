@@ -223,6 +223,34 @@ class Trainer:
 
 
     def train(self, mem_sz, lr, momentum, training_range):
+        """
+        Train a network on the specified training protocol.
+
+        Parameters
+        ----------
+        net : neural network
+            The neural network to train.
+        training  
+            Trainer object parametrizing the training protocol.
+        control_data
+            Data used to do the training.
+        mem_sz : int
+            Size of the memory.
+        batch_sz : int
+            Size of the mini-batches for the training.
+        lr : int
+            Learning rate.
+        momentum : int
+            Momentum for the SGD.
+        training_range : list
+            Range of the data to train on. training_range[0] is the begining 
+            sample, training_range[1] is the end sample
+
+        Returns
+        -------
+        None.
+
+        """
         if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
             first_train_id = training_range[0]
