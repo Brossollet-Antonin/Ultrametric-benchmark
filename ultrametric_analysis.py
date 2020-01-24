@@ -12,7 +12,6 @@ import numpy as np
 import torch
 
 from local_tools import verbose
-import control
 from trainer import Trainer
 import neuralnet
 import sequence_generator_temporal
@@ -127,15 +126,14 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
         for i in range(args.test_nbr):
             training_range = (i*args.test_stride, (i+1)*args.test_stride)
             _time_shfl_start = time.time()
-            control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
+            shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])
             _time_shfl_stop = time.time()
-            #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
-            control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
-                                     batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
+            #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(shuffled_sequence, n_labels=trainer.dataset.num_classes))
+            trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
             _time_training_stop = time.time()
             rs.eval_shfl = trainer.evaluate_hierarchical()
             _time_eval_stop = time.time()
-            shuffle_accuracy_current = rs.eval_shfl[0][0]      # Recover the standard accur  acy
+            shuffle_accuracy_current = rs.eval_shfl[0][0]      # Recover the standard accuracy
             shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (i+1)*args.test_stride]])
             rs.acc_shfl = np.append(rs.acc_shfl, shuffle_accuracy_current, axis=0)
 
@@ -160,7 +158,7 @@ def ultrametric_analysis(trainer, args, block_size_shuffle):
             #         _dtime_rest[-1]
             #     )
             # )
-        rs.train_labels_shfl = control_labels_shuffle
+        rs.train_labels_shfl = shuffled_sequence
         
         print(
             'AVERAGE COMP TIMES:\nShuffling time: {0:.2f} - Training time: {1:.2f} - Eval time: {2:.2f} - Misc time: {3:.2f}'.format(
@@ -260,12 +258,11 @@ def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
         for test_id in range(args.test_nbr):
             training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)
-            control_labels_shuffle = control.shuffle_block_partial(trainer.train_sequence, block_size_shuffle, training_range[1])
+            shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])
 
-            rs.atc_shfl[block_size_shuffle].append(sequence_generator_temporal.sequence_autocor(control_labels_shuffle, n_labels=trainer.dataset.num_classes))
+            rs.atc_shfl[block_size_shuffle].append(sequence_generator_temporal.sequence_autocor(shuffled_sequence, n_labels=trainer.dataset.num_classes))
 
-            control.train(trainer.network_shfl, trainer, control_labels_shuffle, mem_sz=trainer.memory_size,
-                                     batch_sz=trainer.batch_sz, lr=args.lr, momentum=0.5, training_range=training_range)
+            trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
             rs.eval_shfl[block_size_shuffle] = trainer.evaluate_hierarchical()
             shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accur  acy
             shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (test_id+1)*args.test_stride]])
@@ -279,7 +276,7 @@ def ultrametric_analysis_across_blocksizes(trainer, args, block_sizes):
 
             verbose('Accuracy of the (shuffle) network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, shuffle_accuracy_current[0][0]), args)
 
-        rs.train_labels_shfl[block_size_shuffle] = control_labels_shuffle
+        rs.train_labels_shfl[block_size_shuffle] = shuffled_sequence
 
     rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
     for k in rs.train_labels_orig:

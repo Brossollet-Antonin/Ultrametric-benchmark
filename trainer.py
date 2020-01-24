@@ -14,6 +14,7 @@ import random
 from random import shuffle
 from random import seed
 
+from operator import add
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,7 +22,6 @@ import torch.optim as optim
 import torchvision
 
 import memory
-import sort_dataset
 import sequence_generator_temporal
 import sequence_generator_spatial
 import rates_correlation
@@ -90,9 +90,9 @@ class Trainer:
         return T
 
 
-    def generate_batch(self, first_train_id):
+    def generate_batch(self, train_sequence, first_train_id):
         
-        train_labels = self.train_sequence[first_train_id:first_train_id+self.batch_sz]
+        train_labels = train_sequence[first_train_id:first_train_id+self.batch_sz]
         first_couple = next(self.data_iterator[train_labels[0]])
         train_data = first_couple[0]
         train_tensorlabels = first_couple[1]
@@ -222,7 +222,7 @@ class Trainer:
         self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
-    def train(self, mem_sz, lr, momentum, training_range):
+    def train(self, mem_sz, lr, momentum, training_range, seq=None):
         """
         Train a network on the specified training protocol.
 
@@ -253,14 +253,19 @@ class Trainer:
         """
         if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
+            if seq is not None:
+                train_sequence = seq
+            else:
+                train_sequence = self.train_sequence
+
             first_train_id = training_range[0]
             running_loss = 0.0
 
-            memory_list = [next(self.data_iterator[self.train_sequence[0]])]
+            memory_list = [next(self.data_iterator[train_sequence[0]])]
             # Define mini-batches of size training.batch_sz and SGD and update the memory for each of them
             while first_train_id + self.batch_sz < training_range[1]:
                 try:
-                    mini_batch = self.generate_batch(first_train_id)
+                    mini_batch = self.generate_batch(train_sequence, first_train_id)
                     # mini_batch = deepcopy(train_data[first_train_id])        # train_data[first_train_id] is a two elements lists containing tensors
                 except:
                     pdb.set_trace()
@@ -362,6 +367,45 @@ class Trainer:
             result[0].append((np.sum(result[1][:, i] == zero)/len(test_sequence))*100)
 
         return result
+
+
+    def shuffle_block_partial(self, block_size, end): 
+        """
+        Block shuffle a data sequence up to a certain point.
+        
+        The part of the sequence aft
+
+        Parameters
+        ----------
+        train_data : list of torch.Tensor
+            List of the ordered samples used in the training process.
+        block_size : int
+            Size of the block for the shuffle.
+        end: int 
+            Indice of the last sample of the sequence to shuffle 
+        
+        Returns
+        -------
+        control_data_block : list of torch.Tensor
+            List of the samples shuffled by blocks.
+
+        """    
+        block_indices = list(range(len(self.train_sequence[:end])//block_size))
+        shuffle(block_indices)
+        block_indices += list(range(len(self.train_sequence[:end])//block_size, len(self.train_sequence)//block_size))     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
+
+        idx_shuffled = list(
+            map(
+                add,
+                np.repeat([block_size*k for k in block_indices], block_size).tolist(),
+                list(range(block_size))*len(block_indices)
+            )
+        )
+
+        shuffled_labels = [self.train_sequence[k] for k in idx_shuffled]
+
+        return shuffled_labels
+
 
     def testing_final(self):
         # Define which label to exclude in the testing phase (for simplicity, to have a simple tree structure, certain labels have to be excluded

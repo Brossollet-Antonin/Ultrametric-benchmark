@@ -9,14 +9,66 @@ import torch
 import numpy as np
 import random
 from copy import deepcopy
-import sort_dataset
 import pdb
 
 
 def count_differences(seq1, seq2):
     return np.sum([0.25*(seq1[k] - seq2[k])**2 for k in range(len(seq1))])
 
-class artificial_dataset:
+
+def sort_dataset(dataset, train):
+    # If True, return sorted train set, else return sorted test set
+    if dataset == 'MNIST':
+        train_loader = torch.utils.data.DataLoader(
+            torchvision.datasets.MNIST('./files/', train=train, download=True,
+                             transform=torchvision.transforms.Compose([
+                               torchvision.transforms.ToTensor(),
+                               torchvision.transforms.Normalize(
+                                 (0.1307,), (0.3081,))
+                             ])),
+            batch_size=1, shuffle=True)
+    elif dataset == 'CIFAR10':
+         train_loader = torch.utils.data.DataLoader(
+            torchvision.datasets.CIFAR10('./files/', train=train, download=True,
+                             transform=torchvision.transforms.Compose(
+                                     [torchvision.transforms.ToTensor(),
+                                      torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                      ])),
+            batch_size=1, shuffle=True)    
+    elif dataset =='CIFAR100':
+         train_loader = torch.utils.data.DataLoader(
+            torchvision.datasets.CIFAR100('./files/', train=train, download=True,
+                             transform=torchvision.transforms.Compose(
+                                     [torchvision.transforms.ToTensor(),
+                                      torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                      ])),
+            batch_size=1, shuffle=True)  
+                               
+    train_data_sorted = [[] for i in range(10)] if (dataset=='MNIST' or dataset=='CIFAR10') else [[] for i in range(100)] 
+    for i, data in enumerate(train_loader, 0):
+        inputs, labels = data
+        train_data_sorted[int(labels.item())].append(data)
+    return train_data_sorted
+
+
+def sort_MNIST(train):
+    # If True, return sorted train set, else return sorted test set
+    train_data_sorted= [[] for i in range(10)]
+    train_loader = torch.utils.data.DataLoader(
+        torchvision.datasets.MNIST('./files/', train=train, download=True,
+                         transform=torchvision.transforms.Compose([
+                           torchvision.transforms.ToTensor(),
+                           torchvision.transforms.Normalize(
+                             (0.1307,), (0.3081,))
+                         ])),
+        batch_size=1, shuffle=True)
+    for i, data in enumerate(train_loader, 0):
+        inputs, labels = data
+        train_data_sorted[int(labels)].append(data)
+    return train_data_sorted
+
+
+class Dataset:
     
     """Contains artifical dataset parameters and data.
 
@@ -121,8 +173,8 @@ class artificial_dataset:
             self.data_sz = (32**2)*3
 
         if 'artificial' not in data_origin:
-            self.train_data = sort_dataset.sort_dataset(dataset=data_origin, train=True)
-            self.test_data = sort_dataset.sort_dataset(dataset=data_origin, train=False)
+            self.train_data = sort_dataset(dataset=data_origin, train=True)
+            self.test_data = sort_dataset(dataset=data_origin, train=False)
             if data_origin=='MNIST':
                 self.class_sz_test = 892    # The class 5 of MNIST as only 892 test samples
             elif data_origin=='CIFAR10':

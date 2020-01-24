@@ -18,7 +18,7 @@ import torch
 
 from local_tools import verbose
 
-import artificial_dataset
+import dataset
 import neuralnet
 
 from trainer import Trainer
@@ -73,7 +73,7 @@ def run(args):
 
 	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args)
 
-	dataset = artificial_dataset.artificial_dataset(
+	dataset = dataset.Dataset(
 		data_origin = args.data_origin,
 		data_sz=args.artif_seq_size,
 		tree_depth = args.artif_tree_depth,

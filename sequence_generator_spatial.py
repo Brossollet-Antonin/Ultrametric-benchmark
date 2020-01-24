@@ -6,7 +6,7 @@ Created on Mon Apr  1 14:38:26 2019
 """
 
 import random
-import sort_dataset
+from dataset import sort_dataset, sort_MNIST
 import numpy as np
 
 def next_value(sequence, rates_matrix):
@@ -53,7 +53,7 @@ def training_sequence(um_sequence):
     nbr_clone = max(quotient) + 1
     print("Number of clones: ", nbr_clone)
     
-    data = sort_dataset.sort_MNIST(train=True)
+    data = sort_MNIST(train=True)
     iterable = [iter(data[i]) for i in range(len(data))] 
     train_sequence=[]
     for k in um_sequence:
