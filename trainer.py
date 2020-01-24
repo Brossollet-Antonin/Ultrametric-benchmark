@@ -159,7 +159,7 @@ class Trainer:
             )
 
             self.train_sequence = train_sequence
-            self.rates_vector = rates_vector
+            self.rates_matrix = rates_matrix
 
 
         elif self.training_type=="uniform":
@@ -191,7 +191,7 @@ class Trainer:
                 train_data.extend(instances)
 
             self.train_sequence = train_sequence
-            self.rates_vector = rates_vector
+            self.rates_vector = rates
 
 
         elif self.training_type=="twofold split":
@@ -214,7 +214,7 @@ class Trainer:
                 train_data.extend(instances)
 
             self.train_sequence = train_sequence
-            self.rates_vector = rates_vector
+            self.rates_vector = rates
 
         else:
             raise NotImplementedError("training type not supported")
