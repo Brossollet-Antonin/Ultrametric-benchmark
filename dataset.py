@@ -6,6 +6,7 @@ Created on Tue Apr 30 16:09:45 2019
 """
 
 import torch
+import torchvision
 import numpy as np
 import random
 from copy import deepcopy
@@ -175,6 +176,7 @@ class Dataset:
         if 'artificial' not in data_origin:
             self.train_data = sort_dataset(dataset=data_origin, train=True)
             self.test_data = sort_dataset(dataset=data_origin, train=False)
+            self.patterns = []
             if data_origin=='MNIST':
                 self.class_sz_test = 892    # The class 5 of MNIST as only 892 test samples
             elif data_origin=='CIFAR10':
