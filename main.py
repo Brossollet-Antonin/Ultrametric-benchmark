@@ -39,6 +39,7 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
+data_params.add_argument('--split_total_length', type=int, default=40000)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -156,7 +157,8 @@ def run(args):
 						energy_step = step,
 						proba_transition = args.proba_transition,
 						T = T,
-						dynamic_T_thr = args.T_adaptive
+						dynamic_T_thr = args.T_adaptive,
+						split_total_length = args.split_total_length
 						)
 					trainer.network_orig = netfc_original
 					trainer.network_shfl = netfc_shuffle

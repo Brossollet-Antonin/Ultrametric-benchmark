@@ -54,7 +54,7 @@ class Trainer:
     def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, batch_sz=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                 preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0):
+                 preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0, split_total_length=None):
 
         self.dataset = dataset
         self.network = network
@@ -77,6 +77,7 @@ class Trainer:
         self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
         self.dynamic_T_thr = dynamic_T_thr
+        self.split_total_length = split_total_length
 
 
     def heuristic_temperature(self, rate_law, dT=0.01):
@@ -196,22 +197,22 @@ class Trainer:
 
         elif self.training_type=="twofold split":
             n_classes = self.dataset.branching**self.dataset.depth
-            examples_per_class = self.sequence_length // n_classes
 
-            rates = [0 for k in range(self.tree_depth+1)]
-            rates[0] = 0.5
-            rates[1] = 0.5
+            if self.split_total_length is not None:
+                split_length = 2*self.split_total_length // n_classes
+            else:
+                split_length = 2*self.sequence_length // 5*n_classes
+
+            n_splits = self.sequence_length // split_length
 
             train_sequence = []
-            train_data=[]
 
-            for splt_id in range(n_classes//2): # MNIST patterns are numbers from 0 to 9
-                cl_ids = np.random.randint(0, 2, size=2*examples_per_class)
-                inst_ids = np.random.randint(0, self.dataset.class_sz_train, size=2*examples_per_class)
-                instances = [self.dataset.train_data[2*splt_id+cl_ids[k]][inst_ids[k]] for k in range(2*examples_per_class)]
-                # inst = self.dataset.train_data[2*splt_id+cl_ids][inst_ids]
-                train_sequence.extend([2*splt_id+cl_ids[k] for k in range(2*examples_per_class)])
-                train_data.extend(instances)
+            for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
+                # Initiate transition rates based on splitID
+                lbls = [(2*splt_id)%n_classes, (2*splt_id+1)%n_classes]
+
+                cl_ids = np.random.randint(0, 2, size=split_length)
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(split_length)])
 
             self.train_sequence = train_sequence
             self.rates_vector = rates
