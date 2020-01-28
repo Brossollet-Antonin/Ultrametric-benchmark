@@ -39,6 +39,7 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
+data_params.add_argument('--split_total_length', type=int, default=40000)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -96,6 +97,8 @@ def run(args):
 						save_root = cwd+"/Results_Multi/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
 						save_root = cwd+"/Results_Multi/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
+				if args.sequence_type == 'twofold_split' or args.sequence_type == 'onefold_split':
+					save_root = save_root + '_splitlength' + str(args.split_total_length)
 
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
@@ -153,7 +156,8 @@ def run(args):
 					energy_step = step,
 					proba_transition = args.proba_transition,
 					T = T,
-					dynamic_T_thr = args.T_adaptive
+					dynamic_T_thr = args.T_adaptive,
+					split_total_length = args.split_total_length
 					)
 				trainer.network_orig = netfc_original
 				trainer.network_shfl = netfc_shuffle

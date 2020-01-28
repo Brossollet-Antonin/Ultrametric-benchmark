@@ -165,7 +165,7 @@ def run(args):
 
 					verbose('...done', args)
 
-					rs = ultrametric_analysis(trainer, args, block_size_shuffle)
+					rs = ultrametric_analysis_single(trainer, args, block_size_shuffle)
 					rs.parameters = parameters
 
 					trainer.network = trainer.network_orig
@@ -174,7 +174,7 @@ def run(args):
 					trainer.network = trainer.network_shfl
 					diagnos_shuffle = trainer.evaluate_hierarchical()
 
-					save_results(rs, save_root+save_folder, trainer)
+					save_results_single(rs, save_root+save_folder, trainer)
 
 
 
