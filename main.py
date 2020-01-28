@@ -39,11 +39,10 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
-data_params.add_argument('--split_total_length', type=int, default=40000)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
-model_params.add_argument('--lr', type=int, default=0.05, help='Learning rate')
+model_params.add_argument('--lr', type=int, default=0.01, help='Learning rate')
 model_params.add_argument('--minibatch', type=int, dest='minibatches_list', nargs='*', default=[10], help='Size of the training mini-batches')
 model_params.add_argument('--memory', type=int, dest='memory_list', nargs='*', default=[0], help='Size of the memory for replay training')
 model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', help='Number of data points to get during training (number of test of the dataset')
@@ -91,90 +90,88 @@ def run(args):
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
 			for T in args.temperature_list:
-				for block_size_shuffle in args.block_size_shuffle_list:
-					save_root = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
-					if dataset.data_origin == 'artificial':
-						if args.nnarchi == 'FCL':
-							save_root = cwd+"/Results/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
-						else:
-							save_root = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
-
-					#save_folder = "T%.3f_Memory%d_block%d_%.3f" % (T, memory_sz, block_size_shuffle, systime)
-					save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
-
-					parameters = {
-						"Temperature": T,
-						"Tree Depth": dataset.depth,
-						"Tree Branching": dataset.branching,
-						"Sequence Length": args.sequence_length,
-						"Minibatches Size": batch_sz,
-						"Size Blocks Shuffle": block_size_shuffle,
-						"Number of tests": args.test_nbr,
-						"Energy Step": step,
-						"Replay Memory Size": memory_sz,
-						"Learning rate": args.lr,
-						"Dataset": args.data_origin,
-						"Random Seed": systime,
-						"device_type": 'GPU' if args.cuda else 'CPU',
-						"NN architecture": args.nnarchi
-					}
-					# ToDo: - turn parameters into a dictionnary
-					#       - export as JSON
-
-					verbose(
-						'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
-						args
-						)
-
+				save_root = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
+				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
-						netfc_original = neuralnet.Net_FCL(dataset, args.hidden_sizes)
-					elif args.nnarchi == 'CNN':
-						netfc_original = neuralnet.Net_CNN(dataset)
+						save_root = cwd+"/Results_Multi/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
-						netfc_original = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
-					netfc_original.to(device)
+						save_root = cwd+"/Results_Multi/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
 
-					if args.nnarchi == 'FCL':
-						netfc_shuffle = neuralnet.Net_FCL(dataset, args.hidden_sizes)
-					elif args.nnarchi == 'CNN':
-						netfc_shuffle = neuralnet.Net_CNN(dataset)
-					else:
-						netfc_shuffle = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
-					netfc_shuffle.to(device)
+				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
-					args.sequence_type = args.sequence_type.replace('_', ' ')
-					trainer = Trainer(
-						dataset = dataset,
-						network = netfc_original,
-						training_type = args.sequence_type,
-						memory_sampling = 'reservoir sampling',
-						memory_sz = memory_sz,
-						batch_sz = batch_sz,
-						preprocessing = False,
-						device = device,
-						min_visit = args.min_state_visit,
-						sequence_length = args.sequence_length,
-						energy_step = step,
-						proba_transition = args.proba_transition,
-						T = T,
-						dynamic_T_thr = args.T_adaptive,
-						split_total_length = args.split_total_length
-						)
-					trainer.network_orig = netfc_original
-					trainer.network_shfl = netfc_shuffle
+				parameters = {
+					"Temperature": T,
+					"Tree Depth": dataset.depth,
+					"Tree Branching": dataset.branching,
+					"Sequence Length": args.sequence_length,
+					"Minibatches Size": batch_sz,
+					"Number of tests": args.test_nbr,
+					"Energy Step": step,
+					"Replay Memory Size": memory_sz,
+					"Learning rate": args.lr,
+					"Dataset": args.data_origin,
+					"Random Seed": systime,
+					"device_type": 'GPU' if args.cuda else 'CPU',
+					"NN architecture": args.nnarchi
+				}
+				# ToDo: - turn parameters into a dictionnary
+				#       - export as JSON
 
-					verbose('...done', args)
+				verbose(
+					'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
+					args
+					)
 
-					rs = ultrametric_analysis(trainer, args, block_size_shuffle)
-					rs.parameters = parameters
+				if args.nnarchi == 'FCL':
+					netfc_original = neuralnet.Net_FCL(dataset, args.hidden_sizes)
+				elif args.nnarchi == 'CNN':
+					netfc_original = neuralnet.Net_CNN(dataset)
+				else:
+					netfc_original = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
+				netfc_original.to(device)
 
-					trainer.network = trainer.network_orig
-					diagnos_original = trainer.evaluate_hierarchical()
+				if args.nnarchi == 'FCL':
+					netfc_shuffle = neuralnet.Net_FCL(dataset, args.hidden_sizes)
+				elif args.nnarchi == 'CNN':
+					netfc_shuffle = neuralnet.Net_CNN(dataset)
+				else:
+					netfc_shuffle = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
+				netfc_shuffle.to(device)
 
-					trainer.network = trainer.network_shfl
-					diagnos_shuffle = trainer.evaluate_hierarchical()
+				args.sequence_type = args.sequence_type.replace('_', ' ')
+				trainer = Trainer(
+					dataset = dataset,
+					network = netfc_original,
+					training_type = args.sequence_type,
+					memory_sampling = 'reservoir sampling',
+					memory_sz = memory_sz,
+					batch_sz = batch_sz,
+					preprocessing = False,
+					device = device,
+					min_visit = args.min_state_visit,
+					sequence_length = args.sequence_length,
+					energy_step = step,
+					proba_transition = args.proba_transition,
+					T = T,
+					dynamic_T_thr = args.T_adaptive
+					)
+				trainer.network_orig = netfc_original
+				trainer.network_shfl = netfc_shuffle
 
-					save_results(rs, save_root+save_folder, trainer)
+				verbose('...done', args)
+
+				rs = ultrametric_analysis(trainer, args, args.block_size_shuffle_list)
+				rs.parameters = parameters
+				rs.T = trainer.T
+				rs.memory_sz = memory_sz
+
+				trainer.network = trainer.network_orig
+				diagnos_original = trainer.evaluate_hierarchical()
+
+				trainer.network = trainer.network_shfl
+				diagnos_shuffle = trainer.evaluate_hierarchical()
+
+				save_results(rs, save_root)
 
 
 

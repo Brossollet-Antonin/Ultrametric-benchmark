@@ -177,22 +177,19 @@ class Trainer:
 
         elif self.training_type=="onefold split":
             n_classes = self.dataset.branching**self.dataset.depth
-            examples_per_class = self.sequence_length // n_classes
 
-            rates = [0 for k in range(self.tree_depth+1)]
-            rates[0] = 1
+            if self.split_total_length is not None:
+                split_length = self.split_total_length // n_classes
+            else:
+                split_length = self.sequence_length // (5*n_classes)
 
+            n_splits = self.sequence_length // split_length
             train_sequence = []
-            train_data=[]
 
-            for ex_id in range(n_classes): # MNIST patterns are numbers from 0 to 9
-                inst_ids = np.random.randint(0, self.dataset.class_sz_train, size=examples_per_class)
-                instances = [self.dataset.train_data[ex_id][inst_ids[k]] for k in range(examples_per_class)]
-                train_sequence.extend([ex_id for k in range(examples_per_class)])
-                train_data.extend(instances)
+            for ex_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
+                train_sequence.extend([ex_id for k in range(split_length)])
 
             self.train_sequence = train_sequence
-            self.rates_vector = rates
 
 
         elif self.training_type=="twofold split":
@@ -201,7 +198,7 @@ class Trainer:
             if self.split_total_length is not None:
                 split_length = 2*self.split_total_length // n_classes
             else:
-                split_length = 2*self.sequence_length // 5*n_classes
+                split_length = 2*self.sequence_length // (5*n_classes)
 
             n_splits = self.sequence_length // split_length
 
@@ -215,7 +212,6 @@ class Trainer:
                 train_sequence.extend([lbls[cl_ids[k]] for k in range(split_length)])
 
             self.train_sequence = train_sequence
-            self.rates_vector = rates
 
         else:
             raise NotImplementedError("training type not supported")
