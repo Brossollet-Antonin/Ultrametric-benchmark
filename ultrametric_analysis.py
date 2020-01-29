@@ -229,7 +229,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
         verbose('Accuracy of the network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, original_accuracy_current[0][0]), args)
 
     network_shfl_ref = deepcopy(trainer.network_shfl)
-    trainer.network = network_shfl_ref
+    trainer.network = deepcopy(network_shfl_ref)
     eval_shfl = trainer.evaluate_hierarchical()
     acc_shfl = np.array([[eval_shfl[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
 
@@ -251,6 +251,8 @@ def ultrametric_analysis(trainer, args, block_sizes):
         # trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
         for block_size_shuffle in block_sizes:
 
+            trainer.network = deepcopy(network_shfl_ref)
+            
             for test_id in range(args.test_nbr):
                 training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)
                 shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])

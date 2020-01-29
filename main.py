@@ -170,12 +170,6 @@ def run(args):
 				rs.T = trainer.T
 				rs.memory_sz = memory_sz
 
-				trainer.network = trainer.network_orig
-				diagnos_original = trainer.evaluate_hierarchical()
-
-				trainer.network = trainer.network_shfl
-				diagnos_shuffle = trainer.evaluate_hierarchical()
-
 				save_results(rs, save_root)
 
 
