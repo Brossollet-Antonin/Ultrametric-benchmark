@@ -116,7 +116,7 @@ def run(args):
 					"Random Seed": systime,
 					"device_type": 'GPU' if args.cuda else 'CPU',
 					"NN architecture": args.nnarchi,
-					"Split total length": split_total_length
+					"Split total length": args.split_total_length
 				}
 				# ToDo: - turn parameters into a dictionnary
 				#       - export as JSON
