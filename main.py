@@ -91,7 +91,7 @@ def run(args):
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
 			for T in args.temperature_list:
-				save_root = cwd+"/Results/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
+				save_root = cwd+"/Results_Multi/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
 				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
 						save_root = cwd+"/Results_Multi/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
@@ -115,7 +115,8 @@ def run(args):
 					"Dataset": args.data_origin,
 					"Random Seed": systime,
 					"device_type": 'GPU' if args.cuda else 'CPU',
-					"NN architecture": args.nnarchi
+					"NN architecture": args.nnarchi,
+					"Split total length": split_total_length
 				}
 				# ToDo: - turn parameters into a dictionnary
 				#       - export as JSON
