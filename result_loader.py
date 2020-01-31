@@ -188,6 +188,7 @@ class ResultSet_1to1:
 		self.datapaths = datapaths
 		
 	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True):
+		print("\nLoading analytics...")
 
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
@@ -457,6 +458,19 @@ class ResultSet_1to1:
 			return hlocs_stat_orig, hlocs_stat_shfl_list
 
 
+	def lbl_history(self, T_list):
+		n_Ts = len(T_list)
+		assert (n_Ts>0)
+
+		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
+
+		for T_id, T in enumerate(T_list):
+			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
+			lbls_ax.plot(self.train_labels_orig[(T,1)][0])
+			ttl = 'History of labels in the original training sequence - T='+str(T)
+			plt.title(ttl)
+
+
 class ResultSet_1toM:
 	"""Contains the results of a simulation
 
@@ -486,6 +500,7 @@ class ResultSet_1toM:
 		self.block_sizes = set()
 		
 	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True):
+		print("\nLoading analytics...")
 
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
@@ -787,7 +802,7 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 	xtick_scale = 25
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
-	plt.figure(1, figsize=(18,10*n_Ts))
+	fig = plt.figure(1, figsize=(18,12*n_Ts))
 
 	for T_id, T in enumerate(T_list):
 		acc_ax = plt.subplot(n_Ts, 1, 1+T_id)
@@ -813,52 +828,53 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 
 		## Plotting average performance for original ultrametric sequences
 
-		var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
-		var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
-		acc_ax.plot(
-				var_acc_orig,
-				marker = '.',
-				markersize=10,
-				ls = 'none',
+		if T in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			acc_ax.plot(
+					var_acc_orig,
+					marker = '.',
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - 0.3*var_acc_orig_std,
+				y2 = var_acc_orig + 0.3*var_acc_orig_std,
 				color = hsv_to_rgb(hsv_orig),
-				label='T={0:.2f} - Original sequence'.format(T)
+				alpha = 0.4
 			)
-		acc_ax.fill_between(
-			x = range(len(var_acc_orig)),
-			y1 = var_acc_orig - 0.3*var_acc_orig_std,
-			y2 = var_acc_orig + 0.3*var_acc_orig_std,
-			color = hsv_to_rgb(hsv_orig),
-			alpha = 0.4
-		)
 
 		## Plotting average performance for shuffled ultrametric sequences
+		if T in acc_temp_shuffled.keys():
+			for block_id, (block_sz, acc_data) in enumerate(acc_temp_shuffled[T].items()):
+				hsv_shfl = tuple([0.6, 1-block_id*0.12, 0.4+block_id*0.12])
 
-		for block_id, (block_sz, acc_data) in enumerate(acc_temp_shuffled[T].items()):
-			hsv_shfl = tuple([0.6, 1-block_id*0.12, 0.4+block_id*0.12])
-
-			var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
-			var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
-			
-			acc_ax.plot(
-				var_acc_shfl,
-				marker=markers[block_id],
-				markersize=10,
-				ls = 'none',
-				color = hsv_to_rgb(hsv_shfl),
-				label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
-			)
-			acc_ax.fill_between(
-				x = range(len(var_acc_shfl)),
-				y1 = var_acc_shfl - 0.3*var_acc_shfl_std,
-				y2 = var_acc_shfl + 0.3*var_acc_shfl_std,
-				color = hsv_to_rgb(hsv_shfl),
-				alpha = 0.2
-			)
+				var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+				var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+				
+				acc_ax.plot(
+					var_acc_shfl,
+					marker=markers[block_id],
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_shfl),
+					label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+				)
+				acc_ax.fill_between(
+					x = range(len(var_acc_shfl)),
+					y1 = var_acc_shfl - 0.3*var_acc_shfl_std,
+					y2 = var_acc_shfl + 0.3*var_acc_shfl_std,
+					color = hsv_to_rgb(hsv_shfl),
+					alpha = 0.2
+				)
 
 		## Plotting average performance for split scenario (two-folds)
-		if acc_twofold_orig is not None:
-			var_acc_tfs_orig = np.mean([acc[:,0] for params, accs in acc_twofold_orig[T].items() for acc in accs], axis=0)
-			var_acc_tfs_orig_std = np.std([acc[:,0] for params, accs in acc_twofold_orig[T].items() for acc in accs], axis=0)
+		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
 			acc_ax.plot(
 				var_acc_tfs_orig,
 				marker = '.',
@@ -875,16 +891,16 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 				alpha = 0.4
 			)
 
-		if acc_twofold_shuffled is not None:
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
 			for block_id, (block_sz, acc_data) in enumerate(acc_twofold_shuffled[T].items()):
 				
-				hsv_tfs_shfl = tuple([0.35, 0.8-(param_id+1)*0.12, 0.6-(param_id+1)*0.12])
+				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.12, 0.6-(block_id+1)*0.12])
 				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
 				
 				acc_ax.plot(
 					var_acc_tfs_shfl,
-					marker=markers[param_id],
+					marker=markers[block_id],
 					markersize=10,
 					ls = 'none',
 					color = hsv_to_rgb(hsv_tfs_shfl),
@@ -906,10 +922,13 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 		box = acc_ax.get_position()
 		acc_ax.set_position([box.x0, box.y0 + box.height * 0.1,
 						 box.width, box.height * 0.9])
+
 		acc_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
 					  fancybox=True, shadow=True, ncol=2,
 					  prop={'size': 16})
 
 		plt.xlabel('Iterations', fontsize=14)
 		plt.ylabel('Accuracy (%)', fontsize=14)
-		plt.savefig('out_plots_acc.pdf', format='pdf')
+
+	fig.tight_layout(pad=10.0)
+	plt.savefig('out_plots_acc.pdf', format='pdf')

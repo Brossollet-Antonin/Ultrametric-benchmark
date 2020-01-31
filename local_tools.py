@@ -40,3 +40,34 @@ def shuffleblocks(seq, block_sz, snbr):
         for i in block_indices[bbegin:bend]:
             sseq += copied_seq[i*block_sz:(i+1)*block_sz]
     return sseq
+
+######################################
+
+def simulate_sequence(T_list, seq_length=200000, tree_depth=3, tree_branching=2, minimum_classcount=0, rate_law='power', force_switch=True):
+    from sequence_generator_temporal import TempCorr_SequenceGenerator
+    from ultrametric_analysis import ResultSet
+    from matplotlib import pyplot as plt
+
+    n_Ts = len(T_list)
+    assert (n_Ts>0)
+    lbls_fig = plt.figure(figsize=(18,10*n_Ts))
+
+    seqgen = TempCorr_SequenceGenerator()
+    for T_id, T in enumerate(T_list):
+        sequence_labels, rates = seqgen.generate_labels(
+            sequence_first=0,
+            sequence_length=seq_length,
+            energy_step=1,
+            T=T,
+            tree_depth=tree_depth,
+            tree_branching=tree_branching,
+            minimum_classcount=minimum_classcount,
+            rate_law=rate_law,
+            force_switch=force_switch,
+            dynamic_T=0
+        )
+        lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
+        lbls_ax.plot(sequence_labels)
+        plt.ylim((0, tree_branching**tree_depth))
+        ttl = 'History of labels in the original training sequence - T='+str(T)
+        plt.title(ttl)
