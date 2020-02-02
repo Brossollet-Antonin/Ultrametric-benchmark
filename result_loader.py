@@ -341,7 +341,7 @@ class ResultSet_1to1:
 			print("load_atc set to False. Autocorrelations not loaded.")
 
 
-	def get_atc_vectorized(self, T_list, n_tests, out_filename, w_size=10000, n_omits=30):
+	def get_atc(self, T_list, n_tests, out_filename, w_size=10000, n_omits=30):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
 
@@ -353,7 +353,7 @@ class ResultSet_1to1:
 			atc_ax = plt.subplot(n_Ts, 1, 1+T_id)
 
 			seq_list = []
-			for b in train_labels_orig.keys():
+			for b in self.train_labels_orig.keys():
 				if b[0] == 'T':
 					seq_list.append(self.train_labels_orig[b])
 
@@ -847,6 +847,25 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 				alpha = 0.4
 			)
 
+		if (T,1) in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			acc_ax.plot(
+					var_acc_orig,
+					marker = '.',
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - 0.3*var_acc_orig_std,
+				y2 = var_acc_orig + 0.3*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
 		## Plotting average performance for shuffled ultrametric sequences
 		if T in acc_temp_shuffled.keys():
 			for block_id, (block_sz, acc_data) in enumerate(acc_temp_shuffled[T].items()):
@@ -875,6 +894,25 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
 			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
 			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			acc_ax.plot(
+				var_acc_tfs_orig,
+				marker = '.',
+				markersize=10,
+				ls = 'none',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
 			acc_ax.plot(
 				var_acc_tfs_orig,
 				marker = '.',

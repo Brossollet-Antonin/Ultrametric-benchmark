@@ -91,14 +91,14 @@ def run(args):
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
 			for T in args.temperature_list:
-				save_root = cwd+"/Results_Multi/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
+				save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
 				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
-						save_root = cwd+"/Results_Multi/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
+						save_root = cwd+"/Results/1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
-						save_root = cwd+"/Results_Multi/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
-				if args.sequence_type == 'twofold_split' or args.sequence_type == 'onefold_split':
-					save_root = save_root + '_splitlength' + str(args.split_total_length)
+						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
+				if (args.sequence_type == 'twofold_split' or args.sequence_type == 'onefold_split'):
+					save_root = save_root+"_splitlength"+str(args.split_total_length)
 
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
@@ -142,7 +142,6 @@ def run(args):
 					netfc_shuffle = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
 				netfc_shuffle.to(device)
 
-				args.sequence_type = args.sequence_type.replace('_', ' ')
 				trainer = Trainer(
 					dataset = dataset,
 					network = netfc_original,

@@ -119,7 +119,7 @@ class Trainer:
             random.shuffle(train_data)
             self.train_sequence = train_data
 
-        elif self.training_type=="temporal correlation":
+        elif self.training_type=="temporal_correlation":
             if self.dynamic_T_thr > 0:
                 #new_T = self.heuristic_temperature(self.dynamic_T_thr, rate_law='power')
                 new_T = self.heuristic_temperature(rate_law='power')
@@ -141,7 +141,7 @@ class Trainer:
 
 
 
-        elif self.training_type=="spatial correlation":
+        elif self.training_type=="spatial_correlation":
 
             data = sort_dataset.sort_MNIST(dataset='MNIST', train=True)
             if self.preprocessing:
@@ -175,7 +175,7 @@ class Trainer:
             self.rates_vector = rates_vector
 
 
-        elif self.training_type=="onefold split":
+        elif self.training_type=="onefold_split":
             n_classes = self.dataset.branching**self.dataset.depth
 
             if self.split_total_length is not None:
@@ -192,7 +192,7 @@ class Trainer:
             self.train_sequence = train_sequence
 
 
-        elif self.training_type=="twofold split":
+        elif self.training_type=="twofold_split":
             n_classes = self.dataset.branching**self.dataset.depth
 
             if self.split_total_length is not None:
@@ -248,7 +248,7 @@ class Trainer:
         None.
 
         """
-        if self.training_type in ("temporal correlation", "onefold split", "twofold split", "spatial correlation", "random", "uniform"):
+        if self.training_type in ("temporal_correlation", "onefold_split", "twofold_split", "spatial_correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
             if seq is not None:
                 train_sequence = seq
