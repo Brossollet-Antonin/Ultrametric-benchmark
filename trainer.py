@@ -79,6 +79,11 @@ class Trainer:
         self.dynamic_T_thr = dynamic_T_thr
         self.split_total_length = split_total_length
 
+        if self.training_type=="ladder_blocks1" or self.training_type=="ladder_blocks2":
+            self.split_block_length = self.split_total_length // n_classes
+        if self.training_type=="random_blocks1" or self.training_type=="random_blocks2":
+            self.split_block_length = self.split_total_length
+
 
     def heuristic_temperature(self, rate_law, dT=0.01):
         # Only relevant when self.training_type = 'ultrametric'
@@ -177,16 +182,11 @@ class Trainer:
         elif self.training_type=="ladder_blocks1":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            if self.split_total_length is not None:
-                split_length = self.split_total_length // n_classes
-            else:
-                split_length = self.sequence_length // (5*n_classes)
-
-            n_splits = self.sequence_length // split_length
+            n_splits = self.sequence_length // self.split_block_length
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
-                train_sequence.extend([splt_id%n_classes for k in range(split_length)])
+                train_sequence.extend([splt_id%n_classes for k in range(self.split_block_length)])
 
             self.train_sequence = train_sequence
 
@@ -194,17 +194,12 @@ class Trainer:
         elif self.training_type=="random_blocks1":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            if self.split_total_length is not None:
-                split_length = self.split_total_length // n_classes
-            else:
-                split_length = self.sequence_length // (5*n_classes)
-
-            n_splits = self.sequence_length // split_length
+            n_splits = self.sequence_length // self.split_block_length
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 rand_splt_id = random.randint(0, n_classes-1)
-                train_sequence.extend([rand_splt_id for k in range(split_length)])
+                train_sequence.extend([rand_splt_id for k in range(self.split_block_length)])
 
             self.train_sequence = train_sequence
 
@@ -212,12 +207,7 @@ class Trainer:
         elif self.training_type=="ladder_blocks2":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            if self.split_total_length is not None:
-                split_length = 2*self.split_total_length // n_classes
-            else:
-                split_length = 2*self.sequence_length // (5*n_classes)
-
-            n_splits = self.sequence_length // split_length
+            n_splits = self.sequence_length // self.split_block_length
 
             train_sequence = []
 
@@ -225,8 +215,8 @@ class Trainer:
                 # Initiate transition rates based on splitID
                 lbls = [(2*splt_id)%n_classes, (2*splt_id+1)%n_classes]
 
-                cl_ids = np.random.randint(0, 2, size=split_length)
-                train_sequence.extend([lbls[cl_ids[k]] for k in range(split_length)])
+                cl_ids = np.random.randint(0, 2, size=self.split_block_length)
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_length)])
 
             self.train_sequence = train_sequence
 
@@ -234,12 +224,7 @@ class Trainer:
         elif self.training_type=="random_blocks2":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            if self.split_total_length is not None:
-                split_length = 2*self.split_total_length // n_classes
-            else:
-                split_length = 2*self.sequence_length // (5*n_classes)
-
-            n_splits = self.sequence_length // split_length
+            n_splits = self.sequence_length // self.split_block_length
 
             train_sequence = []
 
@@ -248,8 +233,8 @@ class Trainer:
                 rand_splt_id = random.randint(0, (n_classes//2)-1)
                 lbls = [(2*rand_splt_id)%n_classes, (2*rand_splt_id+1)%n_classes]
 
-                cl_ids = np.random.randint(0, 2, size=split_length)
-                train_sequence.extend([lbls[cl_ids[k]] for k in range(split_length)])
+                cl_ids = np.random.randint(0, 2, size=self.split_block_length)
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_length)])
 
             self.train_sequence = train_sequence
 
