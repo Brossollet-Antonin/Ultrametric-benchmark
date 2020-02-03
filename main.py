@@ -50,7 +50,7 @@ model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', h
 
 # sequence parameters
 seq_params = parser.add_argument_group('Sequence Parameters')
-seq_params.add_argument('--seqtype', type=str, default='temporal_correlation', dest='sequence_type', choices=['temporal_correlation', 'spatial_correlation', 'random', 'uniform', 'onefold_split', 'twofold_split'], help='Method used to generate the training sequence')
+seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'spatial_correlation', 'random', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2'], help='Method used to generate the training sequence')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
@@ -97,7 +97,7 @@ def run(args):
 						save_root = cwd+"/Results/1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
 						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
-				if (args.sequence_type == 'twofold_split' or args.sequence_type == 'onefold_split'):
+				if 'blocks' in args.sequence_type:
 					save_root = save_root+"_splitlength"+str(args.split_total_length)
 
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
