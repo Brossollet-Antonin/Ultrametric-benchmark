@@ -54,7 +54,7 @@ class Trainer:
     def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, batch_sz=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                 preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0, split_total_length=None):
+                 preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0, split_length_list=None):
 
         self.dataset = dataset
         self.network = network
@@ -77,12 +77,11 @@ class Trainer:
         self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
         self.dynamic_T_thr = dynamic_T_thr
-        self.split_total_length = split_total_length
 
         if self.training_type=="ladder_blocks1" or self.training_type=="ladder_blocks2":
-            self.split_block_length = self.split_total_length // n_classes
-        if self.training_type=="random_blocks1" or self.training_type=="random_blocks2":
-            self.split_block_length = self.split_total_length
+            self.split_block_lengths = [k // n_classes for k in split_length_list]
+        if self.training_type=="random_blocks1" or self.training_type=="random_blocks2" or self.training_type=="random_blocks2_2freq":
+            self.split_block_lengths = split_length_list
 
 
     def heuristic_temperature(self, rate_law, dT=0.01):
@@ -182,11 +181,11 @@ class Trainer:
         elif self.training_type=="ladder_blocks1":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            n_splits = self.sequence_length // self.split_block_length
+            n_splits = self.sequence_length // self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
-                train_sequence.extend([splt_id%n_classes for k in range(self.split_block_length)])
+                train_sequence.extend([splt_id%n_classes for k in range(self.split_block_lengths[0])])
 
             self.train_sequence = train_sequence
 
@@ -194,12 +193,12 @@ class Trainer:
         elif self.training_type=="random_blocks1":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            n_splits = self.sequence_length // self.split_block_length
+            n_splits = self.sequence_length // self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 rand_splt_id = random.randint(0, n_classes-1)
-                train_sequence.extend([rand_splt_id for k in range(self.split_block_length)])
+                train_sequence.extend([rand_splt_id for k in range(self.split_block_lengths[0])])
 
             self.train_sequence = train_sequence
 
@@ -207,7 +206,7 @@ class Trainer:
         elif self.training_type=="ladder_blocks2":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            n_splits = self.sequence_length // self.split_block_length
+            n_splits = self.sequence_length // self.split_block_lengths[0]
 
             train_sequence = []
 
@@ -215,8 +214,8 @@ class Trainer:
                 # Initiate transition rates based on splitID
                 lbls = [(2*splt_id)%n_classes, (2*splt_id+1)%n_classes]
 
-                cl_ids = np.random.randint(0, 2, size=self.split_block_length)
-                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_length)])
+                cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
 
             self.train_sequence = train_sequence
 
@@ -224,8 +223,7 @@ class Trainer:
         elif self.training_type=="random_blocks2":
             n_classes = self.dataset.branching**self.dataset.depth
 
-            n_splits = self.sequence_length // self.split_block_length
-
+            n_splits = self.sequence_length // self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
@@ -233,10 +231,29 @@ class Trainer:
                 rand_splt_id = random.randint(0, (n_classes//2)-1)
                 lbls = [(2*rand_splt_id)%n_classes, (2*rand_splt_id+1)%n_classes]
 
-                cl_ids = np.random.randint(0, 2, size=self.split_block_length)
-                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_length)])
+                cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
 
             self.train_sequence = train_sequence
+
+
+        elif self.training_type=="random_blocks2_2freq":
+            n_classes = self.dataset.branching**(self.dataset.depth-1)
+
+            n_long_splits = self.sequence_length // self.split_block_lengths[1]
+            n_short_splits = self.split_block_lengths[1] // self.split_block_lengths[0]
+            train_sequence = []
+
+            for l_splt_id in range(n_long_splits):
+                rand_l_splt_id = random.randint(0, 1)
+                for s_splt_id in range(n_short_splits):
+                    rand_s_splt_id = random.randint(0, (n_classes//2)-1)
+                    lbls = [n_classes*rand_l_splt_id+(2*rand_s_splt_id)%n_classes, n_classes*rand_l_splt_id+(2*rand_s_splt_id+1)%n_classes]
+                    cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
+                    train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
+
+            self.train_sequence = train_sequence
+
 
         else:
             raise NotImplementedError("training type not supported")
@@ -273,7 +290,7 @@ class Trainer:
         None.
 
         """
-        if self.training_type in ("ultrametric", "ladder_blocks1", "ladder_blocks2", "random_blocks1", "random_blocks2", "spatial_correlation", "random", "uniform"):
+        if self.training_type in ("ultrametric", "ladder_blocks1", "ladder_blocks2", "random_blocks1", "random_blocks2", "random_blocks2_2freq", "spatial_correlation", "random", "uniform"):
             # For temporal and spatial correlation tests
             if seq is not None:
                 train_sequence = seq

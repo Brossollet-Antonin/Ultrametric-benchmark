@@ -626,6 +626,8 @@ class ResultSet_1toM:
 				self.var_pred_orig[T].append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
 
 				if load_shuffle:
+					if type(block_sizes) is int:
+						block_sizes = [block_sizes]
 					for block_sz in block_sizes:
 						if block_sz not in self.block_sizes:
 							self.block_sizes.add(block_sz)
@@ -970,3 +972,29 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 
 	fig.tight_layout(pad=10.0)
 	plt.savefig('out_plots_acc.pdf', format='pdf')
+
+
+def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):
+	nspl = len(acc_orig)
+	seql = len(lbl_seq)
+
+	spl_lbl_seq = [lbl_seq[k*(seql//nspl)] for k in range(nspl)]
+	assert(len(spl_lbl_seq) == len(acc_orig) == len(acc_unif))
+
+	obs_lbl_set = set()
+	nobs_seq = []
+	for lbl in spl_lbl_seq:
+		obs_lbl_set.add(lbl)
+		nobs_seq.append(len(obs_lbl_set))
+
+	cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(nobs_seq)
+
+	if plot:
+		fig = plt.figure(1, figsize=(18,12))
+		cf_ax = plt.subplot(111)
+		cf_ax.plot(
+			cf,
+			label='Forgetting score as a fct of #iteration'
+		)
+		
+	return cf

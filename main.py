@@ -39,6 +39,7 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
+data_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=100)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -49,7 +50,7 @@ model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', h
 
 # sequence parameters
 seq_params = parser.add_argument_group('Sequence Parameters')
-seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'spatial_correlation', 'random', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2'], help='Method used to generate the training sequence')
+seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'spatial_correlation', 'random', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2', 'random_blocks2_2freq'], help='Method used to generate the training sequence')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
@@ -97,9 +98,8 @@ def run(args):
 					else:
 						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
 				if 'blocks' in args.sequence_type:
-					split_length = int(T)
 					T = float(0)
-					save_root = save_root+"_splitlength"+str(split_length)+"/"
+					save_root = save_root+"_splitlength"+str(args.split_length_list[0])+"/"
 				else:
 					save_root = save_root+"/"
 
@@ -119,7 +119,7 @@ def run(args):
 					"Random Seed": systime,
 					"device_type": 'GPU' if args.cuda else 'CPU',
 					"NN architecture": args.nnarchi,
-					"Split total length": split_length
+					"Split total length": args.split_length_list[0]
 				}
 				# ToDo: - turn parameters into a dictionnary
 				#       - export as JSON
@@ -160,7 +160,7 @@ def run(args):
 					proba_transition = args.proba_transition,
 					T = T,
 					dynamic_T_thr = args.T_adaptive,
-					split_total_length = split_length
+					split_length_list = args.split_length_list
 					)
 				trainer.network_orig = netfc_original
 				trainer.network_shfl = netfc_shuffle
