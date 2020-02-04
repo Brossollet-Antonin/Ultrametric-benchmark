@@ -39,7 +39,6 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
-data_params.add_argument('--split_total_length', type=int, default=40000)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
@@ -102,6 +101,10 @@ def run(args):
 
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
+				if 'blocks' in args.sequence_type:
+					split_length = int(T)
+					T = float(0)
+
 				parameters = {
 					"Temperature": T,
 					"Tree Depth": dataset.depth,
@@ -116,7 +119,7 @@ def run(args):
 					"Random Seed": systime,
 					"device_type": 'GPU' if args.cuda else 'CPU',
 					"NN architecture": args.nnarchi,
-					"Split total length": args.split_total_length
+					"Split total length": split_length
 				}
 				# ToDo: - turn parameters into a dictionnary
 				#       - export as JSON
