@@ -93,13 +93,15 @@ def run(args):
 				save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
 				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
-						save_root = cwd+"/Results/1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
+						save_root = cwd+"/Results/1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
-						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
+						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
 				if 'blocks' in args.sequence_type:
 					split_length = int(T)
 					T = float(0)
-					save_root = save_root+"_splitlength"+str(split_length)
+					save_root = save_root+"_splitlength"+str(split_length)+"/"
+				else:
+					save_root = save_root+"/"
 
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
 
