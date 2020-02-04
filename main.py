@@ -99,7 +99,10 @@ def run(args):
 						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
 				if 'blocks' in args.sequence_type:
 					T = float(0)
-					save_root = save_root+"_splitlength"+str(args.split_length_list[0])+"/"
+					if args.sequence_type == 'random_blocks2_2freq':
+						save_root = save_root+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
+					else:
+						save_root = save_root+"_splitlength"+str(args.split_length_list[0])+"/"
 				else:
 					save_root = save_root+"/"
 
