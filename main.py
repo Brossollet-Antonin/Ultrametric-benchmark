@@ -158,7 +158,7 @@ def run(args):
 					proba_transition = args.proba_transition,
 					T = T,
 					dynamic_T_thr = args.T_adaptive,
-					split_total_length = args.split_total_length
+					split_total_length = split_length
 					)
 				trainer.network_orig = netfc_original
 				trainer.network_shfl = netfc_shuffle
