@@ -39,7 +39,7 @@ data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth',
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
-data_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=100)
+data_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=[100])
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
