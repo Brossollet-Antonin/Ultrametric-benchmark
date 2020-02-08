@@ -461,13 +461,28 @@ class ResultSet_1to1:
 	def lbl_history(self, T_list):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
+		t_explr = None
 
 		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
 
 		for T_id, T in enumerate(T_list):
+			n_labels = len(set(self.train_labels_orig[(T,1)][0]))
 			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
 			lbls_ax.plot(self.train_labels_orig[(T,1)][0])
+
+			obs_lbl_set = set()
+			nobs_seq = []
+			for itr_id, lbl in enumerate(self.train_labels_orig[(T,1)][0]):
+				obs_lbl_set.add(lbl)
+				nobs_seq.append(len(obs_lbl_set))
+				if t_explr is None and len(obs_lbl_set) == n_labels:
+					t_explr = itr_id
+
+			lbls_ax.plot(nobs_seq)
+
 			ttl = 'History of labels in the original training sequence - T='+str(T)
+			if t_explr:
+				ttl = ttl+' - tau_asym=' + str(t_explr)
 			plt.title(ttl)
 
 
@@ -631,10 +646,13 @@ class ResultSet_1toM:
 					for block_sz in block_sizes:
 						if block_sz not in self.block_sizes:
 							self.block_sizes.add(block_sz)
-						self.train_labels_shfl[T][block_sz] = []
-						self.eval_shfl[T][block_sz] = []
-						self.var_acc_shfl[T][block_sz] = []
-						self.var_pred_shfl[T][block_sz] = []
+
+						if block_sz not in self.train_labels_shfl[T].keys():
+							self.train_labels_shfl[T][block_sz] = []
+							self.eval_shfl[T][block_sz] = []
+							self.var_acc_shfl[T][block_sz] = []
+							self.var_pred_shfl[T][block_sz] = []
+
 						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
 							self.train_labels_shfl[T][block_sz].append(pickle.load(file))
 						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
@@ -786,17 +804,32 @@ class ResultSet_1toM:
 	def lbl_history(self, T_list):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
+		t_explr = None
 
 		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
 
 		for T_id, T in enumerate(T_list):
+			n_labels = len(set(self.train_labels_orig[T][0]))
 			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
 			lbls_ax.plot(self.train_labels_orig[T][0])
+
+			obs_lbl_set = set()
+			nobs_seq = []
+			for itr_id, lbl in enumerate(self.train_labels_orig[T][0]):
+				obs_lbl_set.add(lbl)
+				nobs_seq.append(len(obs_lbl_set))
+				if t_explr is None and len(obs_lbl_set) == n_labels:
+					t_explr = itr_id
+
+			lbls_ax.plot(nobs_seq)
+
 			ttl = 'History of labels in the original training sequence - T='+str(T)
+			if t_explr:
+				ttl = ttl+' - tau_asym=' + str(t_explr)
 			plt.title(ttl)
 
 
-def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200):
+def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200, discard_last_tests=0, blocks_for_shared_plots=None, var_scale=0.3, save_format='pdf'):
 
 	n_Ts = len(T_list)
 	assert (n_Ts>0)
@@ -804,10 +837,10 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 	xtick_scale = 25
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
-	fig = plt.figure(1, figsize=(18,12*n_Ts))
+	fig = plt.figure(1, figsize=(18,12*3*n_Ts))
 
 	for T_id, T in enumerate(T_list):
-		acc_ax = plt.subplot(n_Ts, 1, 1+T_id)
+		acc_ax = plt.subplot(3*n_Ts, 1, 1+3*T_id)
 
 		if acc_unif is not None:
 		## Plotting average performance for random sequences (from uniform distr)
@@ -822,8 +855,8 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 
 			acc_ax.fill_between(
 				x = range(len(var_acc_unif)),
-				y1 = var_acc_unif - var_acc_unif_std,
-				y2 = var_acc_unif + var_acc_unif_std,
+				y1 = var_acc_unif - var_scale*var_acc_unif_std,
+				y2 = var_acc_unif + var_scale*var_acc_unif_std,
 				color = hsv_to_rgb(hsv_unif),
 				alpha = 0.4
 			)
@@ -843,8 +876,8 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 				)
 			acc_ax.fill_between(
 				x = range(len(var_acc_orig)),
-				y1 = var_acc_orig - 0.3*var_acc_orig_std,
-				y2 = var_acc_orig + 0.3*var_acc_orig_std,
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
 				color = hsv_to_rgb(hsv_orig),
 				alpha = 0.4
 			)
@@ -862,8 +895,8 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 				)
 			acc_ax.fill_between(
 				x = range(len(var_acc_orig)),
-				y1 = var_acc_orig - 0.3*var_acc_orig_std,
-				y2 = var_acc_orig + 0.3*var_acc_orig_std,
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
 				color = hsv_to_rgb(hsv_orig),
 				alpha = 0.4
 			)
@@ -871,7 +904,7 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 		## Plotting average performance for shuffled ultrametric sequences
 		if T in acc_temp_shuffled.keys():
 			for block_id, (block_sz, acc_data) in enumerate(acc_temp_shuffled[T].items()):
-				hsv_shfl = tuple([0.6, 1-block_id*0.12, 0.4+block_id*0.12])
+				hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
 
 				var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 				var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
@@ -886,76 +919,12 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 				)
 				acc_ax.fill_between(
 					x = range(len(var_acc_shfl)),
-					y1 = var_acc_shfl - 0.3*var_acc_shfl_std,
-					y2 = var_acc_shfl + 0.3*var_acc_shfl_std,
+					y1 = var_acc_shfl - var_scale*var_acc_shfl_std,
+					y2 = var_acc_shfl + var_scale*var_acc_shfl_std,
 					color = hsv_to_rgb(hsv_shfl),
 					alpha = 0.2
 				)
 
-		## Plotting average performance for split scenario (two-folds)
-		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
-			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
-			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
-			acc_ax.plot(
-				var_acc_tfs_orig,
-				marker = '.',
-				markersize=10,
-				ls = 'none',
-				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
-			)
-			acc_ax.fill_between(
-				x = range(len(var_acc_tfs_orig)),
-				y1 = var_acc_tfs_orig - var_acc_tfs_orig_std,
-				y2 = var_acc_tfs_orig + var_acc_tfs_orig_std,
-				color = hsv_to_rgb(hsv_tfs_orig),
-				alpha = 0.4
-			)
-
-		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
-			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
-			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
-			acc_ax.plot(
-				var_acc_tfs_orig,
-				marker = '.',
-				markersize=10,
-				ls = 'none',
-				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
-			)
-			acc_ax.fill_between(
-				x = range(len(var_acc_tfs_orig)),
-				y1 = var_acc_tfs_orig - var_acc_tfs_orig_std,
-				y2 = var_acc_tfs_orig + var_acc_tfs_orig_std,
-				color = hsv_to_rgb(hsv_tfs_orig),
-				alpha = 0.4
-			)
-
-		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
-			for block_id, (block_sz, acc_data) in enumerate(acc_twofold_shuffled[T].items()):
-				
-				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.12, 0.6-(block_id+1)*0.12])
-				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
-				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
-				
-				acc_ax.plot(
-					var_acc_tfs_shfl,
-					marker=markers[block_id],
-					markersize=10,
-					ls = 'none',
-					color = hsv_to_rgb(hsv_tfs_shfl),
-					label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
-				)
-				acc_ax.fill_between(
-					x = range(len(var_acc_tfs_shfl)),
-					y1 = var_acc_tfs_shfl - var_acc_tfs_shfl_std,
-					y2 = var_acc_tfs_shfl + var_acc_tfs_shfl_std,
-					color = hsv_to_rgb(hsv_tfs_shfl),
-					alpha = 0.2
-				)
-
-		###################################################################
-		
 		plt.xticks(xtick_pos, xtick_labels)
 		plt.title('Accuracy as a function of time for original and shuffled sequences', fontsize = 14)
 
@@ -970,22 +939,600 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 		plt.xlabel('Iterations', fontsize=14)
 		plt.ylabel('Accuracy (%)', fontsize=14)
 
+		acc_ax_blk = plt.subplot(3*n_Ts, 1, 2+3*T_id)
+
+		## Plotting average performance for split scenario (two-folds)
+		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			acc_ax_blk.plot(
+				var_acc_tfs_orig,
+				marker = '.',
+				markersize=10,
+				ls = 'none',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_blk.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			acc_ax_blk.plot(
+				var_acc_tfs_orig,
+				marker = '.',
+				markersize=10,
+				ls = 'none',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_blk.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, (block_sz, acc_data) in enumerate(acc_twofold_shuffled[T].items()):
+				
+				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+				
+				acc_ax_blk.plot(
+					var_acc_tfs_shfl,
+					marker=markers[block_id],
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
+				)
+				acc_ax_blk.fill_between(
+					x = range(len(var_acc_tfs_shfl)),
+					y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+					y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					alpha = 0.2
+				)
+
+		###################################################################
+		
+		plt.xticks(xtick_pos, xtick_labels)
+		plt.title('Accuracy as a function of time for original and shuffled sequences', fontsize = 14)
+
+		box = acc_ax_blk.get_position()
+		acc_ax_blk.set_position([box.x0, box.y0 + box.height * 0.1,
+						 box.width, box.height * 0.9])
+
+		acc_ax_blk.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+					  fancybox=True, shadow=True, ncol=2,
+					  prop={'size': 16})
+
+		plt.xlabel('Iterations', fontsize=14)
+		plt.ylabel('Accuracy (%)', fontsize=14)
+
+		###################################################################
+
+		acc_ax_all = plt.subplot(3*n_Ts, 1, 3+3*T_id)
+
+		if acc_unif is not None:
+		## Plotting average performance for random sequences (from uniform distr)
+			var_acc_unif = np.mean([acc[:,0] for acc in acc_unif], axis=0)
+			var_acc_unif_std = np.std([acc[:,0] for acc in acc_unif], axis=0)
+			acc_ax_all.plot(
+					var_acc_unif,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_unif),
+					label='Uniform learning'
+			)
+
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_unif)),
+				y1 = var_acc_unif - var_scale*var_acc_unif_std,
+				y2 = var_acc_unif + var_scale*var_acc_unif_std,
+				color = hsv_to_rgb(hsv_unif),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for original ultrametric sequences
+
+		if T in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			acc_ax_all.plot(
+					var_acc_orig,
+					marker = '.',
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		if (T,1) in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			acc_ax_all.plot(
+					var_acc_orig,
+					marker = '.',
+					markersize=10,
+					ls = 'none',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for shuffled ultrametric sequences
+		if T in acc_temp_shuffled.keys():
+			for block_id, (block_sz, acc_data) in enumerate(acc_temp_shuffled[T].items()):
+				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
+					hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
+
+					var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+					var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+					
+					acc_ax_all.plot(
+						var_acc_shfl,
+						marker=markers[block_id],
+						markersize=10,
+						ls = 'none',
+						color = hsv_to_rgb(hsv_shfl),
+						label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+					)
+					acc_ax_all.fill_between(
+						x = range(len(var_acc_shfl)),
+						y1 = var_acc_shfl - var_scale*var_acc_shfl_std,
+						y2 = var_acc_shfl + var_scale*var_acc_shfl_std,
+						color = hsv_to_rgb(hsv_shfl),
+						alpha = 0.2
+					)
+
+		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			acc_ax_all.plot(
+				var_acc_tfs_orig,
+				marker = '.',
+				markersize=10,
+				ls = 'none',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			acc_ax_all.plot(
+				var_acc_tfs_orig,
+				marker = '.',
+				markersize=10,
+				ls = 'none',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, (block_sz, acc_data) in enumerate(acc_twofold_shuffled[T].items()):
+				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
+					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+					var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+					var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+					
+					acc_ax_all.plot(
+						var_acc_tfs_shfl,
+						marker=markers[block_id],
+						markersize=10,
+						ls = 'none',
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
+					)
+					acc_ax_all.fill_between(
+						x = range(len(var_acc_tfs_shfl)),
+						y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+						y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						alpha = 0.2
+					)
+
+		box = acc_ax_all.get_position()
+		acc_ax_all.set_position([box.x0, box.y0 + box.height * 0.1,
+						 box.width, box.height * 0.9])
+
+		acc_ax_all.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+					  fancybox=True, shadow=True, ncol=2,
+					  prop={'size': 16})
+
+		plt.xlabel('Iterations', fontsize=14)
+		plt.ylabel('Accuracy (%)', fontsize=14)
+
 	fig.tight_layout(pad=10.0)
-	plt.savefig('out_plots_acc.pdf', format='pdf')
+	plt.savefig('out_plots_acc.'+str(save_format), format=save_format)
+
+
+
+def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200, discard_last_tests=0, blocks_for_shared_plots=None, var_scale=0.3, save_format='pdf'):
+
+	n_Ts = len(T_list)
+	assert (n_Ts>0)
+
+	xtick_scale = 25
+	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	fig = plt.figure(1, figsize=(18,12*3*n_Ts))
+
+	for T_id, T in enumerate(T_list):
+		acc_ax = plt.subplot(3*n_Ts, 1, 1+3*T_id)
+
+		if acc_unif is not None:
+		## Plotting average performance for random sequences (from uniform distr)
+			var_acc_unif = np.mean([acc[:,0] for acc in acc_unif], axis=0)
+			var_acc_unif_std = np.std([acc[:,0] for acc in acc_unif], axis=0)
+			acc_ax.plot(
+					var_acc_unif,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_unif),
+					label='Uniform learning'
+			)
+
+			acc_ax.fill_between(
+				x = range(len(var_acc_unif)),
+				y1 = var_acc_unif - var_scale*var_acc_unif_std,
+				y2 = var_acc_unif + var_scale*var_acc_unif_std,
+				color = hsv_to_rgb(hsv_unif),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for original ultrametric sequences
+
+		if T in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			acc_ax.plot(
+					var_acc_orig,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		if (T,1) in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			acc_ax.plot(
+					var_acc_orig,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for shuffled ultrametric sequences
+		if T in acc_temp_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_temp_shuffled[T].keys())):
+				acc_data = acc_temp_shuffled[T][block_sz]
+				hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
+
+				var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+				var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+				
+				acc_ax.plot(
+					var_acc_shfl,
+					ls = '--',
+					color = hsv_to_rgb(hsv_shfl),
+					label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+				)
+				acc_ax.fill_between(
+					x = range(len(var_acc_shfl)),
+					y1 = var_acc_shfl - var_scale*var_acc_shfl_std,
+					y2 = var_acc_shfl + var_scale*var_acc_shfl_std,
+					color = hsv_to_rgb(hsv_shfl),
+					alpha = 0.2
+				)
+
+		plt.xticks(xtick_pos, xtick_labels)
+		plt.title('Accuracy as a function of time for original and shuffled sequences', fontsize = 14)
+
+		box = acc_ax.get_position()
+		acc_ax.set_position([box.x0, box.y0 + box.height * 0.1,
+						 box.width, box.height * 0.9])
+
+		acc_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+					  fancybox=True, shadow=True, ncol=2,
+					  prop={'size': 16})
+
+		plt.xlabel('Iterations', fontsize=14)
+		plt.ylabel('Accuracy (%)', fontsize=14)
+
+		acc_ax_blk = plt.subplot(3*n_Ts, 1, 2+3*T_id)
+
+		## Plotting average performance for split scenario (two-folds)
+		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			acc_ax_blk.plot(
+				var_acc_tfs_orig,
+				ls = 'solid',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_blk.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			acc_ax_blk.plot(
+				var_acc_tfs_orig,
+				ls = 'solid',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_blk.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
+				acc_data = acc_twofold_shuffled[T][block_sz]
+				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+				
+				acc_ax_blk.plot(
+					var_acc_tfs_shfl,
+					ls = '--',
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
+				)
+				acc_ax_blk.fill_between(
+					x = range(len(var_acc_tfs_shfl)),
+					y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+					y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					alpha = 0.2
+				)
+
+		###################################################################
+		
+		plt.xticks(xtick_pos, xtick_labels)
+		plt.title('Accuracy as a function of time for original and shuffled sequences', fontsize = 14)
+
+		box = acc_ax_blk.get_position()
+		acc_ax_blk.set_position([box.x0, box.y0 + box.height * 0.1,
+						 box.width, box.height * 0.9])
+
+		acc_ax_blk.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+					  fancybox=True, shadow=True, ncol=2,
+					  prop={'size': 16})
+
+		plt.xlabel('Iterations', fontsize=14)
+		plt.ylabel('Accuracy (%)', fontsize=14)
+
+		###################################################################
+
+		acc_ax_all = plt.subplot(3*n_Ts, 1, 3+3*T_id)
+
+		if acc_unif is not None:
+		## Plotting average performance for random sequences (from uniform distr)
+			var_acc_unif = np.mean([acc[:,0] for acc in acc_unif], axis=0)
+			var_acc_unif_std = np.std([acc[:,0] for acc in acc_unif], axis=0)
+			acc_ax_all.plot(
+					var_acc_unif,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_unif),
+					label='Uniform learning'
+			)
+
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_unif)),
+				y1 = var_acc_unif - var_scale*var_acc_unif_std,
+				y2 = var_acc_unif + var_scale*var_acc_unif_std,
+				color = hsv_to_rgb(hsv_unif),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for original ultrametric sequences
+
+		if T in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[T]], axis=0)
+			acc_ax_all.plot(
+					var_acc_orig,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		if (T,1) in acc_temp_orig.keys():
+			var_acc_orig = np.mean([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			var_acc_orig_std = np.std([acc[:,0] for acc in acc_temp_orig[(T,1)]], axis=0)
+			acc_ax_all.plot(
+					var_acc_orig,
+					ls = 'solid',
+					color = hsv_to_rgb(hsv_orig),
+					label='T={0:.2f} - Original sequence'.format(T)
+				)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_orig)),
+				y1 = var_acc_orig - var_scale*var_acc_orig_std,
+				y2 = var_acc_orig + var_scale*var_acc_orig_std,
+				color = hsv_to_rgb(hsv_orig),
+				alpha = 0.4
+			)
+
+		## Plotting average performance for shuffled ultrametric sequences
+		if T in acc_temp_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_temp_shuffled[T].keys())):
+				acc_data = acc_temp_shuffled[T][block_sz]
+				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
+					hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
+
+					var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+					var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+					
+					acc_ax_all.plot(
+						var_acc_shfl,
+						ls = '--',
+						color = hsv_to_rgb(hsv_shfl),
+						label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+					)
+					acc_ax_all.fill_between(
+						x = range(len(var_acc_shfl)),
+						y1 = var_acc_shfl - var_scale*var_acc_shfl_std,
+						y2 = var_acc_shfl + var_scale*var_acc_shfl_std,
+						color = hsv_to_rgb(hsv_shfl),
+						alpha = 0.2
+					)
+
+		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
+			acc_ax_all.plot(
+				var_acc_tfs_orig,
+				ls = '--',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_orig is not None and (T,1) in acc_twofold_orig.keys():
+			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[(T,1)]], axis=0)
+			acc_ax_all.plot(
+				var_acc_tfs_orig,
+				ls = 'solid',
+				color = hsv_to_rgb(hsv_tfs_orig),
+				label='T={0:.2f} - Twofold split original sequence'.format(T)
+			)
+			acc_ax_all.fill_between(
+				x = range(len(var_acc_tfs_orig)),
+				y1 = var_acc_tfs_orig - var_scale*var_acc_tfs_orig_std,
+				y2 = var_acc_tfs_orig + var_scale*var_acc_tfs_orig_std,
+				color = hsv_to_rgb(hsv_tfs_orig),
+				alpha = 0.4
+			)
+
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
+				acc_data = acc_twofold_shuffled[T][block_sz]
+				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
+					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+					var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+					var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+					
+					acc_ax_all.plot(
+						var_acc_tfs_shfl,
+						ls = '--',
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
+					)
+					acc_ax_all.fill_between(
+						x = range(len(var_acc_tfs_shfl)),
+						y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+						y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						alpha = 0.2
+					)
+
+		box = acc_ax_all.get_position()
+		acc_ax_all.set_position([box.x0, box.y0 + box.height * 0.1,
+						 box.width, box.height * 0.9])
+
+		acc_ax_all.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+					  fancybox=True, shadow=True, ncol=2,
+					  prop={'size': 16})
+
+		plt.xlabel('Iterations', fontsize=14)
+		plt.ylabel('Accuracy (%)', fontsize=14)
+
+	fig.tight_layout(pad=10.0)
+	plt.savefig('out_plots_acc.'+str(save_format), format=save_format)
 
 
 def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 	nspl = len(acc_orig)
 	seql = len(lbl_seq)
+	t_explr = None
+	n_labels = len(set(lbl_seq))
 
 	spl_lbl_seq = [lbl_seq[k*(seql//nspl)] for k in range(nspl)]
 	assert(len(spl_lbl_seq) == len(acc_orig) == len(acc_unif))
 
 	obs_lbl_set = set()
 	nobs_seq = []
-	for lbl in spl_lbl_seq:
+	for itr_id, lbl in enumerate(spl_lbl_seq):
 		obs_lbl_set.add(lbl)
 		nobs_seq.append(len(obs_lbl_set))
+		if t_explr is None and len(obs_lbl_set) == n_labels:
+			t_explr = itr_id
 
 	cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(nobs_seq)
 
@@ -997,4 +1544,4 @@ def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 			label='Forgetting score as a fct of #iteration'
 		)
 		
-	return cf
+	return cf, t_explr
