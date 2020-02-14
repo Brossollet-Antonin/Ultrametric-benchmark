@@ -20,6 +20,8 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import hsv_to_rgb
 from tqdm.notebook import tqdm
 
+from numba import jit
+
 
 hsv_unif = (0, 0, 0.15)
 hsv_orig = (0, 0.9, 0.6)
@@ -340,7 +342,7 @@ class ResultSet_1to1:
 		if not load_atc:
 			print("load_atc set to False. Autocorrelations not loaded.")
 
-
+	@jit(nopython=True, parallel=True)
 	def get_atc(self, T_list, n_tests, out_filename, w_size=10000, n_omits=30):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
@@ -655,8 +657,7 @@ class ResultSet_1toM:
 
 						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
 							self.train_labels_shfl[T][block_sz].append(pickle.load(file))
-						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
-							self.train_labels_shfl[T][block_sz].append(pickle.load(file))
+
 						self.eval_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
 						self.var_acc_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/var_shuffle_accuracy.npy'))
 						self.var_pred_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
@@ -688,6 +689,7 @@ class ResultSet_1toM:
 			print("load_atc set to False. Autocorrelations not loaded.")
 
 
+	@jit(nopython=True)
 	def get_atc(self, T_list, n_tests, out_filename, w_size=10000, n_omits=30):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
@@ -706,9 +708,9 @@ class ResultSet_1toM:
 			
 			print("Computing autocorrelation on {0:d} sequences".format(len(seq_list)))
 			
-			for seq_id, seq in tqdm(enumerate(seq_list), desc='Sequence #'):
+			for seq_id, seq in enumerate(seq_list):
 				print("   Original sequence {0:d}...".format(seq_id))
-				for lbl_id in tqdm(range(tree_l), desc='Leaf #'):
+				for lbl_id in range(tree_l):
 					locs_orig = np.array([j for j in range(len(seq)) if seq[j]==lbl_id])
 					nlocs = len(locs_orig)
 					locs_orig = locs_orig.reshape((nlocs, 1))
@@ -718,12 +720,11 @@ class ResultSet_1toM:
 					iu_ids = np.triu_indices(nlocs)
 					iu_len = len(iu_ids[0])
 					diffs = locsd_mat_orig[iu_ids].reshape((iu_len,1))
-					hlocs_orig = hlocs_orig + np.histogram(
+					hlocs_stat_orig = hlocs_stat_orig + np.histogram(
 						diffs,
 						bins=w_size,
 						range=(0,w_size)
-					)
-					hlocs_stat_orig = hlocs_stat_orig + hlocs_orig[0]/tree_l
+					)[0]/tree_l
 
 				print("   ...done")
 
@@ -741,6 +742,8 @@ class ResultSet_1toM:
 				label='T={0:.2f} - Original sequence'.format(T)
 			) 
 			
+			pdb.set_trace()
+
 			hlocs_stat_shfl_list = []
 			for nfig, block_sz in enumerate(self.blocks_sizes):
 				print("   Block size {0:d}".format(block_sz))
@@ -772,7 +775,7 @@ class ResultSet_1toM:
 				
 				if hlocs_stat_shfl[0] > 0:
 					hlocs_stat_shfl = hlocs_stat_shfl / hlocs_stat_shfl[0]
-				  
+				
 				atc_ax.loglog(
 					bins_atc,
 					hlocs_stat_shfl[::2],
@@ -1189,6 +1192,8 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 	n_Ts = len(T_list)
 	assert (n_Ts>0)
 
+	splt_sz = {0.4: 1600, 0.5: 160}
+
 	xtick_scale = 25
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
@@ -1225,7 +1230,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 					var_acc_orig,
 					ls = 'solid',
 					color = hsv_to_rgb(hsv_orig),
-					label='T={0:.2f} - Original sequence'.format(T)
+					label='Ultrametric sequence, T={0:.2f} - No shuffling'.format(T)
 				)
 			acc_ax.fill_between(
 				x = range(len(var_acc_orig)),
@@ -1242,7 +1247,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 					var_acc_orig,
 					ls = 'solid',
 					color = hsv_to_rgb(hsv_orig),
-					label='T={0:.2f} - Original sequence'.format(T)
+					label='Ultrametric sequence, T={0:.2f} - No shuffling'.format(T)
 				)
 			acc_ax.fill_between(
 				x = range(len(var_acc_orig)),
@@ -1265,7 +1270,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 					var_acc_shfl,
 					ls = '--',
 					color = hsv_to_rgb(hsv_shfl),
-					label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+					label='Ultrametric sequence, T={0:.2f} - Shuffled w/ block size {1:d}'.format(T, block_sz)
 				)
 				acc_ax.fill_between(
 					x = range(len(var_acc_shfl)),
@@ -1292,6 +1297,28 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		acc_ax_blk = plt.subplot(3*n_Ts, 1, 2+3*T_id)
 
 		## Plotting average performance for split scenario (two-folds)
+
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
+				acc_data = acc_twofold_shuffled[T][block_sz]
+				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+				
+				acc_ax_blk.plot(
+					var_acc_tfs_shfl,
+					ls = '--',
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					label='Random split sequence - Shuffled w/ block size {0:d}'.format(block_sz)
+				)
+				acc_ax_blk.fill_between(
+					x = range(len(var_acc_tfs_shfl)),
+					y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+					y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+					color = hsv_to_rgb(hsv_tfs_shfl),
+					alpha = 0.2
+				)
+
 		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
 			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
 			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
@@ -1299,7 +1326,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 				var_acc_tfs_orig,
 				ls = 'solid',
 				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
+				label='Random split sequence, split size {0:d} - No shuffling'.format(splt_sz[T])
 			)
 			acc_ax_blk.fill_between(
 				x = range(len(var_acc_tfs_orig)),
@@ -1316,7 +1343,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 				var_acc_tfs_orig,
 				ls = 'solid',
 				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
+				label='Random split sequence, split size {0:d} - No shuffling'.format(splt_sz[T])
 			)
 			acc_ax_blk.fill_between(
 				x = range(len(var_acc_tfs_orig)),
@@ -1325,27 +1352,6 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 				color = hsv_to_rgb(hsv_tfs_orig),
 				alpha = 0.4
 			)
-
-		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
-			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
-				acc_data = acc_twofold_shuffled[T][block_sz]
-				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
-				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
-				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
-				
-				acc_ax_blk.plot(
-					var_acc_tfs_shfl,
-					ls = '--',
-					color = hsv_to_rgb(hsv_tfs_shfl),
-					label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
-				)
-				acc_ax_blk.fill_between(
-					x = range(len(var_acc_tfs_shfl)),
-					y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
-					y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
-					color = hsv_to_rgb(hsv_tfs_shfl),
-					alpha = 0.2
-				)
 
 		###################################################################
 		
@@ -1395,7 +1401,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 					var_acc_orig,
 					ls = 'solid',
 					color = hsv_to_rgb(hsv_orig),
-					label='T={0:.2f} - Original sequence'.format(T)
+					label='Ultrametric sequence, T={0:.2f} - No shuffling'.format(T)
 				)
 			acc_ax_all.fill_between(
 				x = range(len(var_acc_orig)),
@@ -1412,7 +1418,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 					var_acc_orig,
 					ls = 'solid',
 					color = hsv_to_rgb(hsv_orig),
-					label='T={0:.2f} - Original sequence'.format(T)
+					label='Ultrametric sequence, T={0:.2f} - No shuffling'.format(T)
 				)
 			acc_ax_all.fill_between(
 				x = range(len(var_acc_orig)),
@@ -1436,7 +1442,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 						var_acc_shfl,
 						ls = '--',
 						color = hsv_to_rgb(hsv_shfl),
-						label='T={0:.2f}, blocksz={1:d} - Shuffled sequence'.format(T, block_sz)
+						label='Ultrametric sequence, T={0:.2f} - Shuffled w/ block size {1:d}'.format(T, block_sz)
 					)
 					acc_ax_all.fill_between(
 						x = range(len(var_acc_shfl)),
@@ -1446,14 +1452,36 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 						alpha = 0.2
 					)
 
+		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
+			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
+				acc_data = acc_twofold_shuffled[T][block_sz]
+				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
+					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+					var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
+					var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
+					
+					acc_ax_all.plot(
+						var_acc_tfs_shfl,
+						ls = '--',
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						label='Random split sequence - Shuffled w/ block size {0:d}'.format(block_sz)
+					)
+					acc_ax_all.fill_between(
+						x = range(len(var_acc_tfs_shfl)),
+						y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
+						y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
+						color = hsv_to_rgb(hsv_tfs_shfl),
+						alpha = 0.2
+					)
+
 		if acc_twofold_orig is not None and T in acc_twofold_orig.keys():
 			var_acc_tfs_orig = np.mean([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
 			var_acc_tfs_orig_std = np.std([acc[:,0] for acc in acc_twofold_orig[T]], axis=0)
 			acc_ax_all.plot(
 				var_acc_tfs_orig,
-				ls = '--',
+				ls = 'solid',
 				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
+				label='Random split sequence, split size {0:d} - No shuffling'.format(splt_sz[T])
 			)
 			acc_ax_all.fill_between(
 				x = range(len(var_acc_tfs_orig)),
@@ -1470,7 +1498,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 				var_acc_tfs_orig,
 				ls = 'solid',
 				color = hsv_to_rgb(hsv_tfs_orig),
-				label='T={0:.2f} - Twofold split original sequence'.format(T)
+				label='Random split sequence, split size {0:d} - No shuffling'.format(splt_sz[T])
 			)
 			acc_ax_all.fill_between(
 				x = range(len(var_acc_tfs_orig)),
@@ -1479,28 +1507,9 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 				color = hsv_to_rgb(hsv_tfs_orig),
 				alpha = 0.4
 			)
-
-		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
-			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
-				acc_data = acc_twofold_shuffled[T][block_sz]
-				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
-					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
-					var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
-					var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
-					
-					acc_ax_all.plot(
-						var_acc_tfs_shfl,
-						ls = '--',
-						color = hsv_to_rgb(hsv_tfs_shfl),
-						label='T={0:.2f}, blocksz={1:d} - Twofold split shuffled sequence'.format(T, block_sz)
-					)
-					acc_ax_all.fill_between(
-						x = range(len(var_acc_tfs_shfl)),
-						y1 = var_acc_tfs_shfl - var_scale*var_acc_tfs_shfl_std,
-						y2 = var_acc_tfs_shfl + var_scale*var_acc_tfs_shfl_std,
-						color = hsv_to_rgb(hsv_tfs_shfl),
-						alpha = 0.2
-					)
+			
+		plt.xticks(xtick_pos, xtick_labels)
+		plt.title('Accuracy as a function of time for original and shuffled sequences', fontsize = 14)
 
 		box = acc_ax_all.get_position()
 		acc_ax_all.set_position([box.x0, box.y0 + box.height * 0.1,

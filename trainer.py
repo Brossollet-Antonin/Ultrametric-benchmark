@@ -77,9 +77,10 @@ class Trainer:
         self.tree_branching = dataset.branching
         self.proba_transition = proba_transition
         self.dynamic_T_thr = dynamic_T_thr
+        self.n_classes = self.tree_branching**self.tree_depth
 
         if self.training_type=="ladder_blocks1" or self.training_type=="ladder_blocks2":
-            self.split_block_lengths = [k // n_classes for k in split_length_list]
+            self.split_block_lengths = split_length_list
         if self.training_type=="random_blocks1" or self.training_type=="random_blocks2" or self.training_type=="random_blocks2_2freq":
             self.split_block_lengths = split_length_list
 

@@ -8,6 +8,10 @@ Created on Tue Jan 14 17:39:14 2020
 import numpy as np
 from copy import deepcopy
 import random
+import os
+import pickle
+import scipy.io
+import pdb
 
 def verbose(message, args, lvl=1):
 	if args.verbose >= lvl:
@@ -71,3 +75,24 @@ def simulate_sequence(T_list, seq_length=200000, tree_depth=3, tree_branching=2,
         plt.ylim((0, tree_branching**tree_depth))
         ttl = 'History of labels in the original training sequence - T='+str(T)
         plt.title(ttl)
+
+#######################################
+
+def generate_mat_sequences(rootdir, outroot, block_sizes):
+    for subdir_fp, dirs, files in os.walk(rootdir):
+        if (subdir_fp == rootdir):
+            continue
+        os.chdir(subdir_fp)
+        subdir = subdir_fp.split('/')[-1]
+
+        # Translate the original sequence
+        if 'train_labels_orig.pickle' in files:
+            lbl_seq = pickle.load(open('train_labels_orig.pickle', "rb"))
+            scipy.io.savemat(outroot+'/lblseq_orig_'+subdir, mdict={'lbl_seq': lbl_seq})
+
+        # Translate all shuffled sequences found
+        for block_sz in block_sizes:
+            shfl_subdir = 'shuffle_'+str(block_sz)
+            if shfl_subdir in dirs:
+                lbl_seq = pickle.load(open(shfl_subdir+'/train_labels_shfl.pickle', "rb"))
+                scipy.io.savemat(outroot+'/lblseq_shfl'+str(block_sz)+'_'+subdir, mdict={'lbl_seq': lbl_seq})
