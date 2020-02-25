@@ -516,7 +516,7 @@ class ResultSet_1toM:
 		self.datapaths = datapaths
 		self.block_sizes = set()
 		
-	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True):
+	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True, load_htmp=False):
 		print("\nLoading analytics...")
 
 		self.train_data_orig = {}
@@ -617,6 +617,7 @@ class ResultSet_1toM:
 			self.var_acc_shfl[T] = {}
 			self.var_pred_orig[T] = []
 			self.var_pred_shfl[T] = {}
+			self.lbl_htmp_shfl[T] = {}
 
 			if load_data:
 				self.train_data_orig[T] = []
@@ -642,6 +643,11 @@ class ResultSet_1toM:
 				self.var_acc_orig[T].append(np.load('var_original_accuracy.npy'))
 				self.var_pred_orig[T].append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
 
+				if load_htmp:
+					with open('labels_heatmap_shfl.pickle', 'rb') as file:
+						self.lbl_htmp_orig[T].append(pickle.load(file))
+
+
 				if load_shuffle:
 					if type(block_sizes) is int:
 						block_sizes = [block_sizes]
@@ -657,6 +663,10 @@ class ResultSet_1toM:
 
 						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
 							self.train_labels_shfl[T][block_sz].append(pickle.load(file))
+
+						if load_htmp:
+							with open('shuffle_'+str(block_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
+								self.lbl_htmp_shfl[T][block_sz].append(pickle.load(file))
 
 						self.eval_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
 						self.var_acc_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/var_shuffle_accuracy.npy'))
@@ -804,33 +814,46 @@ class ResultSet_1toM:
 			return hlocs_stat_orig, hlocs_stat_shfl_list
 
 
-	def lbl_history(self, T_list):
+	def lbl_history(self, T_list, shuffled_blocksz=None, strides=None):
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
 		t_explr = None
 
 		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
+		lbls_axes = []
 
 		for T_id, T in enumerate(T_list):
-			n_labels = len(set(self.train_labels_orig[T][0]))
+			if shuffled_blocksz is None:
+				occur_id = random.randint(0, len(self.train_labels_orig[T])-1)
+				seq = self.train_labels_orig[T][occur_id]
+			else:
+				occur_id = random.randint(0, len(self.train_labels_shfl[T][shuffled_blocksz])-1)
+				seq = self.train_labels_shfl[T][shuffled_blocksz][occur_id]
+
+			n_labels = len(set(seq))
 			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
-			lbls_ax.plot(self.train_labels_orig[T][0])
+			lbls_axes.append(lbls_ax)
+			lbls_ax.plot(seq)
 
 			obs_lbl_set = set()
 			nobs_seq = []
-			for itr_id, lbl in enumerate(self.train_labels_orig[T][0]):
+			for itr_id, lbl in enumerate(seq):
 				obs_lbl_set.add(lbl)
 				nobs_seq.append(len(obs_lbl_set))
 				if t_explr is None and len(obs_lbl_set) == n_labels:
 					t_explr = itr_id
 
 			lbls_ax.plot(nobs_seq)
+			if strides is not None:
+				for stride in strides:
+					lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
 
 			ttl = 'History of labels in the original training sequence - T='+str(T)
 			if t_explr:
 				ttl = ttl+' - tau_asym=' + str(t_explr)
 			plt.title(ttl)
 
+		return lbls_fig, lbls_axes
 
 def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200, discard_last_tests=0, blocks_for_shared_plots=None, var_scale=0.3, save_format='pdf'):
 
@@ -1187,20 +1210,23 @@ def get_acc(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold
 
 
 
-def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200, discard_last_tests=0, blocks_for_shared_plots=None, var_scale=0.3, save_format='pdf'):
+def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, acc_twofold_orig=None, acc_twofold_shuffled=None, seq_length=200000, n_tests=200, plot_window=None, blocks_for_shared_plots=None, var_scale=0.3, save_format='pdf'):
 
 	n_Ts = len(T_list)
 	assert (n_Ts>0)
 
-	splt_sz = {0.4: 1600, 0.5: 160}
+	splt_sz = {0.0: 12500, 0.4: 1600, 0.5: 160}
 
-	xtick_scale = 25
+	n_ticks = 10
+	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 	fig = plt.figure(1, figsize=(18,12*3*n_Ts))
+	axes = []
 
 	for T_id, T in enumerate(T_list):
 		acc_ax = plt.subplot(3*n_Ts, 1, 1+3*T_id)
+		axes.append(acc_ax)
 
 		if acc_unif is not None:
 		## Plotting average performance for random sequences (from uniform distr)
@@ -1294,7 +1320,11 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		plt.xlabel('Iterations', fontsize=14)
 		plt.ylabel('Accuracy (%)', fontsize=14)
 
+		if plot_window is not None:
+			plt.xlim(plot_window[0], plot_window[1])
+
 		acc_ax_blk = plt.subplot(3*n_Ts, 1, 2+3*T_id)
+		axes.append(acc_ax_blk)
 
 		## Plotting average performance for split scenario (two-folds)
 
@@ -1369,9 +1399,13 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		plt.xlabel('Iterations', fontsize=14)
 		plt.ylabel('Accuracy (%)', fontsize=14)
 
+		if plot_window is not None:
+			plt.xlim(plot_window[0], plot_window[1])
+
 		###################################################################
 
 		acc_ax_all = plt.subplot(3*n_Ts, 1, 3+3*T_id)
+		axes.append(acc_ax_all)
 
 		if acc_unif is not None:
 		## Plotting average performance for random sequences (from uniform distr)
@@ -1522,8 +1556,13 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		plt.xlabel('Iterations', fontsize=14)
 		plt.ylabel('Accuracy (%)', fontsize=14)
 
+		if plot_window is not None:
+			plt.xlim(plot_window[0], plot_window[1])
+
 	fig.tight_layout(pad=10.0)
 	plt.savefig('out_plots_acc.'+str(save_format), format=save_format)
+
+	return fig, axes
 
 
 def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):

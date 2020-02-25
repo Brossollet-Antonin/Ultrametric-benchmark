@@ -115,9 +115,65 @@ class SequenceGenerator:
 
 
 
+class RandSplit_SequenceGenerator(SequenceGenerator):
+    def __init__(self, n_classes, timescales): 
+        super().__init__()
+        self.n_classes = n_classes
+        self.timescales = timescales
+
+    def generate_labels(self, sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching,
+        minimum_classcount = 0, rate_law = 'power', force_switch=True, dynamic_T=0):
+        # The following condition is in fact not that necessary to repsect if the energy barrier increase linearly
+        #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
+        depth = len(self.timescales)
+        self.timescales.sort()
+
+        assert(self.n_classes%(2^(depth-1))==0)
+        smaller_grouping = self.n_classes/(2^(depth-1))
+        n_splits = sequence_length/self.timescales[0]
+
+        train_sequences = [[]]
+        for splt_id in range(n_splits):
+            cl_ids = random.randint(0, smaller_grouping-1, size=self.timescales[0])
+            train_sequences[0].extend([cl_ids[k] for k in range(self.timescales[0])])
+            train_sequences[0] = np.array(train_sequences[0])
+
+        for ts_id, ts in enumerate(self.timescales[1:]):
+            n_splits = sequence_length//ts_id
+            train_sequences.append([])
+            for splt_id in range(n_splits):
+                cl_ids = random.randint(0, 1, size=ts)
+                train_sequences[1+ts_id].extend([(self.n_classes//(2^(1+ts_id)))*cl_ids[k] for k in range(ts)])
+                train_sequences[1+ts_id] = np.array(train_sequences[1+ts_id])
+                
+        self.train_sequence = np.sum(np.stack(train_sequences, axis=1), axis=1)
+
+
+
 class TempCorr_SequenceGenerator(SequenceGenerator):
     def __init__(self): 
         super().__init__()
+
+    def set_rates(self, step, T, tree_depth, branching, rate_law='power', force_switch=True):
+        rates = []
+        R = np.exp(- step/T)
+        for k in range(1, tree_depth+1):
+            if rate_law == 'power':
+                a = R**k
+            elif rate_law == 'exp':
+                a = np.exp(-step**k/T)
+            elif rate_law == 'log':
+                a = np.exp(-np.log(10*k*step)/T)
+            else:
+                NotImplementedError()
+            eps = a/(branching**(k-1))
+            rates += (branching**(k-1))*[eps]
+        if force_switch:
+            rates.insert(0,0) # CAUTION: in this setting, alternation is forced, ie the sequence must change state from one example to the next
+        else:
+            rates.insert(0,1-sum(rates))
+        rates = np.array(rates)
+        self.rates = rates*(1/sum(rates))
 
     def generate_labels(self, sequence_first, sequence_length, energy_step, T, tree_depth, tree_branching,
         minimum_classcount = 0, rate_law = 'power', force_switch=True, dynamic_T=0):
@@ -125,7 +181,7 @@ class TempCorr_SequenceGenerator(SequenceGenerator):
         #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
         sequence = [sequence_first]
         
-        rates = setting_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
+        rates = self.set_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
         print('Transition rates vector :', rates)
         seq_id = 0
 
@@ -150,19 +206,21 @@ class Uniform_SequenceGenerator(SequenceGenerator):
         self.self_transition = self_transition
         self.tree_branching = tree_branching
         self.tree_depth = tree_depth
-        if self_transition:
+        self.set_rates()
+
+    def set_rates(self):
+        if self.self_transition:
             self.rates = [proba_transition]*(tree_branching**tree_depth - 1)
+            self.rates.insert(0, 1-sum(self.rates))
         else:
             self.rates = [proba_transition]*(tree_branching**tree_depth - 2)
+            self.rates.insert(0, 1-sum(self.rates))
+            self.rates.insert(0,0)
 
     def generate_labels(self, sequence_first, sequence_length):
         sequence = [sequence_first]
         assert(sum(self.rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
-        if self.self_transition:
-            self.rates.insert(0, 1-sum(self.rates))
-        else:
-            self.rates.insert(0, 1-sum(self.rates))
-            self.rates.insert(0,0)
+
         print('Transition rates vector :', self.rates)
         for i in range(sequence_length):
             sequence.append(next_value(sequence, self.rates, self.tree_depth, self.tree_branching))

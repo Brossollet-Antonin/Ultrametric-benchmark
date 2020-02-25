@@ -76,6 +76,24 @@ def simulate_sequence(T_list, seq_length=200000, tree_depth=3, tree_branching=2,
         ttl = 'History of labels in the original training sequence - T='+str(T)
         plt.title(ttl)
 
+
+def get_lbl_distr(shuffled_sequence, min_range, max_range):
+    """
+    Inputs:
+    shuffled_sequence: list
+    min_range: int
+    max_range: int
+
+    Returns:
+    histogram of the labels distribution from min_range to max_range
+    """
+    min_lbl = min(shuffled_sequence)
+    max_lbl = max(shuffled_sequence)
+    return np.histogram(
+        shuffled_sequence[min_range:max_range],
+        range = (min_lbl, max_lbl)
+        )
+
 #######################################
 
 def generate_mat_sequences(rootdir, outroot, block_sizes):

@@ -58,8 +58,8 @@ class Trainer:
 
         self.dataset = dataset
         self.network = network
-        self.network_orig = network
-        self.network_shfl = network
+        self.network_orig = deepcopy(network)
+        self.network_shfl = deepcopy(network)
         self.training_type = training_type
 
         self.batch_sz = batch_sz

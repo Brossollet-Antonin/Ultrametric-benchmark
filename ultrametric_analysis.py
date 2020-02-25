@@ -183,7 +183,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
 
     rs.acc_orig = np.array([[rs.eval_orig[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
     nbr_test_samples = trainer.dataset.class_sz_test*(trainer.dataset.branching**trainer.dataset.depth)    # number of test examples
-
+    rs.lbls_htmp_orig = np.zeros((args.test_nbr, trainer.n_classes))
 
     # Counting the number of correct responses per classes before the training
     classes_correct = np.zeros(len(trainer.dataset.test_data))
@@ -213,6 +213,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
         verbose('...done\nComputing performance for original sequence...', args, 2)
 
         rs.eval_orig = trainer.evaluate_hierarchical()
+        rs.lbls_htmp_orig[test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
 
         verbose('...done\n', args, 2)
 
@@ -227,10 +228,12 @@ def ultrametric_analysis(trainer, args, block_sizes):
         rs.classes_pred_orig = np.append(rs.classes_pred_orig, classes_correct, axis=0)
 
         verbose('Accuracy of the network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, original_accuracy_current[0][0]), args)
+        verbose(rs.train_labels_orig[:training_range[1]], args)
 
     trainer.network = deepcopy(trainer.network_shfl)
     eval_shfl = trainer.evaluate_hierarchical()
     acc_shfl = np.array([[eval_shfl[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, the first dim of diagnos_shuffle contains the accuracies at different levels
+    rs.lbls_htmp_shfl = {}
 
     # Counting the number of correct responses per classes before the training
     classes_correct = np.zeros(len(trainer.dataset.test_data))
@@ -250,18 +253,22 @@ def ultrametric_analysis(trainer, args, block_sizes):
         # trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
         for block_size_shuffle in block_sizes:
 
+            rs.lbls_htmp_shfl[block_size_shuffle] = np.zeros((args.test_nbr, trainer.n_classes))
+
             trainer.network = deepcopy(trainer.network_shfl)
             
             for test_id in range(args.test_nbr):
                 training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)
                 shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])
 
-                trainer.network = deepcopy(trainer.network_shfl)
-                trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=(0, training_range[1]))
+                #trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
+                trainer.train(mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
                 rs.eval_shfl[block_size_shuffle] = trainer.evaluate_hierarchical()
-                shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accur  acy
+                shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accuracy
                 shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (test_id+1)*args.test_stride]])
                 rs.acc_shfl[block_size_shuffle] = np.append(rs.acc_shfl[block_size_shuffle], shuffle_accuracy_current, axis=0)
+
+                rs.lbls_htmp_shfl[block_size_shuffle][test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
 
                 classes_correct = np.zeros(len(trainer.dataset.test_data))
                 for k in range(nbr_test_samples):
@@ -270,11 +277,13 @@ def ultrametric_analysis(trainer, args, block_sizes):
                 rs.classes_pred_shfl[block_size_shuffle] = np.append(rs.classes_pred_shfl[block_size_shuffle], classes_correct, axis=0)
 
                 verbose('Accuracy of the shuffle network (block size {0:d}) on the {1:d} test images: {2:.2f}%'.format(block_size_shuffle, nbr_test_samples, shuffle_accuracy_current[0][0]), args)
+                verbose(shuffled_sequence[:training_range[1]], args)
 
             rs.train_labels_shfl[block_size_shuffle] = shuffled_sequence
 
     rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
     for k in rs.train_labels_orig:
         rs.classes_count[k] += 1
+
 
     return rs
