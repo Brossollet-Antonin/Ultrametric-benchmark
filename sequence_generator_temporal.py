@@ -181,22 +181,22 @@ class TempCorr_SequenceGenerator(SequenceGenerator):
         #assert (energy_step >= T), 'Unstable stochastic process, Energy_step should be greater than Temperature'
         sequence = [sequence_first]
         
-        rates = self.set_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
-        print('Transition rates vector :', rates)
+        self.set_rates(energy_step, T, tree_depth, tree_branching, rate_law, force_switch)
+        print('Transition rates vector :', self.rates)
         seq_id = 0
 
         class_counter = np.array([0 for i in range(2**tree_depth)])
         minvisit_not_satisfied = minimum_classcount
 
         while (seq_id < sequence_length) or minvisit_not_satisfied:
-            next_value_seq = next_value(sequence, rates, tree_depth, tree_branching)
+            next_value_seq = next_value(sequence, self.rates, tree_depth, tree_branching)
             sequence.append(next_value_seq)
             seq_id += 1
             if minimum_classcount:
                 class_counter[next_value_seq] += 1
                 minvisit_not_satisfied = ((class_counter < epoch*5000).any())
 
-        return (sequence,rates)
+        return (sequence, self.rates)
 
 
 
