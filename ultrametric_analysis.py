@@ -261,7 +261,8 @@ def ultrametric_analysis(trainer, args, block_sizes):
                 shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])
 
                 #trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
-                trainer.train(mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range)
+                trainer.network = deepcopy(trainer.network_shfl)
+                trainer.train(mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=(0, training_range[1]))
                 rs.eval_shfl[block_size_shuffle] = trainer.evaluate_hierarchical()
                 shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accuracy
                 shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (test_id+1)*args.test_stride]])
