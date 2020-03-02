@@ -206,6 +206,8 @@ class ResultSet_1to1:
 		self.var_acc_shfl = {}
 		self.var_pred_orig = {}
 		self.var_pred_shfl = {}
+		self.lbl_htmp_orig = {}
+		self.lbl_htmp_shfl = {}
 	
 		self.help = {}
 
@@ -533,6 +535,8 @@ class ResultSet_1toM:
 		self.var_acc_shfl = {}
 		self.var_pred_orig = {}
 		self.var_pred_shfl = {}
+		self.lbl_htmp_orig = {}
+		self.lbl_htmp_shfl = {}
 	
 		self.help = {}
 

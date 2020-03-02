@@ -183,10 +183,13 @@ class Trainer:
             n_classes = self.dataset.branching**self.dataset.depth
 
             n_splits = self.sequence_length // self.split_block_lengths[0]
+            seq_rest = self.sequence_length % self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 train_sequence.extend([splt_id%n_classes for k in range(self.split_block_lengths[0])])
+            if seq_rest > 0:    
+                train_sequence.extend([n_splits%n_classes for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
 
@@ -195,11 +198,15 @@ class Trainer:
             n_classes = self.dataset.branching**self.dataset.depth
 
             n_splits = self.sequence_length // self.split_block_lengths[0]
+            seq_rest = self.sequence_length % self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 rand_splt_id = random.randint(0, n_classes-1)
                 train_sequence.extend([rand_splt_id for k in range(self.split_block_lengths[0])])
+            if seq_rest > 0:
+                rand_splt_id = random.randint(0, n_classes-1)  
+                train_sequence.extend([n_splits%n_classes for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
 
@@ -208,15 +215,19 @@ class Trainer:
             n_classes = self.dataset.branching**self.dataset.depth
 
             n_splits = self.sequence_length // self.split_block_lengths[0]
+            seq_rest = self.sequence_length % self.split_block_lengths[0]
 
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 # Initiate transition rates based on splitID
                 lbls = [(2*splt_id)%n_classes, (2*splt_id+1)%n_classes]
-
                 cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
                 train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
+            if seq_rest > 0:
+                lbls = [(2*n_splits)%n_classes, (2*n_splits+1)%n_classes] 
+                cl_ids = np.random.randint(0, 2, size=seq_rest)
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
 
@@ -225,15 +236,20 @@ class Trainer:
             n_classes = self.dataset.branching**self.dataset.depth
 
             n_splits = self.sequence_length // self.split_block_lengths[0]
+            seq_rest = self.sequence_length % self.split_block_lengths[0]
             train_sequence = []
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 # Initiate transition rates based on splitID
                 rand_splt_id = random.randint(0, (n_classes//2)-1)
                 lbls = [(2*rand_splt_id)%n_classes, (2*rand_splt_id+1)%n_classes]
-
                 cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
                 train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
+            if seq_rest > 0:
+                rand_splt_id = random.randint(0, (n_classes//2)-1)
+                lbls = [(2*rand_splt_id)%n_classes, (2*rand_splt_id+1)%n_classes]
+                cl_ids = np.random.randint(0, 2, size=seq_rest)
+                train_sequence.extend([lbls[cl_ids[k]] for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
 
@@ -242,7 +258,10 @@ class Trainer:
             n_classes = self.dataset.branching**(self.dataset.depth-1)
 
             n_long_splits = self.sequence_length // self.split_block_lengths[1]
+            seq_rest_long = self.sequence_length % self.split_block_lengths[1]
             n_short_splits = self.split_block_lengths[1] // self.split_block_lengths[0]
+            n_shorts_splits_in_rest = self.split_block_lengths[1] // seq_rest_long
+            seq_rest_short = self.split_block_lengths[1] % seq_rest_long
             train_sequence = []
 
             for l_splt_id in range(n_long_splits):
@@ -430,6 +449,7 @@ class Trainer:
             List of the samples shuffled by blocks.
 
         """    
+        n_extra_labels = len(self.train_sequence)%block_size
         block_indices = list(range(len(self.train_sequence[:end])//block_size))
         shuffle(block_indices)
         block_indices += list(range(len(self.train_sequence[:end])//block_size, len(self.train_sequence)//block_size))     #add the rest of the data unshuffled to have everything work smoothly with older code. Not optimal but simpler
@@ -443,6 +463,8 @@ class Trainer:
         )
 
         shuffled_labels = [self.train_sequence[k] for k in idx_shuffled]
+        shuffled_labels += self.train_sequence[:-n_extra_labels]
+
 
         return shuffled_labels
 

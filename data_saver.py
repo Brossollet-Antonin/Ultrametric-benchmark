@@ -90,7 +90,7 @@ def save_results(rs, save_root):
         json.dump(rs.parameters, outfile)
 
     with open(save_path + "/labels_heatmap_orig.pickle", 'wb') as outfile:
-        pickle.dump(rs.lbls_htmp_orig)
+        pickle.dump(rs.lbls_htmp_orig, outfile)
 
     np.save(save_path + "/evaluation_original", rs.eval_orig)
     np.save(save_path+'/var_original_classes_prediction', rs.classes_pred_orig)

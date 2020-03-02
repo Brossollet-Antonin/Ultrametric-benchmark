@@ -11,7 +11,7 @@ import random
 import numpy as np
 import torch
 
-from local_tools import verbose
+from local_tools import verbose, get_lbl_distr
 from trainer import Trainer
 import neuralnet
 import sequence_generator_temporal
@@ -228,7 +228,6 @@ def ultrametric_analysis(trainer, args, block_sizes):
         rs.classes_pred_orig = np.append(rs.classes_pred_orig, classes_correct, axis=0)
 
         verbose('Accuracy of the network on the {0:d} test images: {1:.2f}%'.format(nbr_test_samples, original_accuracy_current[0][0]), args)
-        verbose(rs.train_labels_orig[:training_range[1]], args)
 
     trainer.network = deepcopy(trainer.network_shfl)
     eval_shfl = trainer.evaluate_hierarchical()
@@ -277,7 +276,6 @@ def ultrametric_analysis(trainer, args, block_sizes):
                 rs.classes_pred_shfl[block_size_shuffle] = np.append(rs.classes_pred_shfl[block_size_shuffle], classes_correct, axis=0)
 
                 verbose('Accuracy of the shuffle network (block size {0:d}) on the {1:d} test images: {2:.2f}%'.format(block_size_shuffle, nbr_test_samples, shuffle_accuracy_current[0][0]), args)
-                verbose(shuffled_sequence[:training_range[1]], args)
 
             rs.train_labels_shfl[block_size_shuffle] = shuffled_sequence
 

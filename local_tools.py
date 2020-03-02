@@ -77,7 +77,7 @@ def simulate_sequence(T_list, seq_length=200000, tree_depth=3, tree_branching=2,
         plt.title(ttl)
 
 
-def get_lbl_distr(shuffled_sequence, min_range, max_range):
+def get_lbl_distr(shuffled_sequence, min_range, max_range, n_classes):
     """
     Inputs:
     shuffled_sequence: list
@@ -87,12 +87,12 @@ def get_lbl_distr(shuffled_sequence, min_range, max_range):
     Returns:
     histogram of the labels distribution from min_range to max_range
     """
-    min_lbl = min(shuffled_sequence)
-    max_lbl = max(shuffled_sequence)
-    return np.histogram(
+    hist_tuple = np.histogram(
         shuffled_sequence[min_range:max_range],
-        range = (min_lbl, max_lbl)
+        bins = n_classes
         )
+
+    return hist_tuple[0]
 
 #######################################
 
