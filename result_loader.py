@@ -185,9 +185,14 @@ class ResultSet_1to1:
 		Path to the data.    
 	
 	"""
-	def __init__(self, dataroot, datapaths):
+	def __init__(self, sim_map_dict, dataroot, sim_struct, dataset_name, nn_config, seq_type, simset_id):
+		self.sim_map_dict = sim_map_dict
 		self.dataroot = dataroot
-		self.datapaths = datapaths
+		self.sim_struct = sim_struct,
+		self.dataset_name = dataset_name,
+		self.nn_config = nn_config,
+		self.seq_type = seq_type,
+		self.simset_id = simset_id
 		
 	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True):
 		print("\nLoading analytics...")
@@ -280,26 +285,49 @@ class ResultSet_1to1:
 					Unavailable. load_atc set to False
 					"""
 
-		for params, datapath_list in self.datapaths.items():
+
+		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
+		folderpath = self.dataroot + '/Results/' + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder']
+
+		if self.seq_type in ("uniform", "ultrametric"):
+			T = self.sim_battery_params["T"]
+		else:
+			T = 0.0
+
+		if self.seq_type in ("uniform"):
+			self.shuffle_sizes = []
+		else:
+			self.shuffle_sizes = self.sim_battery_params["shuffle_sizes"]
+
+		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+			block_size = self.sim_battery_params["block_size"]
+		else:
+			block_size = 0
+
+		params = (T, 1)
+
+		self.train_labels_orig[params] = []
+		self.train_labels_shfl[params] = []
+		self.dstr_train[params] = []
+		self.params[params] = []
+		self.eval_orig[params] = []
+		self.eval_shfl[params] = []
+		self.var_acc_orig[params] = []
+		self.var_acc_shfl[params] = []
+		self.var_pred_orig[params] = []
+		self.var_pred_shfl[params] = []
+
+		if load_data:
+			self.train_data_orig[params] = []
+			self.train_data_shfl[params] = []
+
+		if load_atc:
+			self.atc_orig[params] = []
+			self.atc_shfl[params] = []
+
+		for simuset_path in os.listdir(folderpath):
 			
-			self.train_labels_orig[params] = []
-			self.train_labels_shfl[params] = []
-			self.dstr_train[params] = []
-			self.params[params] = []
-			self.eval_orig[params] = []
-			self.eval_shfl[params] = []
-			self.var_acc_orig[params] = []
-			self.var_acc_shfl[params] = []
-			self.var_pred_orig[params] = []
-			self.var_pred_shfl[params] = []
-
-			if load_data:
-				self.train_data_orig[params] = []
-				self.train_data_shfl[params] = []
-
-			if load_atc:
-				self.atc_orig[params] = []
-				self.atc_shfl[params] = []
+			os.chdir(folderpath+'/'+simuset_path)
 
 			for datapath in datapath_list:
 				os.chdir(self.dataroot+'/'+datapath)
@@ -513,11 +541,16 @@ class ResultSet_1toM:
 		Path to the data.    
 	
 	"""
-	def __init__(self, dataroot, datapaths):
+	def __init__(self, sim_map_dict, dataroot, sim_struct, dataset_name, nn_config, seq_type, simset_id):
+		self.sim_map_dict = sim_map_dict
 		self.dataroot = dataroot
-		self.datapaths = datapaths
-		self.block_sizes = set()
-		
+		self.sim_struct = sim_struct
+		self.dataset_name = dataset_name
+		self.nn_config = nn_config
+		self.seq_type = seq_type
+		self.simset_id = simset_id
+
+
 	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True, load_htmp=False):
 		print("\nLoading analytics...")
 
@@ -609,98 +642,113 @@ class ResultSet_1toM:
 					Unavailable. load_atc set to False
 					"""
 
-		for T, datapath_list in self.datapaths.items():
+		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
+		folderpath = self.dataroot + '/Results/' + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder']
+
+		if self.seq_type in ("uniform", "ultrametric"):
+			T = self.sim_battery_params["T"]
+		else:
+			T = 0.0
+
+		if self.seq_type in ("uniform"):
+			self.shuffle_sizes = []
+		else:
+			self.shuffle_sizes = self.sim_battery_params["shuffle_sizes"]
+
+		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+			block_size = self.sim_battery_params["block_size"]
+		else:
+			block_size = 0
+
+		self.train_labels_orig[T] = []
+		self.train_labels_shfl[T] = {}
+		self.dstr_train[T] = []
+		self.params[T] = []
+		self.eval_orig[T] = []
+		self.eval_shfl[T] = {}
+		self.var_acc_orig[T] = []
+		self.var_acc_shfl[T] = {}
+		self.var_pred_orig[T] = []
+		self.var_pred_shfl[T] = {}
+		self.lbl_htmp_shfl[T] = {}
+
+		if load_data:
+			self.train_data_orig[T] = []
+			self.train_data_shfl[T] = []
+
+		if load_atc:
+			self.atc_orig[T] = []
+			self.atc_shfl[T] = []
+
+		for simuset_path in os.listdir(folderpath):
 			
-			self.train_labels_orig[T] = []
-			self.train_labels_shfl[T] = {}
-			self.dstr_train[T] = []
-			self.params[T] = []
-			self.eval_orig[T] = []
-			self.eval_shfl[T] = {}
-			self.var_acc_orig[T] = []
-			self.var_acc_shfl[T] = {}
-			self.var_pred_orig[T] = []
-			self.var_pred_shfl[T] = {}
-			self.lbl_htmp_shfl[T] = {}
+			os.chdir(folderpath+'/'+simuset_path)
+
+			with open('train_labels_orig.pickle', 'rb') as file:
+				self.train_labels_orig[T].append(pickle.load(file))
+
+			with open('distribution_train.pickle', 'rb') as file:
+				self.dstr_train[T].append(pickle.load(file))
+				
+			with open('parameters.json', 'r') as file:
+				self.params[T].append(json.load(file))
+
+			self.eval_orig[T].append(np.load('evaluation_original.npy', allow_pickle=True))
+			self.var_acc_orig[T].append(np.load('var_original_accuracy.npy'))
+			self.var_pred_orig[T].append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
+
+			if load_htmp:
+				with open('labels_heatmap_shfl.pickle', 'rb') as file:
+					self.lbl_htmp_orig[T].append(pickle.load(file))
+
+			if load_shuffle:
+				if type(self.shuffle_sizes) is int:
+					self.shuffle_sizes = [self.shuffle_sizes]
+
+				for shuffle_sz in self.shuffle_sizes:
+					if shuffle_sz not in self.train_labels_shfl[T].keys():
+						self.train_labels_shfl[T][shuffle_sz] = []
+						self.eval_shfl[T][shuffle_sz] = []
+						self.var_acc_shfl[T][shuffle_sz] = []
+						self.var_pred_shfl[T][shuffle_sz] = []
+
+					with open('shuffle_'+str(shuffle_sz)+'/train_labels_shfl.pickle', 'rb') as file:
+						self.train_labels_shfl[T][shuffle_sz].append(pickle.load(file))
+
+					if load_htmp:
+						with open('shuffle_'+str(shuffle_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
+							self.lbl_htmp_shfl[T][shuffle_sz].append(pickle.load(file))
+
+					self.eval_shfl[T][shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
+					self.var_acc_shfl[T][shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_accuracy.npy'))
+					self.var_pred_shfl[T][shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
 
 			if load_data:
-				self.train_data_orig[T] = []
-				self.train_data_shfl[T] = []
+				print("Loading data for {0:s}...".format(datapath))
 
-			if load_atc:
-				self.atc_orig[T] = []
-				self.atc_shfl[T] = []
-
-			for datapath, block_sizes in datapath_list:
-				os.chdir(self.dataroot+'/'+datapath)
-
-				with open('train_labels_orig.pickle', 'rb') as file:
-					self.train_labels_orig[T].append(pickle.load(file))
-
-				with open('distribution_train.pickle', 'rb') as file:
-					self.dstr_train[T].append(pickle.load(file))
-				
-				with open('parameters.json', 'r') as file:
-					self.params[T].append(json.load(file))
-
-				self.eval_orig[T].append(np.load('evaluation_original.npy', allow_pickle=True))
-				self.var_acc_orig[T].append(np.load('var_original_accuracy.npy'))
-				self.var_pred_orig[T].append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
-
-				if load_htmp:
-					with open('labels_heatmap_shfl.pickle', 'rb') as file:
-						self.lbl_htmp_orig[T].append(pickle.load(file))
-
+				with open('train_data_orig.pickle', 'rb') as file:
+					self.train_data_orig[T].append(pickle.load(file))
 
 				if load_shuffle:
-					if type(block_sizes) is int:
-						block_sizes = [block_sizes]
-					for block_sz in block_sizes:
-						if block_sz not in self.block_sizes:
-							self.block_sizes.add(block_sz)
-
-						if block_sz not in self.train_labels_shfl[T].keys():
-							self.train_labels_shfl[T][block_sz] = []
-							self.eval_shfl[T][block_sz] = []
-							self.var_acc_shfl[T][block_sz] = []
-							self.var_pred_shfl[T][block_sz] = []
-
-						with open('shuffle_'+str(block_sz)+'/train_labels_shfl.pickle', 'rb') as file:
-							self.train_labels_shfl[T][block_sz].append(pickle.load(file))
-
-						if load_htmp:
-							with open('shuffle_'+str(block_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
-								self.lbl_htmp_shfl[T][block_sz].append(pickle.load(file))
-
-						self.eval_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
-						self.var_acc_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/var_shuffle_accuracy.npy'))
-						self.var_pred_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
-
-				if load_data:
-					print("Loading data for {0:s}...".format(datapath))
-
-					with open('train_data_orig.pickle', 'rb') as file:
-						self.train_data_orig[T].append(pickle.load(file))
-
-					if load_shuffle:
-						for block_sz in block_sizes:
-							self.train_data_shfl[T][block_sz] = []
-							with open('shuffle_'+str(block_sz)+'/train_data_shfl.pickle', 'rb') as file:
-								self.train_data_shfl[T][block_sz].append(pickle.load(file))
+					for shuffle_sz in self.shuffle_sizes:
+						self.train_data_shfl[T][shuffle_sz] = []
+						with open('shuffle_'+str(shuffle_sz)+'/train_data_shfl.pickle', 'rb') as file:
+							self.train_data_shfl[T][shuffle_sz].append(pickle.load(file))
 					
-					print("...done")
+				print("...done")
 
-				if load_atc:
-					self.atc_orig[T].append(np.load('autocorr_original.npy'))
-					if load_shuffle:
-						for block_sz in block_sizes:
-							self.atc_shfl[T][block_sz] = []
-							self.atc_shfl[T][block_sz].append(np.load('shuffle_'+str(block_sz)+'/autocorr_shuffle.npy'))
+			if load_atc:
+				self.atc_orig[T].append(np.load('autocorr_original.npy'))
+				if load_shuffle:
+					for shuffle_sz in self.shuffle_sizes:
+						self.atc_shfl[T][shuffle_sz] = []
+						self.atc_shfl[T][shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
 
 		if not load_data:
 			print("load_data set to False. Data sequences not loaded.")
 		if not load_atc:
 			print("load_atc set to False. Autocorrelations not loaded.")
+
 
 
 	@jit(nopython=True)

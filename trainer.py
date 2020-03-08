@@ -168,7 +168,7 @@ class Trainer:
 
 
         elif self.training_type=="uniform":
-            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator(self.proba_transition, self.tree_branching, self.tree_depth)
+            seqgen = sequence_generator_temporal.Uniform_SequenceGenerator(self.tree_branching, self.tree_depth)
 
             train_sequence, rates_vector = seqgen.generate_labels(
                 self.sequence_first,
@@ -281,7 +281,7 @@ class Trainer:
         self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
-    def train(self, mem_sz, lr, momentum, training_range, seq=None):
+    def train(self, mem_sz, lr, momentum, training_range, seq=None, method='sgd'):
         """
         Train a network on the specified training protocol.
 
@@ -340,7 +340,10 @@ class Trainer:
                 else:
                     train_mini_batch = mini_batch
                 # Perform SGD on the mini_batch and memory
-                running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
+                if method == 'sgd':
+                    running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
+                if method == 'ewc':
+                    running_loss += EWC(self.network, train_mini_batch, lr, momentum, self.device)
                 # Update memory
                 memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
                 first_train_id += self.batch_sz

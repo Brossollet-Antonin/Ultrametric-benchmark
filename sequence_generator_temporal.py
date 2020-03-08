@@ -201,19 +201,20 @@ class TempCorr_SequenceGenerator(SequenceGenerator):
 
 
 class Uniform_SequenceGenerator(SequenceGenerator):
-    def __init__(self, proba_transition, tree_branching, tree_depth, self_transition=True): 
+    def __init__(self, tree_branching, tree_depth, self_transition=True): 
         super().__init__()
         self.self_transition = self_transition
         self.tree_branching = tree_branching
         self.tree_depth = tree_depth
+        self.proba_transition = 1/(self.tree_branching ** self.tree_depth)
         self.set_rates()
 
     def set_rates(self):
         if self.self_transition:
-            self.rates = [proba_transition]*(tree_branching**tree_depth - 1)
+            self.rates = [self.proba_transition]*(self.tree_branching**self.tree_depth - 1)
             self.rates.insert(0, 1-sum(self.rates))
         else:
-            self.rates = [proba_transition]*(tree_branching**tree_depth - 2)
+            self.rates = [self.proba_transition]*(self.tree_branching**self.tree_depth - 2)
             self.rates.insert(0, 1-sum(self.rates))
             self.rates.insert(0,0)
 
