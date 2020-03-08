@@ -98,18 +98,19 @@ def save_results(rs, save_root):
 
     np.save(save_path+'/classes_templates', rs.classes_templates)
 
-    for block_size_shuffle in rs.eval_shfl.keys():
-        save_path = save_root + save_folder + '/shuffle_%d/'%(block_size_shuffle)
-        os.makedirs(save_path)
+    if rs.sequence_type != 'uniform':
+        for block_size_shuffle in rs.eval_shfl.keys():
+            save_path = save_root + save_folder + '/shuffle_%d/'%(block_size_shuffle)
+            os.makedirs(save_path)
 
-        with open(save_path + "/train_labels_shfl.pickle", 'wb') as outfile:
-            pickle.dump(rs.train_labels_shfl[block_size_shuffle], outfile)
+            with open(save_path + "/train_labels_shfl.pickle", 'wb') as outfile:
+                pickle.dump(rs.train_labels_shfl[block_size_shuffle], outfile)
 
-        with open(save_path + "/labels_heatmap_shfl.pickle", 'wb') as outfile:
-            pickle.dump(rs.lbls_htmp_shfl[block_size_shuffle], outfile)
+            with open(save_path + "/labels_heatmap_shfl.pickle", 'wb') as outfile:
+                pickle.dump(rs.lbls_htmp_shfl[block_size_shuffle], outfile)
 
-        np.save(save_path + "/evaluation_shuffled", rs.eval_shfl[block_size_shuffle])
-        np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl[block_size_shuffle])
-        np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl[block_size_shuffle])
+            np.save(save_path + "/evaluation_shuffled", rs.eval_shfl[block_size_shuffle])
+            np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl[block_size_shuffle])
+            np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl[block_size_shuffle])
 
     print('Saved all results to {0:s} subfolders'.format(save_root))

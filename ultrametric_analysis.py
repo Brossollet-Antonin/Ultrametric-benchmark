@@ -176,6 +176,7 @@ def ultrametric_analysis_single(trainer, args, block_size_shuffle):
 def ultrametric_analysis(trainer, args, block_sizes):
 
     rs = ResultSet()
+    rs.sequence_type = args.sequence_type
     rs.classes_templates = trainer.dataset.patterns
 
     trainer.network = trainer.network_orig
