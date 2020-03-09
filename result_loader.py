@@ -1339,7 +1339,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		if T in acc_temp_shuffled.keys():
 			for block_id, block_sz in enumerate(sorted(acc_temp_shuffled[T].keys())):
 				acc_data = acc_temp_shuffled[T][block_sz]
-				hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
+				hsv_shfl = tuple([0.6, 1-block_id*0.04, 0.4+block_id*0.04])
 
 				var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 				var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
@@ -1383,7 +1383,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 		if acc_twofold_shuffled is not None and T in acc_twofold_shuffled.keys():
 			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
 				acc_data = acc_twofold_shuffled[T][block_sz]
-				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+				hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.04, 0.6-(block_id+1)*0.03])
 				var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 				var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
 				
@@ -1519,7 +1519,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 			for block_id, block_sz in enumerate(sorted(acc_temp_shuffled[T].keys())):
 				acc_data = acc_temp_shuffled[T][block_sz]
 				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
-					hsv_shfl = tuple([0.6, 1-block_id*0.08, 0.4+block_id*0.08])
+					hsv_shfl = tuple([0.6, 1-block_id*0.04, 0.4+block_id*0.04])
 
 					var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 					var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
@@ -1542,7 +1542,7 @@ def get_acc_nomarkers(T_list, acc_temp_orig, acc_temp_shuffled, acc_unif=None, a
 			for block_id, block_sz in enumerate(sorted(acc_twofold_shuffled[T].keys())):
 				acc_data = acc_twofold_shuffled[T][block_sz]
 				if blocks_for_shared_plots is None or block_sz in blocks_for_shared_plots:
-					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.08, 0.6-(block_id+1)*0.05])
+					hsv_tfs_shfl = tuple([0.35, 0.8-(block_id+1)*0.04, 0.6-(block_id+1)*0.03])
 					var_acc_tfs_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 					var_acc_tfs_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
 					
