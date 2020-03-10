@@ -466,8 +466,8 @@ class Trainer:
         )
 
         shuffled_labels = [self.train_sequence[k] for k in idx_shuffled]
-        shuffled_labels += self.train_sequence[:-n_extra_labels]
-
+        pdb.set_trace()
+        shuffled_labels += self.train_sequence[-n_extra_labels:]
 
         return shuffled_labels
 
