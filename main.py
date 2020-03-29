@@ -52,7 +52,7 @@ model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', h
 seq_params = parser.add_argument_group('Sequence Parameters')
 seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'spatial_correlation', 'random', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2', 'random_blocks2_2freq'], help='Method used to generate the training sequence')
 seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
-seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[100], help='Size of the block used to shuffle the sequence')
+seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[], help='Size of the block used to shuffle the sequence')
 seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
 seq_params.add_argument('--force_switch', type=int, default=1, help='When true, the training sequence cannot remain at the same value from one state to the next through time')
 seq_params.add_argument('--min_state_visit', type=int, default=0, help='Indicated the number of times each state must be visited in the generated training sequence (no constraint by default)')
@@ -69,6 +69,12 @@ def run(args):
 	args.test_stride = int(args.sequence_length/args.test_nbr)
 	systime = time.time()
 	random.seed(systime)
+
+	args.enable_shuffling = True
+	if not args.block_size_shuffle_list:
+		args.enable_shuffling = False
+	if args.sequence_type == 'uniform':
+		args.enable_shuffling = False
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 

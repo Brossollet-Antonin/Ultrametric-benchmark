@@ -177,6 +177,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
 
     rs = ResultSet()
     rs.sequence_type = args.sequence_type
+    rs.enable_shuffling = args.enable_shuffling
 
     rs.classes_templates = trainer.dataset.patterns
 
@@ -238,7 +239,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
 
     # Counting the number of correct responses per classes before the training
     classes_correct = np.zeros(len(trainer.dataset.test_data))
-    if trainer.training_type!="uniform":
+    if rs.enable_shuffling:
         verbose("--- Start shuffle training ---", args)
         # Shuffle the training sequence in block of a choosen length (try to use a length of blocks that divise the length of the
         # sequence to be sure to train on the full sequence, have one small block to take that into account is not implemented # TODO)
