@@ -48,8 +48,25 @@ def mem_SGD(net, mini_batch, lr, momentum, device):
 class Trainer:
     """
     Defined by tuple (dataset, neural_network, sequence_type).
-    Training type : random, temporal correlation, spatial correlation, permutedMNIST
+    Training type : random, ultrametric, uniform, spatial_correlation,
+    ladder_blocks1, ladder_blocks2, random_blocks1, random_blocks2, random_blocks2_2freq
     memory sampling : reservoir sampling, ring buffer
+
+    random: random sequence
+    ultrametric: random walk on ultrametric tree
+    uniform: uniform transition matrix
+    spatial_correlation: unmaintened
+    ladder_blocks1: sequence of following digits, repeted split_length_list[0]
+    times (0000000...01111...122222...)
+    ladder_blocks2: like ladder_blocks1 but two adjacent digits in each blocks,
+    with equiprobability between each two digits (01100101100...10222332333...)
+    random_blocks1: blocks of the same random digit repeted split_length_list[0]
+    times (33333333....3555555...5666666666)
+    random_blocks2: blocks of two adjacent random digits repeted
+    split_length_list[0] with equiprobability to switch between two digits
+    times (334334433433...345655566...69898899898...)
+    random_blocks2_2freq: like random_blocks2 but with two different timescales
+    of switches, lenghts stored in split_length_list
     """
     def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, batch_sz=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
@@ -97,7 +114,7 @@ class Trainer:
 
 
     def generate_batch(self, train_sequence, first_train_id):
-        
+
         train_labels = train_sequence[first_train_id:first_train_id+self.batch_sz]
         first_couple = next(self.data_iterator[train_labels[0]])
         train_data = first_couple[0]
@@ -106,7 +123,7 @@ class Trainer:
             next_couple = next(self.data_iterator[train_labels[seq_locid]])
             train_data = torch.cat((train_data, next_couple[0]))
             train_tensorlabels = torch.cat((train_tensorlabels, next_couple[1]))
-        
+
         return [train_data, train_tensorlabels]
 
 
@@ -188,7 +205,7 @@ class Trainer:
 
             for splt_id in range(n_splits): # MNIST patterns are numbers from 0 to 9
                 train_sequence.extend([splt_id%n_classes for k in range(self.split_block_lengths[0])])
-            if seq_rest > 0:    
+            if seq_rest > 0:
                 train_sequence.extend([n_splits%n_classes for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
@@ -205,7 +222,7 @@ class Trainer:
                 rand_splt_id = random.randint(0, n_classes-1)
                 train_sequence.extend([rand_splt_id for k in range(self.split_block_lengths[0])])
             if seq_rest > 0:
-                rand_splt_id = random.randint(0, n_classes-1)  
+                rand_splt_id = random.randint(0, n_classes-1)
                 train_sequence.extend([n_splits%n_classes for k in range(seq_rest)])
 
             self.train_sequence = train_sequence
@@ -225,7 +242,7 @@ class Trainer:
                 cl_ids = np.random.randint(0, 2, size=self.split_block_lengths[0])
                 train_sequence.extend([lbls[cl_ids[k]] for k in range(self.split_block_lengths[0])])
             if seq_rest > 0:
-                lbls = [(2*n_splits)%n_classes, (2*n_splits+1)%n_classes] 
+                lbls = [(2*n_splits)%n_classes, (2*n_splits+1)%n_classes]
                 cl_ids = np.random.randint(0, 2, size=seq_rest)
                 train_sequence.extend([lbls[cl_ids[k]] for k in range(seq_rest)])
 
@@ -277,7 +294,7 @@ class Trainer:
 
         else:
             raise NotImplementedError("training type not supported")
-        
+
         self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
@@ -289,7 +306,7 @@ class Trainer:
         ----------
         net : neural network
             The neural network to train.
-        training  
+        training
             Trainer object parametrizing the training protocol.
         control_data
             Data used to do the training.
@@ -302,7 +319,7 @@ class Trainer:
         momentum : int
             Momentum for the SGD.
         training_range : list
-            Range of the data to train on. training_range[0] is the begining 
+            Range of the data to train on. training_range[0] is the begining
             sample, training_range[1] is the end sample
 
         Returns
@@ -431,10 +448,10 @@ class Trainer:
         return result
 
 
-    def shuffle_block_partial(self, block_size, end): 
+    def shuffle_block_partial(self, block_size, end):
         """
         Block shuffle a data sequence up to a certain point.
-        
+
         The part of the sequence aft
 
         Parameters
@@ -443,15 +460,15 @@ class Trainer:
             List of the ordered samples used in the training process.
         block_size : int
             Size of the block for the shuffle.
-        end: int 
-            Indice of the last sample of the sequence to shuffle 
-        
+        end: int
+            Indice of the last sample of the sequence to shuffle
+
         Returns
         -------
         control_data_block : list of torch.Tensor
             List of the samples shuffled by blocks.
 
-        """    
+        """
         n_extra_labels = len(self.train_sequence)%block_size
         block_indices = list(range(len(self.train_sequence[:end])//block_size))
         shuffle(block_indices)
