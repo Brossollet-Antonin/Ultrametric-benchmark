@@ -192,7 +192,7 @@ class Dataset:
             self.create_power(self.shuffle_classes)
 
 
-    def create(self, shuffle_labels=False):        
+    def create(self, shuffle_labels=True):        
         # Creating an initial random tensor of size data_sz, of +1 and -1
         initial = torch.randint(2,(self.data_sz,), dtype=torch.float)
         initial = initial*2.0 -1.0
