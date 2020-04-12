@@ -112,7 +112,13 @@ def run(args):
 				else:
 					save_root = save_root+"/"
 
+				if (args.artif_shuffle_classes==0):
+					save_root = save_root[:-1]+"_noclassreshuffle/"
+
 				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
+
+				if args.sequence_type == 'uniform':
+					T = 0.0
 
 				parameters = {
 					"Temperature": T,
