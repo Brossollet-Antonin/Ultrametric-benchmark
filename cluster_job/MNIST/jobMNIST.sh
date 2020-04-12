@@ -18,7 +18,7 @@ do
       do
         for value in {1..10}
         do
-          sbatch individualjobMNIST.sh ${minibatchsize} ${blocksize} ${temperature}
+          sbatch individualjobMNIST.sh ${minibatchsize} ${blocksize} ${temperature} ${seqtype}
           sleep 1
         done
       done
