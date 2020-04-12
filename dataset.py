@@ -35,7 +35,7 @@ def sort_dataset(dataset, train):
                                      [torchvision.transforms.ToTensor(),
                                       torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                                       ])),
-            batch_size=1, shuffle=True)    
+            batch_size=1, shuffle=True)
     elif dataset =='CIFAR100':
          train_loader = torch.utils.data.DataLoader(
             torchvision.datasets.CIFAR100('./files/', train=train, download=True,
@@ -43,9 +43,9 @@ def sort_dataset(dataset, train):
                                      [torchvision.transforms.ToTensor(),
                                       torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                                       ])),
-            batch_size=1, shuffle=True)  
-                               
-    train_data_sorted = [[] for i in range(10)] if (dataset=='MNIST' or dataset=='CIFAR10') else [[] for i in range(100)] 
+            batch_size=1, shuffle=True)
+
+    train_data_sorted = [[] for i in range(10)] if (dataset=='MNIST' or dataset=='CIFAR10') else [[] for i in range(100)]
     for i, data in enumerate(train_loader, 0):
         inputs, labels = data
         train_data_sorted[int(labels.item())].append(data)
@@ -70,7 +70,7 @@ def sort_MNIST(train):
 
 
 class Dataset:
-    
+
     """Contains artifical dataset parameters and data.
 
     Parameters
@@ -95,7 +95,7 @@ class Dataset:
         ratio_type='linear' ratio_value bits will be flipped, if
         ratio_type='exponnential' (1/ratio_value)**depth bits will be flipped.
     noise_level : int, default=1
-        Noise level to generate the samples for each class. noise_level bits 
+        Noise level to generate the samples for each class. noise_level bits
         will be flipped randomly to generate each sample of the class.
 
     Attributes
@@ -107,20 +107,20 @@ class Dataset:
     depth : int
         Depth of the ultrametric tree used to generate artificial dataset.
     class_sz_train : int
-        Number of samples generated for each label for the training dataset for 
+        Number of samples generated for each label for the training dataset for
         an artificial dataset.
     class_sz_test : int
-        Number of samples generated for each label for the testing dataset for 
+        Number of samples generated for each label for the testing dataset for
         an artificial dataset.
     ratio_type : str
         Method used to generate the artificial dataset, specified how many bits
         will be flipped between each level of the ultrametric tree.
     ratio_value : int
-        Number of flipped bits between each level of the tree. If 
-        ratio_type='linear' ratio_value bits will be flipped, if 
+        Number of flipped bits between each level of the tree. If
+        ratio_type='linear' ratio_value bits will be flipped, if
         ratio_type='exponnential' (1/ratio_value)**depth bits will be flipped.
     noise_level : int
-        Noise level to generate the samples for each class. noise_level bits 
+        Noise level to generate the samples for each class. noise_level bits
         will be flipped randomly to generate each sample of the class.
     branching : int
         Branching ratio of the ultrametric dataset associated with the dataset.
@@ -131,18 +131,18 @@ class Dataset:
     n_in_channels : int
         Number of input channels (e.g. 1 for B&W images, 3 for color images).
     train_data : list of list of torch.Tensor
-        List containing the lists of tensors of the train data of the dataset, 
-        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2 
+        List containing the lists of tensors of the train data of the dataset,
+        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2
         class of the dataset).
     test_data : list of list of torch.Tensor
-        List containing the lists of tensors of the test data of the dataset, 
-        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2 
+        List containing the lists of tensors of the test data of the dataset,
+        classed by labels (e.g. train_data[2][5] is the 5 tensor of the 2
         class of the dataset).
-        
+
     """
 
-    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0, 
-                 class_sz_test=0, ratio_type='linear', ratio_value=5, 
+    def __init__(self, data_origin, data_sz=0, tree_depth=3, class_sz_train=0,
+                 class_sz_test=0, ratio_type='linear', ratio_value=5,
                  noise_level=1, shuffle_classes=True):
         self.data_origin = data_origin
         self.class_sz_train = class_sz_train
@@ -161,7 +161,7 @@ class Dataset:
             self.depth, self.branching = 3, 2
             self.num_classes = 10
             self.n_axes, self.n_in_channels = 2, 1
-            self.data_sz = (28**2)*3
+            self.data_sz = (28**2)
         elif data_origin == 'CIFAR10':
             self.depth, self.branching = 3, 2
             self.num_classes = 10
@@ -269,7 +269,7 @@ class Dataset:
 
     def create_power(self, shuffle_labels=True):
         """
-        Generate the artificial dataset. 
+        Generate the artificial dataset.
 
         Parameters
         ----------
