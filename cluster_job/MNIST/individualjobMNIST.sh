@@ -13,5 +13,6 @@
 module load anaconda
 
 #Command to execute Python program
-python ../main.py --dataset MNIST --nnarch FCL --hidden_sizes 256 --seqlength 1200000 --split_length 1000 \
+python /rigel/theory/users/ab4877/Ultrametric-benchmark/main.py --dataset MNIST --nnarch FCL --hidden_sizes 256 \
+--seqlength 1200000 --split_length 1000 \
 --minibatch ${1} --blocksz ${2} -T ${3} --seqtype ${4}
