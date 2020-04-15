@@ -3,25 +3,24 @@
 # Script to execute parameter exploration
 
 minibatcheslist="10"
-blocksizelist="1 100 500 1000 10000 100000"
+blocksizearr=(1 100 500 1000 10000 100000)
 temperaturelist="0.225"
 seqtypelist="ultrametric random_blocks2"
 
 
-for minibatchsize in $minibatcheslist
+
+for temperature in $temperaturelist
 do
-  for temperature in $temperaturelist
+  for seqtype in $seqtypelist
   do
-    for seqtype in $seqtypelist
+    for value in {1..10}
     do
-      for value in {1..10}
-      do
-        sbatch individualjobMNIST.sh ${minibatchsize} ${blocksizelist} ${temperature} ${seqtype}
-        sleep 1
-      done
+      sbatch individualjobMNIST.sh ${temperature} ${seqtype} ${blocksizearr[*]}
+      sleep 1
     done
   done
 done
+
 
 
 
