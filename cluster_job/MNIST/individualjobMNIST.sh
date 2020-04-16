@@ -13,6 +13,6 @@
 module load anaconda
 
 #Command to execute Python program
-python /rigel/theory/users/ab4877/Ultrametric-benchmark/main.py --dataset MNIST --nnarch FCL --hidden_sizes 256 \
+python3 /rigel/theory/users/ab4877/Ultrametric-benchmark/main.py --dataset MNIST --nnarch FCL --hidden_sizes 256 \
 --seqlength 1200000 --split_length 1000 \
 -T ${1} --seqtype ${2} --blocksz ${3} ${4} ${5} ${6} ${7} ${8}
