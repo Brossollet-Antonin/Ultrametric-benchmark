@@ -13,7 +13,7 @@ for temperature in $temperaturelist
 do
   for seqtype in $seqtypelist
   do
-    for value in {1..1}
+    for value in {1..5}
     do
       sbatch individualjobMNIST.sh ${temperature} ${seqtype} ${blocksizearr[*]}
       sleep 1
