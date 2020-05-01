@@ -14,6 +14,6 @@
 module load anaconda
 
 #Command to execute Python program
-python3 /rigel/theory/users/sl4744/projects/Ultrametric-benchmark/main.py --dataset artificial_128 --nnarch FCL --hidden_sizes 50 --gpu \
---seqlength 300000 --split_length 328 --nbrtest 300 \
--T ${1} --seqtype ${2} --shuffle_classes {3} --blocksz ${4} ${5} ${6} ${7} ${8} ${9}
+python3 /rigel/theory/users/sl4744/projects/Ultrametric-benchmark/main.py --dataset artificial --data_tree_depth ${1} --nnarch FCL --hidden_sizes ${2} --gpu \
+--seqlength 300000 --split_length ${3} --nbrtest 300 \
+-T ${4} --seqtype ${5} --shuffle_classes ${6} --blocksz ${7} ${8} ${9} ${10} ${11} ${12}

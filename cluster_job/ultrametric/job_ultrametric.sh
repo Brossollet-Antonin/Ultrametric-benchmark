@@ -2,12 +2,14 @@
 #
 # Script to execute parameter exploration
 
+tree_depth="7"
+hidden_size="50"
 minibatcheslist="10"
 blocksizearr=(1 82 164 328 1312 5248 20992)
 temperaturelist="0.6"
 seqtypelist="ultrametric random_blocks2"
 shuffle_labels="1 0"
-
+split_length="328"
 
 for temperature in $temperaturelist
 do
@@ -17,7 +19,7 @@ do
   	do
 	  for value in {1..5}
 	  do
-	    sbatch individualjob_Antonin.sh ${temperature} ${seqtype} ${sl} ${blocksizearr[*]} 
+	    sbatch individualjob_Antonin.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${blocksizearr[*]} 
 	    sleep 1
 	  done
 	done
