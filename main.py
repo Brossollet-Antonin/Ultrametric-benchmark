@@ -36,6 +36,7 @@ parser.add_argument('-v', '--verbose', dest='verbose', action='count', default=0
 data_params = parser.add_argument_group('Dataset Parameters')
 data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial'])
 data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
+data_params.add_argument('--data_flips_rate', type=float, default=0.04)
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
@@ -87,7 +88,7 @@ def run(args):
 		class_sz_train=1000,
 		class_sz_test=400,
 		ratio_type='linear',
-		ratio_value=8,
+		ratio_value=args.data_flips_rate,
 		noise_level=3,
 		shuffle_classes=args.artif_shuffle_classes
 		)
@@ -124,6 +125,7 @@ def run(args):
 					"Temperature": T,
 					"Tree Depth": dataset.depth,
 					"Tree Branching": dataset.branching,
+					"Flips ratio": args.data_flips_rate,
 					"Sequence Length": args.sequence_length,
 					"Minibatches Size": batch_sz,
 					"Number of tests": args.test_nbr,
