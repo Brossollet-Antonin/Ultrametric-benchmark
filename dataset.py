@@ -214,15 +214,14 @@ class Dataset:
             next_parent = deepcopy(parents_mem[-1])
 
             if self.ratio_type == 'linear':
-                for s in range(self.ratio_value):
-                    ind_mod = random.randint(0, self.data_sz -1)
-                    next_parent[ind_mod] = next_parent[ind_mod]*(-1)
-            elif self.ratio_type == 'exponnential':
-                for s in range(int(self.data_sz*(1/self.ratio_value)**(d+1))):
-                    ind_mod = random.randint(0, self.data_sz -1)
-                    next_parent[ind_mod] = next_parent[ind_mod]*(-1)
+                n_flips = int(self.ratio_value*self.data_sz)
+            elif self.ratio_type == 'exponential':
+                n_flips = int(self.data_sz*(1/int(self.ratio_value*self.data_sz))**(d+1))
             else:
                 raise NotImplementedError("Supported modes are for the moment 'linear' and 'exponnential'")
+            ind_mod = random.sample(range(self.data_sz), n_flips)
+            next_parent[ind_mod] = next_parent[ind_mod]*(-1)
+            
             # Switch the value of the ind_mod digit
 
             parents_mem.append(next_parent)
@@ -295,9 +294,9 @@ class Dataset:
             for pat_id in range(self.branching**d):
                 template = deepcopy(self.patterns[d-1][pat_id//2])
                 self.patterns[d].append(template)
-                for s in range(self.ratio_value):
-                    ind_mod = random.randint(0, self.data_sz -1)
-                    self.patterns[d][pat_id][ind_mod] = self.patterns[d][pat_id][ind_mod]*(-1)
+                n_flips = int(self.ratio_value*self.data_sz)
+                ind_mod = random.sample(range(self.data_sz), n_flips)
+                self.patterns[d][pat_id][ind_mod] = self.patterns[d][pat_id][ind_mod]*(-1)
 
         train_data = [[] for i in range(self.branching**self.depth)]
         test_data = [[] for i in range(self.branching**self.depth)]
