@@ -1,16 +1,16 @@
 {
     "1toM": {
-        "artificial_32": {
-            "FCL20": {
+        "MNIST_8": {
+            "FCL256": {
                 "ultrametric": {
                     "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10",
+                        "lr": 0.01,
                         "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
                     }
                 },
                 "ultrametric_noclshfl": {
@@ -27,12 +27,12 @@
                 "random_blocks2": {
                     "key": "block_size",
                     1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength1000",
-                        "lr": 0.05,
+                        "folder": "random_blocks2_length1000000_batches10",
+                        "lr": 0.01,
                         "seq_var_ratio": 8,
-                        "seq_length": 300000,
+                        "seq_length": 1000000,
                         "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
                     },
                     1600:{
                         "folder": "random_blocks2_200227",
@@ -45,9 +45,9 @@
                 },
                 "uniform": {
                     "key": "none",
-                    0.0:{   
+                    0.0:{
                         "folder": "uniform_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05, 
+                        "lr": 0.05,
                         "seq_var_ratio": 8,
                         "seq_length": 300000,
                         "T": 0.0
@@ -178,7 +178,7 @@
                 }
             }
         },
-        "MNIST_10": {
+        "MNIST_8": {
             "CNN": {
                 "uniform": {
                     "key": "T",
