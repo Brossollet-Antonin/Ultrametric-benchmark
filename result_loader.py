@@ -10,6 +10,7 @@ import pickle
 import numpy as np
 import json
 import pdb
+import re
 
 from copy import deepcopy
 import random
@@ -60,14 +61,13 @@ class ResultSet:
 			('repo2_name', block_sz_tuple2)
 			]
 		}
-		
+
 	Attribute
 	---------
 	dataroot : str
 		Path of the root where data are stored.
 	datapath : str
-		Path to the data.    
-	
+		Path to the data.
 	"""
 	def __init__(self, set_name, sim_map_dict, dataroot, sim_struct, dataset_name, nn_config, seq_type, simset_id, hsv_orig, hsv_shfl_list=None):
 		self.set_name = set_name
@@ -100,7 +100,7 @@ class ResultSet:
 		self.var_pred_shfl = {}
 		self.lbl_htmp_orig = {}
 		self.lbl_htmp_shfl = {}
-	
+
 		self.help = {}
 
 		self.help['train_labels_orig'] = """
@@ -134,7 +134,7 @@ class ResultSet:
 				"""
 		self.help['var_original_classes_prediction.npy'] = """
 				Type: array    Stored as: npy
-				[0:test_nbr] Contains, for each test run, the composition of the test sampl,
+				[0:test_nbr] Contains, for each test run, the composition of the test sample,
 				as well as the progress of training as the max training ID scanned at the time of the test run
 				"""
 
@@ -210,11 +210,13 @@ class ResultSet:
 			self.atc_orig = []
 			self.atc_shfl = []
 
+		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+			block_folders = os.listdir(folderpath)
+			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
+			os.chdir(folderpath+'/'+block_folder)
+			folderpath = os.getcwd()
+		
 		for simuset_path in os.listdir(folderpath):
-			
-			if 'T'+str(T) not in simuset_path:
-				continue 
-
 			os.chdir(folderpath+'/'+simuset_path)
 
 			with open('train_labels_orig.pickle', 'rb') as file:
@@ -222,7 +224,7 @@ class ResultSet:
 
 			with open('distribution_train.pickle', 'rb') as file:
 				self.dstr_train.append(pickle.load(file))
-				
+
 			with open('parameters.json', 'r') as file:
 				self.params.append(json.load(file))
 
@@ -257,8 +259,7 @@ class ResultSet:
 					self.var_pred_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
 
 			if load_data:
-				print("Loading data for {0:s}...".format(datapath))
-
+				print("Loading data for {0:s}...".format(os.getcwd()))
 				with open('train_data_orig.pickle', 'rb') as file:
 					self.train_data_orig.append(pickle.load(file))
 
@@ -267,7 +268,7 @@ class ResultSet:
 						self.train_data_shfl[shuffle_sz] = []
 						with open('shuffle_'+str(shuffle_sz)+'/train_data_shfl.pickle', 'rb') as file:
 							self.train_data_shfl[shuffle_sz].append(pickle.load(file))
-					
+
 				print("...done")
 
 			if load_atc:
@@ -355,16 +356,16 @@ class ResultSet:
 			tree_l = max(seq_list)+1
 			hlocs_stat_orig = np.zeros(w_size)
 			hlocs_stat_shfl = np.zeros(w_size)
-			
+
 			print("Computing autocorrelation on {0:d} sequences".format(len(seq_list)))
-			
+
 			for seq_id, seq in enumerate(seq_list):
 				print("   Original sequence {0:d}...".format(seq_id))
 				for lbl_id in range(tree_l):
 					locs_orig = np.array([j for j in range(len(seq)) if seq[j]==lbl_id])
 					nlocs = len(locs_orig)
 					locs_orig = locs_orig.reshape((nlocs, 1))
-					
+
 					locsd_mat_orig = cdist(locs_orig, locs_orig, 'cityblock')
 					#     iu_ids_couples = np.array([(i,j) for j in range(20) for i in range(20*cut_id, 20*cut_id+j)])
 					iu_ids = np.triu_indices(nlocs)
@@ -381,7 +382,7 @@ class ResultSet:
 
 			if hlocs_stat_orig[0] > 0:
 				hlocs_stat_orig = hlocs_stat_orig / hlocs_stat_orig[1]
-				
+
 			bins_atc = range(w_size//2)
 			atc_ax.loglog(
 				bins_atc,
@@ -390,7 +391,7 @@ class ResultSet:
 				color = hsv_to_rgb(hsv_orig),
 				ls = 'solid',
 				label='T={0:.2f} - Original sequence'.format(T)
-			) 
+			)
 
 			hlocs_stat_shfl_list = []
 			for nfig, block_sz in enumerate(self.blocks_sizes):
@@ -406,7 +407,7 @@ class ResultSet:
 						locs_shfl = np.array([j for j in range(len(shuffleseq)) if  shuffleseq[j]==lbl_id])
 						nlocs = len(locs_shfl)
 						locs_shfl = locs_shfl.reshape((nlocs, 1))
-						locsd_mat_shfl = cdist(locs_shfl, locs_shfl, 'cityblock')     
+						locsd_mat_shfl = cdist(locs_shfl, locs_shfl, 'cityblock')
 						iu_ids = np.triu_indices(nlocs)
 						bins = range(w_size)
 						hlocs_shfl = np.bincount(
@@ -417,13 +418,13 @@ class ResultSet:
 						#     bins=w_size,
 						#     range=(0, w_size)
 						# )
-						
+
 						hlocs_stat_shfl = hlocs_stat_shfl + hlocs_shfl[0]/tree_l
 					print("       ...done")
-				
+
 				if hlocs_stat_shfl[0] > 0:
 					hlocs_stat_shfl = hlocs_stat_shfl / hlocs_stat_shfl[0]
-				
+
 				atc_ax.loglog(
 					bins_atc,
 					hlocs_stat_shfl[::2],
@@ -431,9 +432,9 @@ class ResultSet:
 					ls = 'solid',
 					color = hsv_to_rgb(hsv_shfl),
 					label='T={0:.2f} - Shuffled with blocksz={1:d}'.format(T, block_sz),
-					alpha=0.5) 
+					alpha=0.5)
 				hlocs_stat_shfl_list.append(hlocs_stat_shfl)
-				
+
 			plt.title('Autocorrelation of training sequence')
 			plt.xlabel('t, number of iterations /2', fontsize=12)
 			plt.ylabel('A(t)', fontsize=14)
@@ -443,12 +444,12 @@ class ResultSet:
 			atc_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
 			  fancybox=True, shadow=True, ncol=2,
 			  prop={'size': 16})
-			
+
 			plt.savefig(
 				fname=filename+'.pdf',
 				format='pdf'
 			)
-				
+
 			return hlocs_stat_orig, hlocs_stat_shfl_list
 
 
@@ -488,7 +489,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			x = range(len(var_acc_orig)),
 			y1 = np.maximum(0, var_acc_orig - conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig)),
 			y2 = np.minimum(var_acc_orig + conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig), 100),
-			color = hsv_to_rgb(hsv_orig),
+			color = hsv_to_rgb(rs.hsv_orig),
 			alpha = 0.4
 		)
 
@@ -504,7 +505,6 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 
 		var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 		var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
-		
 		ax.plot(
 			var_acc_shfl,
 			ls = '--',
@@ -559,7 +559,7 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 
 	for tick in ax.xaxis.get_major_ticks():
 		tick.label.set_fontsize(14)
-	
+
 	for tick in ax.yaxis.get_major_ticks():
 		tick.label.set_fontsize(14)
 
@@ -623,7 +623,7 @@ def get_acc(
 		make_perfplot(rs_unif, blocks=blocks, ax=acc_ax, plt_confinter=plt_confinter)
 
 	make_perfplot(rs, blocks=blocks, ax=acc_ax, plt_confinter=plt_confinter)
-	
+
 	format_perf_plot(acc_ax, "Accuracy as a function of time for original and shuffled sequence - " + rs.set_name, xtick_pos, xtick_labels, plot_window)
 
 
@@ -634,9 +634,9 @@ def get_acc(
 
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks, ax=acc_ax_altr, plt_confinter=plt_confinter)
-		
+
 		make_perfplot(rs_altr, blocks=blocks, ax=acc_ax_altr, plt_confinter=plt_confinter)
-		
+
 		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.set_name, xtick_pos, xtick_labels, plot_window)
 
 
@@ -654,7 +654,7 @@ def get_acc(
 		make_perfplot(rs_altr, blocks=blocks_for_shared_plots, ax=acc_ax_all, plt_confinter=plt_confinter)
 		make_perfplot(rs, blocks=blocks_for_shared_plots, ax=acc_ax_all, plt_confinter=plt_confinter)
 
-		
+
 		format_perf_plot(acc_ax_all, "Comparative accuracy as a function of time for different scenarios", xtick_pos, xtick_labels, plot_window)
 
 	fig.tight_layout(pad=10.0)
@@ -696,7 +696,7 @@ def get_raw_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 			cf,
 			label='Forgetting score as a fct of #iteration'
 		)
-		
+
 	return cf, t_explr
 
 
@@ -747,7 +747,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 		avg_cf_std[0] = np.mean(cf_std)
 		init_cf[0] = cf_mean[0]
 		init_cf_std[0] = cf_std[0]
-	
+
 	for block_id, block_sz in enumerate(blocks):
 		assert block_sz in rs.train_labels_shfl.keys()
 		t_explr = []
@@ -810,13 +810,13 @@ def load_cf_set(
 
 	fig_cfscore = plt.figure(figsize=(18,12))
 	cf_ax = plt.subplot(1,1,1)
-	 
+
 	avg_cf, avg_cf_std, init_cf, init_cf_std = get_cf_stats(rs, blocks, ax=cf_ax, plt_confinter=plt_confinter)
 
 	cf_ax.set_xticks(xtick_pos)
 	cf_ax.set_xticklabels(xtick_labels)
 	cf_ax.set_title('Per-label loss in classification performance from the moment all classes are explored', fontsize = 18)
-				
+
 	box = cf_ax.get_position()
 	cf_ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 
@@ -911,11 +911,11 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 		ax_mean_cfs.set_yscale("log")
 
 	for tick in ax_mean_cfs.xaxis.get_major_ticks():
-	    tick.label.set_fontsize(14) 
+	    tick.label.set_fontsize(14)
 	    tick.label.set_rotation('vertical')
-	    
+
 	for tick in ax_mean_cfs.yaxis.get_major_ticks():
-	    tick.label.set_fontsize(14) 
+	    tick.label.set_fontsize(14)
 
 	ax_mean_cfs.set_xlim(0, 1.1*x_origpos)
 	ax_mean_cfs.set_ylim(-0.1, 0.8)

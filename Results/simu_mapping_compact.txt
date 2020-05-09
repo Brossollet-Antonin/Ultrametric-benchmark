@@ -205,6 +205,21 @@
                     }
                 }
             }
+        },
+        "MNIST_8": {
+            "FCL256": {
+                "ultrametric": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10",
+                        "lr": 0.01,
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
+                    }
+                }
+            }
         }
     },
     "1to1": {
@@ -222,7 +237,7 @@
                 }
             }
         },
-        "MNIST_10": {
+        "MNIST_8": {
             "CNN": {
                 "uniform": {
                     "key": "T",
