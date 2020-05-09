@@ -1,0 +1,240 @@
+{
+    "1toM": {
+        "artificial_32": {
+            "FCL20": {
+                "ultrametric_ratio8": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                    }
+                },
+                "ultrametric_ratio8_noclshfl": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 200, 500, 1000, 2000, 8000, 20000)
+                    }
+                },
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                    }
+                },
+                "ultrametric_ratio20_noclshfl": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 200, 500, 1000, 2000, 8000, 20000)
+                    }
+                },
+                "random_blocks2_ratio8": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength1000",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                    },
+                    1600:{
+                        "folder": "random_blocks2_200227",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "block_size": 1600,
+                        "shuffle_sizes": (1, 100, 200, 400, 800, 1600, 8000)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                    }
+                },
+                "random_blocks2_ratio20_noclshfl": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000)
+                    }
+                },
+                "uniform": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length300000_batches10_seqlen200_ratio8",
+                        "lr": 0.05, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "T": 0.0
+                    }
+                }
+            }
+        },
+        "artificial_128": {
+            "FCL4": {
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.0
+                    }
+                }
+            },
+            "FCL10": {
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.0
+                    }
+                }
+            },
+            "FCL50": {
+                "ultrametric": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1)
+                    },
+                    0.5:{
+                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.5,
+                        "shuffle_sizes": (1)
+                    },
+                    0.6:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "T": 0.6,
+                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
+                    }
+                },
+                "random_blocks2": {
+                    "key": "block_size",
+                    328:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength328",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "block_size": 328,
+                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992)
+                    },
+                },
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.0
+                    }
+                }
+            },
+            "FCL80": {
+                "ultrametric": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    },
+                    0.6:{
+                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.6,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.0
+                    }
+                }
+            }
+        }
+    },
+    "1to1": {
+        "artificial_32": {
+            "FCL20": {
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.0
+                    }
+                }
+            }
+        },
+        "MNIST_10": {
+            "CNN": {
+                "uniform": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 200000,
+                        "T": 0.4
+                    }
+                }
+            }
+        }
+    }
+}
