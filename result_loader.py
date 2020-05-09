@@ -46,7 +46,6 @@ conf_fscore={
 	0.99: 2.58,
 }
 
-
 class ResultSet:
 	"""Contains the results of a simulation
 
@@ -84,8 +83,7 @@ class ResultSet:
 
 
 	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True, load_htmp=False):
-		print("\nLoading analytics...")
-
+		print("Loading result set for {0:s}...".format(self.set_name))
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
 		self.train_data_shfl = {}
@@ -177,7 +175,7 @@ class ResultSet:
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
 		folderpath = self.dataroot + '/Results/' + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder']
 
-		if self.seq_type in ("uniform", "ultrametric", "ultrametric_noclshfl"):
+		if ("uniform" in self.seq_type) or ("ultrametric" in self.seq_type):
 			T = self.sim_battery_params["T"]
 		else:
 			T = 0.0
@@ -187,7 +185,7 @@ class ResultSet:
 		else:
 			self.shuffle_sizes = self.sim_battery_params["shuffle_sizes"]
 
-		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+		if ("random_blocks2" in self.seq_type) or ("ladder_blocks2" in self.seq_type):
 			block_size = self.sim_battery_params["block_size"]
 		else:
 			block_size = 0
@@ -279,15 +277,70 @@ class ResultSet:
 						self.atc_shfl[shuffle_sz] = []
 						self.atc_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
 
-		if not load_data:
-			print("load_data set to False. Data sequences not loaded.")
-		if not load_atc:
-			print("load_atc set to False. Autocorrelations not loaded.")
+		if load_data:
+			print("load_data set to True. Data sequences loaded.")
+		if load_atc:
+			print("load_atc set to True. Autocorrelations loaded.")
 
 
+	def lbl_history(self, T_list, shuffled_blocksz=None, strides=None):
+		n_Ts = len(T_list)
+		assert (n_Ts>0)
+		t_explr = None
+
+		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
+		lbls_axes = []
+
+		for T_id, T in enumerate(T_list):
+			if shuffled_blocksz is None:
+				occur_id = random.randint(0, len(self.train_labels_orig)-1)
+				seq = self.train_labels_orig[occur_id]
+			else:
+				occur_id = random.randint(0, len(self.train_labels_shfl[shuffled_blocksz])-1)
+				seq = self.train_labels_shfl[shuffled_blocksz][occur_id]
+
+			n_labels = len(set(seq))
+			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
+			lbls_axes.append(lbls_ax)
+			lbls_ax.plot(seq)
+
+			obs_lbl_set = set()
+			nobs_seq = []
+			for itr_id, lbl in enumerate(seq):
+				obs_lbl_set.add(lbl)
+				nobs_seq.append(len(obs_lbl_set))
+				if t_explr is None and len(obs_lbl_set) == n_labels:
+					t_explr = itr_id
+
+			lbls_ax.plot(nobs_seq)
+			if strides is not None:
+				for stride in strides:
+					lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
+
+			ttl = 'History of labels in the original training sequence - T='+str(T)
+			if t_explr:
+				ttl = ttl+' - tau_asym=' + str(t_explr)
+			plt.title(ttl)
+
+		return lbls_fig, lbls_axes
+			
 
 	@jit(nopython=True)
-	def get_atc(self, T_list, n_tests, out_filename, w_size=10000, n_omits=30):
+	def get_atc(self, T_list, n_tests, out_filename, w_size=10000):
+		"""
+		Computes the (avg) autocorrelation function of a the sequences in a simulation set
+		Note: will only work in JIT compilation. Running this on JIT has not been fully tested yet, need more work.
+		Right now we're using Matlab to compute autocorrelation functions.
+
+		Parameters
+		----------
+		T_list : list of floats
+			List of temperatures for which simulations were ran and are registered in this simulation set
+		n_tests : ?
+		w_size : int
+			size of the window that is used for computing autocorrelation.
+			To reduce computation time, we only look a given number of elements forward on the sequence, corresponding to w_size
+		"""
 		n_Ts = len(T_list)
 		assert (n_Ts>0)
 
@@ -399,49 +452,26 @@ class ResultSet:
 			return hlocs_stat_orig, hlocs_stat_shfl_list
 
 
-	def lbl_history(self, T_list, shuffled_blocksz=None, strides=None):
-		n_Ts = len(T_list)
-		assert (n_Ts>0)
-		t_explr = None
-
-		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
-		lbls_axes = []
-
-		for T_id, T in enumerate(T_list):
-			if shuffled_blocksz is None:
-				occur_id = random.randint(0, len(self.train_labels_orig)-1)
-				seq = self.train_labels_orig[occur_id]
-			else:
-				occur_id = random.randint(0, len(self.train_labels_shfl[shuffled_blocksz])-1)
-				seq = self.train_labels_shfl[shuffled_blocksz][occur_id]
-
-			n_labels = len(set(seq))
-			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
-			lbls_axes.append(lbls_ax)
-			lbls_ax.plot(seq)
-
-			obs_lbl_set = set()
-			nobs_seq = []
-			for itr_id, lbl in enumerate(seq):
-				obs_lbl_set.add(lbl)
-				nobs_seq.append(len(obs_lbl_set))
-				if t_explr is None and len(obs_lbl_set) == n_labels:
-					t_explr = itr_id
-
-			lbls_ax.plot(nobs_seq)
-			if strides is not None:
-				for stride in strides:
-					lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
-
-			ttl = 'History of labels in the original training sequence - T='+str(T)
-			if t_explr:
-				ttl = ttl+' - tau_asym=' + str(t_explr)
-			plt.title(ttl)
-
-		return lbls_fig, lbls_axes
-
-
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
+	"""
+	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
+
+	Parameters
+	----------
+	rs : ResultSet
+		the ResultSet object containing the simulations for which we wish to plot accuracy = f(iter)
+	blocks : list(int)
+		a list of the shuffle block sizes that were used in the simulations
+		Note that all simulations should use the same shuffle block sizes
+	ax : matplotlib axes object
+		the axes to plot on
+	plt_confinter: bool
+		if True, confidence intervals for confidence level 95% will be printed.
+		Defaults to False
+		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
+
+	"""
+
 	### ORIGINAL ###
 	n_orig = len(rs.var_acc_orig)
 	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
@@ -450,7 +480,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			var_acc_orig,
 			ls = 'solid',
 			color = hsv_to_rgb(rs.hsv_orig),
-			label='Ultrametric sequence - No shuffling'
+			label=rs.set_name+' - No shuffling'
 		)
 
 	if plt_confinter:
@@ -479,7 +509,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			var_acc_shfl,
 			ls = '--',
 			color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-			label='Ultrametric sequence - Shuffled w/ block size {0:d}'.format(block_sz)
+			label=rs.set_name+' - Shuffled w/ block size {0:d}'.format(block_sz)
 		)
 
 		if plt_confinter:
@@ -493,6 +523,22 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 
 
 def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
+	"""
+	Formats an accuracy plot to fit paper conventions and standards. 
+
+	Parameters
+	----------
+	ax : matplotlib axes object
+		the axes to perform formatting on
+	title : str
+		title of the plot
+	xtick_pos : list(float)
+		positions to save x-axis ticks on
+	xtick_labels: list(str)
+		labels to put on the x-axis ticks which positions are set
+	plot_window: tuple like (x_min, x_max)
+		tuple of extrema positions to use for formating x-axis
+	"""
 	ax.set_xticks(xtick_pos)
 	ax.set_xticklabels(xtick_labels)
 	ax.set_title(title, fontsize = 14)
@@ -523,7 +569,44 @@ def get_acc(
 	seq_length=300000, n_tests=300, plot_window=None, blocks=None,
 	blocks_for_shared_plots=None, plt_confinter=False, n_ticks=10, save_format=None
 	):
+	"""
+	Creates accuracy plots from three ResultSet objects:
+	- a main result set
+	- an alternative result set (could be a different generation strategy or a different hyperparameter like bit-flipping ratio)
+	- the baseline ResultSet with uniform generation stategy
+	Will generate three plots:
+	1) main result set vs baseline uniform, with shuffling block sizes in argument "blocks"
+	2) alternative result set vs baseline uniform, with shuffling block sizes in argument "blocks"
+	3) all three result set, with shuffling blocks in argument "blocks_for_shared_plots" only
 
+	Parameters
+	----------
+	rs : ResultSet
+		tmain result set
+	rs_altr : ResultSet
+		alternative result set
+	rs_unif : ResultSet
+		baseline result set with uniform generation strategy
+	seq_length: int
+		length of the sequences
+	n_tests: int
+		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
+	plot_window: tuple like (x_min, x_max)
+		if not None, will restrict plotting to a subset of iterations with (x_min, x_max)
+	blocks: list(int)
+		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in order to assess the effect of shuffling.
+		Note that the same set of shuffle block sizes must be used by the main result set and the alternative result set
+	blocks_for_shared_plots: list(int)
+		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in the third plot.
+	plt_confinter: bool
+		if True, confidence intervals for confidence level 95% will be printed.
+		Defaults to False
+		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
+	n_ticks: int
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+	save_format: str
+		if not None, plots will be saved in the provided format
+	"""
 	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
@@ -599,7 +682,10 @@ def get_raw_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 			t_explr = itr_id//(seql//nspl)
 
 	spl_nobs_seq = [nobs_seq[k*(seql//nspl)] for k in range(nspl)]
-	assert(len(spl_nobs_seq) == len(acc_orig) == len(acc_unif))
+	try:
+		assert(len(spl_nobs_seq) == len(acc_orig) == len(acc_unif))
+	except:
+		pdb.set_trace()
 
 	cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(spl_nobs_seq)
 

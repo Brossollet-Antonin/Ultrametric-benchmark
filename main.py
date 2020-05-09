@@ -6,7 +6,7 @@ Created on Fri Jan 10 15:02:44 2020
 """
 
 import argparse
-import os
+import os, sys
 import pdb
 
 import random
@@ -136,7 +136,8 @@ def run(args):
 					"Random Seed": systime,
 					"device_type": 'GPU' if args.cuda else 'CPU',
 					"NN architecture": args.nnarchi,
-					"Split total length": args.split_length_list[0]
+					"Split total length": args.split_length_list[0],
+					"Original command": str(sys.argv) # We store the original command for this set of simulations
 				}
 				# ToDo: - turn parameters into a dictionnary
 				#       - export as JSON
