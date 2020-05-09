@@ -50,26 +50,110 @@ conf_fscore={
 class ResultSet:
 	"""Contains the results of a simulation
 
-	Parameters
-	----------
+	Attribute
+	---------
+	set_name: str
+		A unique name given to this dataset, describing its specifities
+		Used for legends in the plots that will be generated.
+	sim_map_dict: dict
+		The simu_mapping file parsed into a Python dictionnary. This dict maps simulation configuration to folders containing all simulations for that configuration.
 	dataroot : str
 		Path to the folder specific to the simulation type, dataset and sequence type that we're studying
 		Ex: '<project_root>/Results/1toM/MNIST_10/CNN/temporal_correlation_length200000_batches10'
-	datapath : dict of form
-		{ Temp: [
-			('repo1_name', block_sz_tuple1),
-			('repo2_name', block_sz_tuple2)
-			]
-		}
-
-	Attribute
-	---------
-	dataroot : str
-		Path of the root where data are stored.
-	datapath : str
-		Path to the data.
+	sim_struct: str
+		Data structure generated for the simulations. If simulations were generated after February 15th 2020, this will be '1toM' (default) 
+	dataset_name: str
+		Identifies the data that you're dealing with.
+		'MNIST' or 'artificial' or perhaps 'CIFAR'. Do not mention the number of classes here.
+	nn_config: str
+		Short identifier for the structure of neural network that you have used for the simulations.
+		Strct: <archi_name><archi_width_param>
+		Ex: 'FCL20' for a set of 3 Fully Connected Layers with mid layer width 20.
+		The meaning of <archi_width_param> depends on the architecture type and is hard-coded at the moment.
+	seq_type: str
+		Uniquely identifies the generation strategy for the sequence of labels that your network will be learning on.
+		See simu_mapping dict for details and examples of seq_types. Please name your seq_type in a clear and meaningful way.
+	simset_id: int or float
+		For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
+		For ultrametric sequences, this is temperature (float)
+		For random_blocks2, this is the size of the shuffling block (int)
+	hsv_orig: tuple (h,s,v)
+		HSV description of the color that will be used for plots for the original sequence, meaning the sequence that has not been shuffled.
+	hsv_shfl_list: list((h,s,v))
+		A list of HSV descriptions of the colors that will be used for plots for the shuffled sequences.
+		This list should be at least as long as the maximum number of shuffling block sizes that you will perform, as each curve will need to be identified visually.
+	train_labels_orig: list of arrays
+		Contains the training labels, cast between 0 and N_labels, for the original training sequence
+		Originally stored as: pickle
+	train_labels_shfl: dict of list of arrays
+		Contains the training labels, cast between 0 and N_labels, for the shuffled training sequence
+		Dict mapping each shuffling block size to a list of sequences, one per simulation
+		Originally stored as: pickle
+	distribution_train: list
+		Counts, for each label, the corresponding number of training example
+		Originally stored as: pickle
+	parameters: dict
+		Refers the different parameters and hyperparameters used for this set of simulations
+		Originally stored as: JSON
+	diagnostic_original
+		[0] contains the average accuracy split per level of hierarchy (I don't understand the split though)
+		[1][0] contains the GT pointwise to the testing sequence
+		[1][1] contains the prediction pointwise to the testing sequence
+		[1][2:2+N_hier-1] contains the pointwise distance between GT and prediction on the testing sequence
+		Originally stored as: npy
+	var_original_accuracy: array
+		[0] Average accuracy over full test sequence
+		[1:test_nbr] Average accuracy over each test run
+		Originally stored as: npy
+	var_original_classes_prediction: array
+		[0:test_nbr] Contains, for each test run, the composition of the test sample,
+		as well as the progress of training as the max training ID scanned at the time of the test run
+		Originally stored as: npy
+	autocorr_original: array
+		The autocorrelation function as computed by statsmodels.tsa.stattools.act
+		Only available if load_atc set to True in self.load_analytics()
+		Originally tored as: npy
+	autocorr_shuffle: array
+		A list of autocorrelation functions, each computed on a different test sample, as computed by statsmodels.tsa.stattools.act
+		Originally stored as: npy
 	"""
-	def __init__(self, set_name, sim_map_dict, dataroot, sim_struct, dataset_name, nn_config, seq_type, simset_id, hsv_orig, hsv_shfl_list=None):
+
+	def __init__(self, set_name, sim_map_dict, dataroot, dataset_name, nn_config, seq_type, simset_id, hsv_orig, sim_struct='1toM', hsv_shfl_list=None):
+		"""Instanciates the ResultSet, identified by a set of hyperparameters
+
+		Parameters
+		----------
+		set_name: str
+			A unique name given to this dataset, describing its specifities
+			Used for legends in the plots that will be generated.
+		sim_map_dict: dict
+			The simu_mapping file parsed into a Python dictionnary. This dict maps simulation configuration to folders containing all simulations for that configuration.
+		dataroot : str
+			Path to the folder specific to the simulation type, dataset and sequence type that we're studying
+			Ex: '<project_root>/Results/1toM/MNIST_10/CNN/temporal_correlation_length200000_batches10'
+		sim_struct: str
+			Data structure generated for the simulations. If simulations were generated after February 15th 2020, this will be '1toM' (default) 
+		dataset_name: str
+			Identifies the data that you're dealing with.
+			'MNIST' or 'artificial' or perhaps 'CIFAR'. Do not mention the number of classes here.
+		nn_config: str
+			Short identifier for the structure of neural network that you have used for the simulations.
+			Strct: <archi_name><archi_width_param>
+			Ex: 'FCL20' for a set of 3 Fully Connected Layers with mid layer width 20.
+			The meaning of <archi_width_param> depends on the architecture type and is hard-coded at the moment.
+		seq_type: str
+			Uniquely identifies the generation strategy for the sequence of labels that your network will be learning on.
+			See simu_mapping dict for details and examples of seq_types. Please name your seq_type in a clear and meaningful way.
+		simset_id: int or float
+			For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
+			For ultrametric sequences, this is temperature (float)
+			For random_blocks2, this is the size of the shuffling block (int)
+		hsv_orig: tuple (h,s,v)
+			HSV description of the color that will be used for plots for the original sequence, meaning the sequence that has not been shuffled.
+		hsv_shfl_list: list((h,s,v))
+			A list of HSV descriptions of the colors that will be used for plots for the shuffled sequences.
+			This list should be at least as long as the maximum number of shuffling block sizes that you will perform, as each curve will need to be identified visually. 
+		"""
 		self.set_name = set_name
 		self.sim_map_dict = sim_map_dict
 		self.dataroot = dataroot
@@ -82,7 +166,23 @@ class ResultSet:
 		self.hsv_shfl_list = hsv_shfl_list
 
 
-	def load_analytics(self, load_data=False, load_atc=False, load_shuffle=True, load_htmp=False):
+	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False):
+		"""
+		Loads the data from sim_map_dict for self hyperparameters
+
+		Parameters
+		----------
+		load_shuffle: bool
+			If True, loads the data for shuffled sequences.
+			True by default, but needs to be False for uniform sequences
+		load_atc: bool
+			If True, precomputed autocorrelation function will be loaded
+			Defaults to False, and right now no autocorrelation precomputation is produced (too slow to produce)
+		load_htmp: bool
+			If True, a heatmap that provides the average exploration of each class as a function of iteration will be produced.
+
+
+		"""
 		print("Loading result set for {0:s}...".format(self.set_name))
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
@@ -101,76 +201,6 @@ class ResultSet:
 		self.lbl_htmp_orig = {}
 		self.lbl_htmp_shfl = {}
 
-		self.help = {}
-
-		self.help['train_labels_orig'] = """
-				Type: list    Stored as: pickle
-				Contains the training labels, cast between 0 and N_labels, for the original training sequence
-				"""
-		self.help['train_labels_shfl'] = """
-				Type: list    Stored as: pickle
-				Contains the training labels, cast between 0 and N_labels, for the shuffled training sequence
-				"""
-		self.help['distribution_train'] = """
-				Type: list    Stored as: pickle
-				Counts, for each label, the corresponding number of training example
-				"""
-		self.help['parameters'] = """
-				Type: list    Stored as: JSON
-				Refers the different parameters and hyperparameters used for this set of simulations
-				"""
-
-		self.help['diagnostic_original.npy'] = """
-				Type: array    Stored as: npy
-				[0] contains the average accuracy split per level of hierarchy (I don't understand the split though)
-				[1][0] contains the GT pointwise to the testing sequence
-				[1][1] contains the prediction pointwise to the testing sequence
-				[1][2:2+N_hier-1] contains the pointwise distance between GT and prediction on the testing sequence
-				"""
-		self.help['var_original_accuracy.npy'] = """
-				Type: array    Stored as: npy
-				[0] Average accuracy over full test sequence
-				[1:test_nbr] Average accuracy over each test run
-				"""
-		self.help['var_original_classes_prediction.npy'] = """
-				Type: array    Stored as: npy
-				[0:test_nbr] Contains, for each test run, the composition of the test sample,
-				as well as the progress of training as the max training ID scanned at the time of the test run
-				"""
-
-		if load_data:
-			self.help['train_data_orig'] = """
-					Type: list    Stored as: pickle
-					Contains the training data inputs, for the original training sequence
-					"""
-			self.help['train_data_shfl'] = """
-					Type: list    Stored as: pickle
-					Contains the training data inputs, for the shuffled training sequence
-					"""
-		else:
-			self.help['train_data_orig'] = """
-					Unavailable. load_data set to False
-					"""
-			self.help['train_data_shfl'] = """
-					Unavailable. load_data set to False
-					"""
-
-		if load_atc:
-			self.help['autocorr_original.npy'] = """
-					Type: array    Stored as: npy
-					The autocorrelation function as computed by statsmodels.tsa.stattools.act
-					"""
-			self.help['autocorr_shuffle.npy'] = """
-					Type: array    Stored as: npy
-					A list of autocorrelation functions, each computed on a different test sample, as computed by statsmodels.tsa.stattools.act
-					"""
-		else:
-			self.help['autocorr_original.npy'] = """
-					Unavailable. load_atc set to False
-					"""
-			self.help['autocorr_shuffle.npy'] = """
-					Unavailable. load_atc set to False
-					"""
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
 		folderpath = self.dataroot + '/Results/' + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder']
@@ -210,11 +240,11 @@ class ResultSet:
 			self.atc_orig = []
 			self.atc_shfl = []
 
-		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
-			block_folders = os.listdir(folderpath)
-			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
-			os.chdir(folderpath+'/'+block_folder)
-			folderpath = os.getcwd()
+		#if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+	#		block_folders = os.listdir(folderpath)
+	#		block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
+	#		os.chdir(folderpath+'/'+block_folder)
+	#		folderpath = os.getcwd()
 		
 		for simuset_path in os.listdir(folderpath):
 			os.chdir(folderpath+'/'+simuset_path)
@@ -258,18 +288,6 @@ class ResultSet:
 					self.var_acc_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_accuracy.npy'))
 					self.var_pred_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
 
-			if load_data:
-				print("Loading data for {0:s}...".format(os.getcwd()))
-				with open('train_data_orig.pickle', 'rb') as file:
-					self.train_data_orig.append(pickle.load(file))
-
-				if load_shuffle:
-					for shuffle_sz in self.shuffle_sizes:
-						self.train_data_shfl[shuffle_sz] = []
-						with open('shuffle_'+str(shuffle_sz)+'/train_data_shfl.pickle', 'rb') as file:
-							self.train_data_shfl[shuffle_sz].append(pickle.load(file))
-
-				print("...done")
 
 			if load_atc:
 				self.atc_orig.append(np.load('autocorr_original.npy'))
@@ -278,50 +296,52 @@ class ResultSet:
 						self.atc_shfl[shuffle_sz] = []
 						self.atc_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
 
-		if load_data:
-			print("load_data set to True. Data sequences loaded.")
 		if load_atc:
 			print("load_atc set to True. Autocorrelations loaded.")
 
 
-	def lbl_history(self, T_list, shuffled_blocksz=None, strides=None):
-		n_Ts = len(T_list)
-		assert (n_Ts>0)
+	def lbl_history(self, shuffled_blocksz=None, strides=None):
+		"""
+		Plots an example of sequence as label=f(iter)
+
+		Parameters
+		----------
+		shuffled_blocksz: int
+			If not None, will pick one of the simulated sequences shuffled with the specified shuffling block size
+		strides: list
+			If not None, must be a list of int/float with the position of vertical bars to be plotted on top of the figure
+		"""
 		t_explr = None
 
-		lbls_fig = plt.figure(figsize=(18,10*n_Ts))
-		lbls_axes = []
+		lbls_fig, lbls_ax = plt.subplot(figsize=(18,10))
 
-		for T_id, T in enumerate(T_list):
-			if shuffled_blocksz is None:
-				occur_id = random.randint(0, len(self.train_labels_orig)-1)
-				seq = self.train_labels_orig[occur_id]
-			else:
-				occur_id = random.randint(0, len(self.train_labels_shfl[shuffled_blocksz])-1)
-				seq = self.train_labels_shfl[shuffled_blocksz][occur_id]
+		if shuffled_blocksz is None:
+			occur_id = random.randint(0, len(self.train_labels_orig)-1)
+			seq = self.train_labels_orig[occur_id]
+		else:
+			occur_id = random.randint(0, len(self.train_labels_shfl[shuffled_blocksz])-1)
+			seq = self.train_labels_shfl[shuffled_blocksz][occur_id]
 
-			n_labels = len(set(seq))
-			lbls_ax = plt.subplot(n_Ts, 1, 1+T_id)
-			lbls_axes.append(lbls_ax)
-			lbls_ax.plot(seq)
+		n_labels = len(set(seq))
+		lbls_ax.plot(seq)
 
-			obs_lbl_set = set()
-			nobs_seq = []
-			for itr_id, lbl in enumerate(seq):
-				obs_lbl_set.add(lbl)
-				nobs_seq.append(len(obs_lbl_set))
-				if t_explr is None and len(obs_lbl_set) == n_labels:
-					t_explr = itr_id
+		obs_lbl_set = set()
+		nobs_seq = []
+		for itr_id, lbl in enumerate(seq):
+			obs_lbl_set.add(lbl)
+			nobs_seq.append(len(obs_lbl_set))
+			if t_explr is None and len(obs_lbl_set) == n_labels:
+				t_explr = itr_id
 
-			lbls_ax.plot(nobs_seq)
-			if strides is not None:
-				for stride in strides:
-					lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
+		lbls_ax.plot(nobs_seq)
+		if strides is not None:
+			for stride in strides:
+				lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
 
-			ttl = 'History of labels in the original training sequence - T='+str(T)
-			if t_explr:
-				ttl = ttl+' - tau_asym=' + str(t_explr)
-			plt.title(ttl)
+		ttl = 'History of labels in the original training sequence'
+		if t_explr:
+			ttl = ttl+' - tau_asym=' + str(t_explr)
+		plt.title(ttl)
 
 		return lbls_fig, lbls_axes
 			
@@ -582,7 +602,7 @@ def get_acc(
 	Parameters
 	----------
 	rs : ResultSet
-		tmain result set
+		main result set
 	rs_altr : ResultSet
 		alternative result set
 	rs_unif : ResultSet
@@ -668,6 +688,31 @@ def get_acc(
 
 
 def get_raw_cf(lbl_seq, acc_orig, acc_unif, plot=False):
+	"""
+	Computes the RPLF score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
+
+	Parameters
+	----------
+	lbl_seq : list(int)
+		sequence of labels for this simulation. This is used to determine the timeframe of exploration of the different classes.
+	acc_orig : list(float)
+		list of accuracy scores (%) for the original sequence
+	acc_unif : list(float)
+		list of accuracy scores (%) for the sequence shuffled with a block size of 1, meaning that on learning, the algorithm is only limited by the incomplete exploration of classes as well as the imbalance in the sequence up to this point.
+		The imbalance is the same as in the original sequence at any point in time. 
+	plot: bool
+		if True, will plot the RPLF as a function of the number of iterations since the first full exploration
+
+	Returns
+	-------
+	cf: list
+		list of the RPLF scores from the time of first full exploration of the classes.
+		Therefore the scores are aligned from the first iteration that all classes were explored, onward.
+		If at least one class is missing from the sequence, then None
+	t_explr: int
+		The first iteration at which all classes were explored.
+		If at least one class is missing from the sequence, then None
+	"""
 	nspl = len(acc_orig)
 	seql = len(lbl_seq)
 	t_explr = None
