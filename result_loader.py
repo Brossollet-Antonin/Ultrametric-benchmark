@@ -232,19 +232,15 @@ class ResultSet:
 		self.var_pred_shfl = {}
 		self.lbl_htmp_shfl = {}
 
-		if load_data:
-			self.train_data_orig = []
-			self.train_data_shfl = []
-
 		if load_atc:
 			self.atc_orig = []
 			self.atc_shfl = []
 
-		#if self.seq_type in ("random_blocks2", "ladder_blocks2"):
-	#		block_folders = os.listdir(folderpath)
-	#		block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
-	#		os.chdir(folderpath+'/'+block_folder)
-	#		folderpath = os.getcwd()
+		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+			block_folders = os.listdir(folderpath)
+			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
+			os.chdir(folderpath+'/'+block_folder)
+			folderpath = os.getcwd()
 		
 		for simuset_path in os.listdir(folderpath):
 			os.chdir(folderpath+'/'+simuset_path)
@@ -313,7 +309,7 @@ class ResultSet:
 		"""
 		t_explr = None
 
-		lbls_fig, lbls_ax = plt.subplot(figsize=(18,10))
+		lbls_fig, lbls_ax = plt.subplots(figsize=(18,10))
 
 		if shuffled_blocksz is None:
 			occur_id = random.randint(0, len(self.train_labels_orig)-1)

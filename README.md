@@ -9,3 +9,6 @@ The results analysis is not automatically done for the moment. Some codes to do 
 ## Run jobs on Habanero
 The [cluster job](cluster_job) folder contain scripts to run batch jobs on the theory centre cluster Habanero to train batches on neural networks using different parameters to produce more statistically significant data and explore different parameters. 
 Infos on how to use Habanero can be found [here](https://confluence.columbia.edu/confluence/display/rcs/Habanero+HPC+Cluster+User+Documentation).
+
+## ToDo
+- Replace all path navigation by dedicated paths: root_path, results_path, plot_paths
