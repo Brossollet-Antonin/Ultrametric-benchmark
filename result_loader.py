@@ -11,6 +11,9 @@ import numpy as np
 import json
 import pdb
 import re
+import getpass
+
+import utils
 
 from copy import deepcopy
 import random
@@ -48,8 +51,9 @@ conf_fscore={
 	0.99: 2.58,
 }
 
+paths = utils.get_project_paths()
+
 class ResultSet:
-<<<<<<< HEAD
 	"""Contains the results of a simulation
 
 	Attribute
@@ -120,7 +124,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataroot, dataset_name, nn_config, seq_type, simset_id, hsv_orig, sim_struct='1toM', hsv_shfl_list=None):
+	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hsv_orig, sim_struct='1toM', hsv_shfl_list=None):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -130,9 +134,6 @@ class ResultSet:
 			Used for legends in the plots that will be generated.
 		sim_map_dict: dict
 			The simu_mapping file parsed into a Python dictionnary. This dict maps simulation configuration to folders containing all simulations for that configuration.
-		dataroot : str
-			Path to the folder specific to the simulation type, dataset and sequence type that we're studying
-			Ex: '<project_root>/Results/1toM/MNIST_10/CNN/temporal_correlation_length200000_batches10'
 		sim_struct: str
 			Data structure generated for the simulations. If simulations were generated after February 15th 2020, this will be '1toM' (default) 
 		dataset_name: str
@@ -158,7 +159,6 @@ class ResultSet:
 		"""
 		self.set_name = set_name
 		self.sim_map_dict = sim_map_dict
-		self.dataroot = dataroot
 		self.sim_struct = sim_struct
 		self.dataset_name = dataset_name
 		self.nn_config = nn_config
@@ -205,7 +205,7 @@ class ResultSet:
 
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
-		folderpath = self.dataroot + '/Results/' + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder']
+		folderpath = paths['simus'] + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder'] + '/'
 
 		if ("uniform" in self.seq_type) or ("ultrametric" in self.seq_type):
 			T = self.sim_battery_params["T"]
@@ -238,30 +238,30 @@ class ResultSet:
 			self.atc_orig = []
 			self.atc_shfl = []
 
-		if self.seq_type in ("random_blocks2", "ladder_blocks2"):
+		if self.seq_type in ("random_blocks2", "ladder_blocks2") and 'slebastard' not in getpass.getuser(): # Patch temporaire,
+				# A terme, il faut qu'on trouve pourquoi la structure de nos folders diffère
 			block_folders = os.listdir(folderpath)
 			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
-			os.chdir(folderpath+'/'+block_folder)
-			folderpath = os.getcwd()
+			folderpath = folderpath+'/'+block_folder+'/'
 		
-		for simuset_path in os.listdir(folderpath):
-			os.chdir(folderpath+'/'+simuset_path)
+		for simuset in os.listdir(folderpath):
+			simuset_path = folderpath+'/'+simuset+'/'
 
-			with open('train_labels_orig.pickle', 'rb') as file:
+			with open(simuset_path+'train_labels_orig.pickle', 'rb') as file:
 				self.train_labels_orig.append(pickle.load(file))
 
-			with open('distribution_train.pickle', 'rb') as file:
+			with open(simuset_path+'distribution_train.pickle', 'rb') as file:
 				self.dstr_train.append(pickle.load(file))
 
-			with open('parameters.json', 'r') as file:
+			with open(simuset_path+'parameters.json', 'r') as file:
 				self.params.append(json.load(file))
 
-			self.eval_orig.append(np.load('evaluation_original.npy', allow_pickle=True))
-			self.var_acc_orig.append(np.load('var_original_accuracy.npy'))
-			self.var_pred_orig.append(np.load('var_original_classes_prediction.npy', allow_pickle=True))
+			self.eval_orig.append(np.load(simuset_path+'evaluation_original.npy', allow_pickle=True))
+			self.var_acc_orig.append(np.load(simuset_path+'var_original_accuracy.npy'))
+			self.var_pred_orig.append(np.load(simuset_path+'var_original_classes_prediction.npy', allow_pickle=True))
 
 			if load_htmp:
-				with open('labels_heatmap_shfl.pickle', 'rb') as file:
+				with open(simuset_path+'labels_heatmap_shfl.pickle', 'rb') as file:
 					self.lbl_htmp_orig.append(pickle.load(file))
 
 			if load_shuffle:
@@ -275,24 +275,24 @@ class ResultSet:
 						self.var_acc_shfl[shuffle_sz] = []
 						self.var_pred_shfl[shuffle_sz] = []
 
-					with open('shuffle_'+str(shuffle_sz)+'/train_labels_shfl.pickle', 'rb') as file:
+					with open(simuset_path+'shuffle_'+str(shuffle_sz)+'/train_labels_shfl.pickle', 'rb') as file:
 						self.train_labels_shfl[shuffle_sz].append(pickle.load(file))
 
 					if load_htmp:
-						with open('shuffle_'+str(shuffle_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
+						with open(simuset_path+'shuffle_'+str(shuffle_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
 							self.lbl_htmp_shfl[shuffle_sz].append(pickle.load(file))
 
-					self.eval_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
-					self.var_acc_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_accuracy.npy'))
-					self.var_pred_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
+					self.eval_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
+					self.var_acc_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/var_shuffle_accuracy.npy'))
+					self.var_pred_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
 
 
 			if load_atc:
-				self.atc_orig.append(np.load('autocorr_original.npy'))
+				self.atc_orig.append(np.load(simuset_path+'autocorr_original.npy'))
 				if load_shuffle:
 					for shuffle_sz in self.shuffle_sizes:
 						self.atc_shfl[shuffle_sz] = []
-						self.atc_shfl[shuffle_sz].append(np.load('shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
+						self.atc_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
 
 		if load_atc:
 			print("load_atc set to True. Autocorrelations loaded.")
@@ -464,12 +464,12 @@ class ResultSet:
 			  prop={'size': 16})
 
 			plt.savefig(
-				fname=filename+'.pdf',
+				fname=paths['plots']+filename+'.pdf',
 				format='pdf'
 			)
 
 			return hlocs_stat_orig, hlocs_stat_shfl_list
-	
+
 
 	def set_hsv(self, hue=0.5, uniform=False):
 		l_shfl = len(self.shuffle_sizes) if not uniform else 1
@@ -674,7 +674,7 @@ def get_acc(
 	fig.tight_layout(pad=10.0)
 
 	if save_format is not None:
-		plt.savefig('out_plots_acc.'+str(save_format), format=save_format)
+		plt.savefig(paths['plots']+'out_plots_acc.'+str(save_format), format=save_format)
 
 	return fig, axes
 
@@ -866,7 +866,7 @@ def load_cf_set(
 
 	fig_cfscore.tight_layout(pad=10.0)
 	if save_format is not None:
-		plt.savefig('out_plots_cfscore.svg', format=save_format)
+		plt.savefig(paths['plots']+'out_plots_cfscore.svg', format=save_format)
 
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
@@ -961,8 +961,8 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 
 	# Saving figure
 
-	plt.savefig('out_plots_cfscore_avg_linscale.svg', format='svg')
-	plt.savefig('out_plots_cfscore_avg_linscale.pdf', format='pdf')
+	plt.savefig(paths['plots']+'out_plots_cfscore_avg_linscale.svg', format='svg')
+	plt.savefig(paths['plots']+'out_plots_cfscore_avg_linscale.pdf', format='pdf')
 
 def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
 				axis_line_width=1.0, tick_size=12, tick_label_size=20,

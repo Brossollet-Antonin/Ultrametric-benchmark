@@ -6,8 +6,8 @@ Created on Fri Jan 10 15:02:44 2020
 """
 
 import argparse
-import os, sys
-import pdb
+import os, sys, pdb
+import getpass
 
 import random
 from datetime import datetime
@@ -21,11 +21,13 @@ from local_tools import verbose
 import dataset as ds
 import neuralnet
 
+import utils
 from trainer import Trainer
 from ultrametric_analysis import ultrametric_analysis
 from data_saver import save_results
 
-cwd = os.getcwd()
+paths = utils.get_project_paths()
+cwd = paths['root']
 
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
@@ -98,12 +100,12 @@ def run(args):
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
 			for T in args.temperature_list:
-				save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
+				save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
 				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
-						save_root = cwd+"/Results/1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
+						save_root = paths['simus'] + "1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
 					else:
-						save_root = cwd+"/Results/1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
+						save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
 				if 'blocks' in args.sequence_type:
 					T = float(0)
 					if args.sequence_type == 'random_blocks2_2freq':
