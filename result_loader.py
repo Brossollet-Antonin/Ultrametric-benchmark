@@ -16,6 +16,7 @@ from copy import deepcopy
 import random
 from scipy.spatial.distance import cdist
 import time
+import matplotlib
 
 from matplotlib import pyplot as plt
 from matplotlib.colors import hsv_to_rgb
@@ -27,16 +28,16 @@ from numba import jit
 hsv_unif = (0, 0, 0.15)
 
 hsv_um_um_orig = (0, 1, 1)
-hsv_um_um_shfl_list = tuple([0, 1-block_id*0.08, 1] for block_id in range(8))
+hsv_um_um_shfl_list = tuple([0, 1-block_id*0.20, 1] for block_id in range(5))
 
 hsv_um_mx_orig = (0.32, 0.9, 0.65)
-hsv_um_mx_shfl_list = tuple([0.32, 0.9-block_id*0.08, 0.65] for block_id in range(8))
+hsv_um_mx_shfl_list = tuple([0.32, 1-block_id*0.20, 0.65+0.05*block_id] for block_id in range(5))
 
 hsv_rb_um_orig = (0.63, 1, 0.8)
-hsv_rb_um_shfl_list = tuple([0.63, 1-block_id*0.08, 0.8] for block_id in range(8))
+hsv_rb_um_shfl_list = tuple([0.63, 1-block_id*0.20, 0.8] for block_id in range(5))
 
 hsv_rb_mx_orig = (0.77, 1, 0.8)
-hsv_rb_mx_shfl_list = tuple([0.77, 1-block_id*0.08, 0.8] for block_id in range(8))
+hsv_rb_mx_shfl_list = tuple([0.77, 1-block_id*0.20, 0.8+0.04*block_id] for block_id in range(5))
 
 markers = ['o','+','x','4','s','p','P', '8', 'h', 'X']
 
@@ -48,6 +49,7 @@ conf_fscore={
 }
 
 class ResultSet:
+<<<<<<< HEAD
 	"""Contains the results of a simulation
 
 	Attribute
@@ -467,7 +469,15 @@ class ResultSet:
 			)
 
 			return hlocs_stat_orig, hlocs_stat_shfl_list
+	
 
+	def set_hsv(self, hue=0.5, uniform=False):
+		l_shfl = len(self.shuffle_sizes) if not uniform else 1
+		self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
+		sat_stride = 1/l_shfl
+		value_stride = 0.3/l_shfl
+		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.5+value_stride*shfl_id] for shfl_id in range(l_shfl)]
+	  
 
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
 	"""
@@ -492,9 +502,10 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 	### ORIGINAL ###
 	n_orig = len(rs.var_acc_orig)
 	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
-	var_acc_orig_std = np.std([acc[:,0] for acc in rs.var_acc_orig], axis=0)
+	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
+	x_labels = rs.var_acc_orig[0][:,1]
 	ax.plot(
-			var_acc_orig,
+			x_labels, var_acc_orig,
 			ls = 'solid',
 			color = hsv_to_rgb(rs.hsv_orig),
 			label=rs.set_name+' - No shuffling'
@@ -502,7 +513,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 
 	if plt_confinter:
 		ax.fill_between(
-			x = range(len(var_acc_orig)),
+			x = x_labels,
 			y1 = np.maximum(0, var_acc_orig - conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig)),
 			y2 = np.minimum(var_acc_orig + conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig), 100),
 			color = hsv_to_rgb(rs.hsv_orig),
@@ -522,7 +533,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 		var_acc_shfl = np.mean([acc[:,0] for acc in acc_data], axis=0)
 		var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
 		ax.plot(
-			var_acc_shfl,
+			x_labels, var_acc_shfl,
 			ls = '--',
 			color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
 			label=rs.set_name+' - Shuffled w/ block size {0:d}'.format(block_sz)
@@ -530,7 +541,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 
 		if plt_confinter:
 			ax.fill_between(
-				x = range(len(var_acc_shfl)),
+				x = x_labels,
 				y1 = np.maximum(0, var_acc_shfl - conf_fscore[0.95]*np.sqrt(var_acc_shfl*(100-var_acc_shfl)/n_shfl)),
 				y2 = np.minimum(var_acc_shfl + conf_fscore[0.95]*np.sqrt(var_acc_shfl*(100-var_acc_shfl)/n_shfl), 100),
 				color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
@@ -555,29 +566,16 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 	plot_window: tuple like (x_min, x_max)
 		tuple of extrema positions to use for formating x-axis
 	"""
-	ax.set_xticks(xtick_pos)
-	ax.set_xticklabels(xtick_labels)
-	ax.set_title(title, fontsize = 14)
-
 	box = ax.get_position()
 	ax.set_position([box.x0, box.y0 + box.height * 0.1,
 					 box.width, box.height * 0.9])
 
-	ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
-				  fancybox=True, shadow=True, ncol=2,
-				  prop={'size': 16})
-
-	ax.set_xlabel('Iterations', fontsize=14)
-	ax.set_ylabel('Accuracy (%)', fontsize=14)
+	ax.legend()
+	ax.set_xlabel('Iterations')
+	ax.set_ylabel('Accuracy (%)')
 
 	if plot_window is not None:
 		ax.set_xlim(plot_window[0], plot_window[1])
-
-	for tick in ax.xaxis.get_major_ticks():
-		tick.label.set_fontsize(14)
-
-	for tick in ax.yaxis.get_major_ticks():
-		tick.label.set_fontsize(14)
 
 
 def get_acc(
@@ -891,39 +889,39 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 		xtick_labels = [str(k) for k in sorted(cf.keys()) if k>0]
 
 		ax_mean_cfs.plot(
-		    xtick_pos,
-		    [cf[k] for k in sorted(cf.keys()) if k>0],
-		    ls = 'solid',
-		    linewidth=3,
-		    marker = '+',
-		    markersize = 15,
-		    markeredgewidth = 3,
-		    color = hsv_to_rgb(rs.hsv_orig),
-		    label = rs.set_name
+			xtick_pos,
+			[cf[k] for k in sorted(cf.keys()) if k>0],
+			ls = 'solid',
+			linewidth=3,
+			marker = '+',
+			markersize = 15,
+			markeredgewidth = 3,
+			color = hsv_to_rgb(rs.hsv_orig),
+			label = rs.set_name
 		)
 		ax_mean_cfs.set_xticks(xtick_pos, xtick_labels)
 		ax_mean_cfs.fill_between(
-		    x = xtick_pos,
-		    y1 = [cf[k] - var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
-		    y2 = [cf[k] + var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
-		    color = hsv_to_rgb(rs.hsv_orig),
-		    alpha = 0.2
+			x = xtick_pos,
+			y1 = [cf[k] - var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
+			y2 = [cf[k] + var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
+			color = hsv_to_rgb(rs.hsv_orig),
+			alpha = 0.2
 		)
 
 		ax_mean_cfs.plot(
-		    x_origpos,
-		    cf[0],
-		    marker = '+',
-		    markersize = 20,
-		    markeredgewidth = 4,
-		    color = hsv_to_rgb(rs.hsv_orig)
+			x_origpos,
+			cf[0],
+			marker = '+',
+			markersize = 20,
+			markeredgewidth = 4,
+			color = hsv_to_rgb(rs.hsv_orig)
 		)
 		ax_mean_cfs.fill_between(
-		    x = [x_origpos],
-		    y1 = [cf[0] - var_scale*cf_std[0]],
-		    y2 = [cf[0] + var_scale*cf_std[0]],
-		    color = hsv_to_rgb(rs.hsv_orig),
-		    alpha = 0.2
+			x = [x_origpos],
+			y1 = [cf[0] - var_scale*cf_std[0]],
+			y2 = [cf[0] + var_scale*cf_std[0]],
+			color = hsv_to_rgb(rs.hsv_orig),
+			alpha = 0.2
 		)
 
 		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
@@ -952,11 +950,11 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 		ax_mean_cfs.set_yscale("log")
 
 	for tick in ax_mean_cfs.xaxis.get_major_ticks():
-	    tick.label.set_fontsize(14)
-	    tick.label.set_rotation('vertical')
+		tick.label.set_fontsize(14)
+		tick.label.set_rotation('vertical')
 
 	for tick in ax_mean_cfs.yaxis.get_major_ticks():
-	    tick.label.set_fontsize(14)
+		tick.label.set_fontsize(14)
 
 	ax_mean_cfs.set_xlim(0, 1.1*x_origpos)
 	ax_mean_cfs.set_ylim(-0.1, 0.8)
@@ -965,3 +963,36 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 
 	plt.savefig('out_plots_cfscore_avg_linscale.svg', format='svg')
 	plt.savefig('out_plots_cfscore_avg_linscale.pdf', format='pdf')
+
+def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
+				axis_line_width=1.0, tick_size=12, tick_label_size=20,
+				label_pad=4, legend_loc='lower right'):
+	def cm2inch(x): return x/2.54
+	fig_height = cm2inch(fig_height)
+	fig_width = cm2inch(fig_width)
+	rcParams = matplotlib.rcParams
+
+	rcParams["figure.figsize"] = [fig_width, fig_height]   #default is [6.4, 4.8]
+	rcParams["font.sans-serif"] = "Tahoma"
+	rcParams["font.size"] = size
+	rcParams["legend.fontsize"] = size
+	rcParams["legend.frameon"] = False
+	rcParams["legend.loc"] = legend_loc
+	rcParams["axes.labelsize"] = size
+	rcParams["xtick.labelsize"] = tick_label_size
+	rcParams["ytick.labelsize"] = tick_label_size
+	rcParams["xtick.major.size"] = tick_size
+	rcParams["ytick.major.size"] = tick_size
+	rcParams["axes.titlesize"] = 0 # no title for paper
+	rcParams["axes.labelpad"] = label_pad  # default is 4.0
+	rcParams["axes.linewidth"] = axis_line_width
+	rcParams["lines.linewidth"] = line_width
+	rcParams["xtick.direction"] = "in"
+	rcParams["ytick.direction"] = "in"
+	rcParams["lines.antialiased"] = True
+	rcParams["savefig.dpi"] = 320
+
+
+def add_letter_figure(ax, letter, fontsize=15):
+	ax.text(-0.1, 1.15, letter, transform=ax.transAxes, fontsize=fontsize
+			, fontweight='bold', va='top', ha='right')
