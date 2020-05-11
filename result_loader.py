@@ -28,16 +28,16 @@ from numba import jit
 hsv_unif = (0, 0, 0.15)
 
 hsv_um_um_orig = (0, 1, 1)
-hsv_um_um_shfl_list = tuple([0, 1-block_id*0.08, 1] for block_id in range(8))
+hsv_um_um_shfl_list = tuple([0, 1-block_id*0.20, 1] for block_id in range(5))
 
 hsv_um_mx_orig = (0.32, 0.9, 0.65)
-hsv_um_mx_shfl_list = tuple([0.32, 1-block_id*0.12, 0.65] for block_id in range(8))
+hsv_um_mx_shfl_list = tuple([0.32, 1-block_id*0.20, 0.65+0.05*block_id] for block_id in range(5))
 
 hsv_rb_um_orig = (0.63, 1, 0.8)
-hsv_rb_um_shfl_list = tuple([0.63, 1-block_id*0.12, 0.8] for block_id in range(8))
+hsv_rb_um_shfl_list = tuple([0.63, 1-block_id*0.20, 0.8] for block_id in range(5))
 
 hsv_rb_mx_orig = (0.77, 1, 0.8)
-hsv_rb_mx_shfl_list = tuple([0.77, 1-block_id*0.12, 0.8] for block_id in range(8))
+hsv_rb_mx_shfl_list = tuple([0.77, 1-block_id*0.20, 0.8+0.04*block_id] for block_id in range(5))
 
 markers = ['o','+','x','4','s','p','P', '8', 'h', 'X']
 
@@ -473,6 +473,13 @@ class ResultSet:
 
             return hlocs_stat_orig, hlocs_stat_shfl_list
 
+    def set_hsv(self, hue=0.5, uniform=False):
+        l_shfl = len(self.shuffle_sizes) if not uniform else 1
+        self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
+        sat_stride = 1/l_shfl
+        value_stride = 0.3/l_shfl
+        self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.5+value_stride*shfl_id] for shfl_id in range(l_shfl)]
+        
 
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
     """
