@@ -475,8 +475,8 @@ class ResultSet:
 		l_shfl = len(self.shuffle_sizes) if not uniform else 1
 		self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
 		sat_stride = 1/l_shfl
-		value_stride = 0.3/l_shfl
-		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.5+value_stride*shfl_id] for shfl_id in range(l_shfl)]
+		value_stride = 0.5/l_shfl
+		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.45+value_stride*shfl_id] for shfl_id in range(l_shfl)]
 	  
 
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
