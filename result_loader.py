@@ -238,7 +238,7 @@ class ResultSet:
 			self.atc_orig = []
 			self.atc_shfl = []
 
-		if self.seq_type in ("random_blocks2", "ladder_blocks2") and 'slebastard' not in getpass.getuser(): # Patch temporaire,
+		if self.seq_type in ("random_blocks2", "ladder_blocks2") and 'sleb' not in getpass.getuser(): # Patch temporaire,
 				# A terme, il faut qu'on trouve pourquoi la structure de nos folders diffère
 			block_folders = os.listdir(folderpath)
 			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]

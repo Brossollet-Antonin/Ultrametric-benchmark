@@ -103,9 +103,9 @@ def run(args):
 				save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
 				if dataset.data_origin == 'artificial':
 					if args.nnarchi == 'FCL':
-						save_root = paths['simus'] + "1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)							
+						save_root = paths['simus'] + "1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.data_sz*dataset.ratio_value)							
 					else:
-						save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.ratio_value)
+						save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.data_sz*dataset.ratio_value)
 				if 'blocks' in args.sequence_type:
 					T = float(0)
 					if args.sequence_type == 'random_blocks2_2freq':
