@@ -829,7 +829,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 			rs.var_acc_shfl[1][seq_id][:,0],
 			n_labels
 		)
-		if _t_explr:
+		if _t_explr is not None:
 			cf_aligned = np.concatenate([
 				np.array(_cf[_t_explr:]),
 				np.zeros(_t_explr)
