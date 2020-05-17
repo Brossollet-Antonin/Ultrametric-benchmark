@@ -23,24 +23,13 @@ import matplotlib
 
 from matplotlib import pyplot as plt
 from matplotlib.colors import hsv_to_rgb
+import seaborn as sns
 from tqdm.notebook import tqdm
 
 from numba import jit
 
 
 hsv_unif = (0, 0, 0.15)
-
-hsv_um_um_orig = (0, 1, 1)
-hsv_um_um_shfl_list = tuple([0, 1-block_id*0.20, 1] for block_id in range(5))
-
-hsv_um_mx_orig = (0.32, 0.9, 0.65)
-hsv_um_mx_shfl_list = tuple([0.32, 1-block_id*0.20, 0.65+0.05*block_id] for block_id in range(5))
-
-hsv_rb_um_orig = (0.63, 1, 0.8)
-hsv_rb_um_shfl_list = tuple([0.63, 1-block_id*0.20, 0.8] for block_id in range(5))
-
-hsv_rb_mx_orig = (0.77, 1, 0.8)
-hsv_rb_mx_shfl_list = tuple([0.77, 1-block_id*0.20, 0.8+0.04*block_id] for block_id in range(5))
 
 markers = ['o','+','x','4','s','p','P', '8', 'h', 'X']
 
@@ -124,7 +113,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hsv_orig, sim_struct='1toM', hsv_shfl_list=None):
+	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue, sim_struct='1toM', uniform=False):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -164,8 +153,8 @@ class ResultSet:
 		self.nn_config = nn_config
 		self.seq_type = seq_type
 		self.simset_id = simset_id
-		self.hsv_orig = hsv_orig
-		self.hsv_shfl_list = hsv_shfl_list
+		self.hue = hue
+		self.uniform = uniform
 
 
 	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False):
@@ -297,6 +286,16 @@ class ResultSet:
 		if load_atc:
 			print("load_atc set to True. Autocorrelations loaded.")
 
+		self.set_hsv(self.hue, self.uniform)
+
+
+	def set_hsv(self, hue=0.5, uniform=False):
+		l_shfl = len(self.shuffle_sizes) if not uniform else 1
+		self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
+		sat_stride = 1/l_shfl
+		value_stride = 0.5/l_shfl
+		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.45+value_stride*shfl_id] for shfl_id in range(l_shfl)]
+
 
 	def lbl_history(self, shuffled_blocksz=None, strides=None):
 		"""
@@ -342,6 +341,89 @@ class ResultSet:
 		plt.title(ttl)
 
 		return lbls_fig, lbls_axes
+
+
+	def lbl_distrib(self, max_iter=None, shuffled_blocksz=None, filter_perc=2, cumulative=False):
+		"""
+		Plots the distribution of relative representation of labels for the sequence, averaged over all sequences of the simulation set.
+		If shuffle_blocksz is left None, the set of original sequences will be used for plotting.
+		Otherwise, the set of sequences shuffled with the specified bklock size will be used. 
+
+		Parameters
+		----------
+		max_iter: int
+			If not None, will only plot distributions up to iteration max_iter
+		shuffled_blocksz: int
+			If not None, will pick one of the simulated sequences shuffled with the specified shuffling block size
+		filter_perc: float
+			size of the gaussian filter used for distribution smooting, in percentage of the total sequence length
+		cumulative: bool
+			if True, the relative share over all
+		"""
+		from scipy.ndimage import gaussian_filter1d
+
+		seq_length = self.params[0]["Sequence Length"]
+		n_classes = self.params[0]["Tree Branching"]**self.params[0]["Tree Depth"]
+		distrib = np.zeros(shape=(seq_length, n_classes))
+
+		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
+
+		if shuffled_blocksz is None:
+			seq_set = self.train_labels_orig
+		else:
+			seq_set = self.train_labels_shfl[shuffled_blocksz]
+
+		n_seqs = len(seq_set)
+
+		for seq in seq_set:
+			if len(seq) > seq_length:
+				seq = seq[0:seq_length]
+			distrib[range(seq_length), seq] += 1/n_seqs
+
+		# Optionally, cumulative summing over iterations
+		if cumulative:
+			norm = np.arange(1, 1+float(seq_length))
+			distrib = np.cumsum(
+				np.divide(distrib.transpose(), norm).transpose(),
+				axis=0)
+
+		# Gaussian smoothing
+		if max_iter is not None:
+			filter_sz = filter_perc*max_iter/100
+		else:
+			filter_sz = filter_perc*seq_length/100
+		filt_distrib = np.copy(distrib)
+		for cl_id in range(n_classes):
+			filt_distrib[:, cl_id] = gaussian_filter1d(distrib[:, cl_id], filter_sz)
+
+		# Plot heatmap of different labels
+		if max_iter is not None:
+			sns.heatmap(
+				np.transpose(filt_distrib[0:max_iter,:]),
+				ax = heatmap_ax
+				)
+		else:
+			sns.heatmap(
+				np.transpose(filt_distrib),
+				ax = heatmap_ax
+				)
+
+		# Plot all distributions on one plot
+		for cl_id in range(n_classes):
+			hsv = [cl_id/n_classes, 1, 0.7]
+			if max_iter is not None:
+				distr_ax.plot(
+					filt_distrib[0:max_iter, cl_id],
+					color = hsv_to_rgb(hsv)
+				)
+			else:
+				distr_ax.plot(
+					filt_distrib[:, cl_id],
+					color = hsv_to_rgb(hsv)
+				)
+			
+
+		return fig, heatmap_ax, distr_ax
 			
 
 	@jit(nopython=True)
@@ -469,14 +551,6 @@ class ResultSet:
 			)
 
 			return hlocs_stat_orig, hlocs_stat_shfl_list
-
-
-	def set_hsv(self, hue=0.5, uniform=False):
-		l_shfl = len(self.shuffle_sizes) if not uniform else 1
-		self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
-		sat_stride = 1/l_shfl
-		value_stride = 0.5/l_shfl
-		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.45+value_stride*shfl_id] for shfl_id in range(l_shfl)]
 	  
 
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
@@ -681,7 +755,7 @@ def get_acc(
 
 
 
-def get_raw_cf(lbl_seq, acc_orig, acc_unif, plot=False):
+def get_raw_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	"""
 	Computes the RPLF score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
 
@@ -710,7 +784,6 @@ def get_raw_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 	nspl = len(acc_orig)
 	seql = len(lbl_seq)
 	t_explr = None
-	n_labels = len(set(lbl_seq))
 
 	obs_lbl_set = set()
 	nobs_seq = []
@@ -745,10 +818,17 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 	init_cf = {}
 	init_cf_std = {}
 
+	n_labels = rs.params[0]["Tree Branching"]**rs.params[0]["Tree Depth"]
+
 	for seq_id, seq in enumerate(rs.train_labels_orig):
 		t_explr = []
 		cf = []
-		_cf, _t_explr = get_raw_cf(seq, rs.var_acc_orig[seq_id][:,0], rs.var_acc_shfl[1][seq_id][:,0])
+		_cf, _t_explr = get_raw_cf(
+			seq,
+			rs.var_acc_orig[seq_id][:,0],
+			rs.var_acc_shfl[1][seq_id][:,0],
+			n_labels
+		)
 		if _t_explr:
 			cf_aligned = np.concatenate([
 				np.array(_cf[_t_explr:]),
@@ -795,7 +875,8 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 			_cf, _t_explr = get_raw_cf(
 				seq,
 				rs.var_acc_shfl[block_sz][seq_id][:,0],
-				rs.var_acc_shfl[1][seq_id][:,0]
+				rs.var_acc_shfl[1][seq_id][:,0],
+				n_labels
 			)
 			if _t_explr is not None:
 				cf_aligned = np.concatenate([
@@ -871,7 +952,7 @@ def load_cf_set(
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xlog=False, ylog=False, var_scale=1):
+def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1):
 	fig_mean_cfs = plt.figure(figsize=(18,12))
 	ax_mean_cfs = plt.subplot(111)
 
@@ -916,10 +997,25 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=2.5e4, vline_pos=2.2e4, xl
 			markeredgewidth = 4,
 			color = hsv_to_rgb(rs.hsv_orig)
 		)
-		ax_mean_cfs.fill_between(
-			x = [x_origpos],
-			y1 = [cf[0] - var_scale*cf_std[0]],
-			y2 = [cf[0] + var_scale*cf_std[0]],
+		ax_mean_cfs.plot(
+			x_origpos,
+			cf[0] - var_scale*cf_std[0],
+			marker = '_',
+			markersize = 10,
+			markeredgewidth = 4,
+			color = hsv_to_rgb(rs.hsv_orig)
+		)
+		ax_mean_cfs.plot(
+			x_origpos,
+			cf[0] + var_scale*cf_std[0],
+			marker = '_',
+			markersize = 10,
+			markeredgewidth = 4,
+			color = hsv_to_rgb(rs.hsv_orig)
+		)
+		ax_mean_cfs.plot(
+			[x_origpos, x_origpos],
+			[cf[0] - var_scale*cf_std[0], cf[0] + var_scale*cf_std[0]],
 			color = hsv_to_rgb(rs.hsv_orig),
 			alpha = 0.2
 		)
