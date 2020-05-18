@@ -1021,7 +1021,6 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 		)
 
 		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
-		ax_mean_cfs.vlines(x=vline_pos, ymin=-0.1, ymax=1)
 
 	# Plot formatting for figure 4 of paper
 
@@ -1034,8 +1033,8 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 
 	ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 16})
 
-	ax_mean_cfs.set_xlabel('Iterations', fontsize=16)
-	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)', fontsize=16)
+	ax_mean_cfs.set_xlabel('Shuffle length')
+	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)')
 
 	fig_mean_cfs.tight_layout(pad=10.0)
 
@@ -1046,14 +1045,12 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 		ax_mean_cfs.set_yscale("log")
 
 	for tick in ax_mean_cfs.xaxis.get_major_ticks():
-		tick.label.set_fontsize(14)
 		tick.label.set_rotation('vertical')
 
-	for tick in ax_mean_cfs.yaxis.get_major_ticks():
-		tick.label.set_fontsize(14)
-
-	ax_mean_cfs.set_xlim(0, 1.1*x_origpos)
-	ax_mean_cfs.set_ylim(-0.1, 0.8)
+	ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
+	ylim = ax_mean_cfs.get_ylim()
+	ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
+	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
 

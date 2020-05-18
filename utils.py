@@ -8,6 +8,8 @@ def get_project_paths():
         paths['root'] = '/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/'
     elif getpass.getuser() == 'ab4877':
         paths['root'] = '/rigel/theory/users/ab4877/Ultrametric-benchmark/'
+    elif getpass.getuser() == 'Antonin':
+        paths['root'] = 'C:/Users/Antonin/Documents/Documents/ENS 2A/Stage M1/Code/github/Ultrametric-benchmark/'
     else:
         paths['root'] = '/home/slebst/Documents/Workspace/Jobs/Columbia/ultrametric_benchmark/Ultrametric-Benchmark/'
     paths['plots'] = paths['root'] + 'plots/'
