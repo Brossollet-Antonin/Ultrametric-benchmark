@@ -342,7 +342,7 @@ class ResultSet:
 		return lbls_fig, lbls_axes
 
 
-	def lbl_distrib(self, max_iter=None, shuffled_blocksz=None, filter_perc=2, cumulative=False):
+	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz:int=None, filter_perc:float=2, cumulative:bool=False):
 		"""
 		Plots the distribution of relative representation of labels for the sequence, averaged over all sequences of the simulation set.
 		If shuffle_blocksz is left None, the set of original sequences will be used for plotting.
@@ -382,9 +382,10 @@ class ResultSet:
 		# Optionally, cumulative summing over iterations
 		if cumulative:
 			norm = np.arange(1, 1+float(seq_length))
-			distrib = np.cumsum(
-				np.divide(distrib.transpose(), norm).transpose(),
-				axis=0)
+			distrib = np.divide(
+				np.cumsum(distrib, axis=0).transpose(),
+				norm
+				).transpose()
 
 		# Gaussian smoothing
 		if max_iter is not None:
