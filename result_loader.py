@@ -140,11 +140,10 @@ class ResultSet:
 			For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
 			For ultrametric sequences, this is temperature (float)
 			For random_blocks2, this is the size of the shuffling block (int)
-		hsv_orig: tuple (h,s,v)
-			HSV description of the color that will be used for plots for the original sequence, meaning the sequence that has not been shuffled.
-		hsv_shfl_list: list((h,s,v))
-			A list of HSV descriptions of the colors that will be used for plots for the shuffled sequences.
-			This list should be at least as long as the maximum number of shuffling block sizes that you will perform, as each curve will need to be identified visually. 
+		hue: int
+			Hue used for the color of the family of plots generated from this simulation
+		uniform: bool
+			Should be true if the sequence is generated using the uniform option. False (default)
 		"""
 		self.set_name = set_name
 		self.sim_map_dict = sim_map_dict
