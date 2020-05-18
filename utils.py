@@ -5,7 +5,9 @@ def get_project_paths():
     if getpass.getuser() == 'slebst':
         paths['root'] = '/home/slebst/Documents/Workspace/Jobs/Columbia/ultrametric_benchmark/Ultrametric-Benchmark/'
     elif getpass.getuser() == 'sl4744':
-        paths['root'] = '/rigel/theory/users/sl4744/projects/Ultrametric-benchmark'
+        paths['root'] = '/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/'
+    elif getpass.getuser() == 'ab4877':
+        paths['root'] = '/rigel/theory/users/ab4877/Ultrametric-benchmark/'
     else:
         paths['root'] = '/home/slebst/Documents/Workspace/Jobs/Columbia/ultrametric_benchmark/Ultrametric-Benchmark/'
     paths['plots'] = paths['root'] + 'plots/'
