@@ -6,12 +6,14 @@ Created on Wed Jun 26 10:53:11 2019
 """
 
 import os
+import errno
 import pickle
 import numpy as np
 import json
 import pdb
 import re
 import getpass
+import datetime
 
 import utils
 
@@ -28,16 +30,13 @@ from tqdm.notebook import tqdm
 
 from numba import jit
 
-
 hsv_unif = (0, 0, 0.15)
-
 markers = ['o','+','x','4','s','p','P', '8', 'h', 'X']
-
 conf_fscore={
-	0.9: 1.64,
-	0.95: 1.96,
-	0.98: 2.33,
-	0.99: 2.58,
+    0.9: 1.64,
+    0.95: 1.96,
+    0.98: 2.33,
+    0.99: 2.58,
 }
 
 paths = utils.get_project_paths()
@@ -47,8 +46,8 @@ class ResultSet:
 
 	Attribute
 	---------
-	set_name: str
-		A unique name given to this dataset, describing its specifities
+	set_descr: str
+		A description of the result set
 		Used for legends in the plots that will be generated.
 	sim_map_dict: dict
 		The simu_mapping file parsed into a Python dictionnary. This dict maps simulation configuration to folders containing all simulations for that configuration.
@@ -113,12 +112,12 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue=0.5, sim_struct='1toM'):
+	def __init__(self, rs_name, rs_descr, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue=0.5, sim_struct='1toM'):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
 		----------
-		set_name: str
+		set_descr: str
 			A unique name given to this dataset, describing its specifities
 			Used for legends in the plots that will be generated.
 		sim_map_dict: dict
@@ -145,7 +144,9 @@ class ResultSet:
 		uniform: bool
 			True if the sequence the simulation is done on unifrom sequence
 		"""
-		self.set_name = set_name
+		
+		self.name = rs_name
+		self.descr = rs_descr
 		self.sim_map_dict = sim_map_dict
 		self.sim_struct = sim_struct
 		self.dataset_name = dataset_name
@@ -173,7 +174,7 @@ class ResultSet:
 
 
 		"""
-		print("Loading result set for {0:s}...".format(self.set_name))
+		print("Loading result set for {0:s}...".format(self.descr))
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
 		self.train_data_shfl = {}
@@ -193,7 +194,13 @@ class ResultSet:
 
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
-		folderpath = paths['simus'] + self.sim_struct + '/' + self.dataset_name + '/' + self.nn_config + '/' + self.sim_battery_params['folder'] + '/'
+		folderpath = "{0:s}{1:s}/{2:s}/{3:s}/{4:s}/".format(
+			paths['simus'],
+			self.sim_struct,
+			self.dataset_name,
+			self.nn_config,
+			self.sim_battery_params['folder']
+		)
 
 		if ("uniform" in self.seq_type) or ("ultrametric" in self.seq_type):
 			T = self.sim_battery_params["T"]
@@ -342,7 +349,7 @@ class ResultSet:
 		return lbls_fig, lbls_axes
 
 
-	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz:int=None, filter_perc:float=2, cumulative:bool=False):
+	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10):
 		"""
 		Plots the distribution of relative representation of labels for the sequence, averaged over all sequences of the simulation set.
 		If shuffle_blocksz is left None, the set of original sequences will be used for plotting.
@@ -358,10 +365,13 @@ class ResultSet:
 			size of the gaussian filter used for distribution smooting, in percentage of the total sequence length
 		cumulative: bool
 			if True, the relative share over all
+		save_formats: list(str):
+			if not None, must contain the list of format the distribution figures should be output as
 		"""
 		from scipy.ndimage import gaussian_filter1d
 
 		seq_length = self.params[0]["Sequence Length"]
+		n_tests = self.params[0]["Number of tests"]
 		n_classes = self.params[0]["Tree Branching"]**self.params[0]["Tree Depth"]
 		distrib = np.zeros(shape=(seq_length, n_classes))
 
@@ -397,6 +407,9 @@ class ResultSet:
 			filt_distrib[:, cl_id] = gaussian_filter1d(distrib[:, cl_id], filter_sz)
 
 		# Plot heatmap of different labels
+		xtick_scale = n_tests//xaxis_n_ticks
+		xtick_pos = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+
 		if max_iter is not None:
 			sns.heatmap(
 				np.transpose(filt_distrib[0:max_iter,:]),
@@ -407,6 +420,11 @@ class ResultSet:
 				np.transpose(filt_distrib),
 				ax = heatmap_ax
 				)
+
+		heatmap_ax.set_xticks(xtick_pos)
+
+		heatmap_ax.set_xlabel('Iteration')
+		heatmap_ax.set_ylabel('Class label')
 
 		# Plot all distributions on one plot
 		for cl_id in range(n_classes):
@@ -422,6 +440,27 @@ class ResultSet:
 					color = hsv_to_rgb(hsv)
 				)
 			
+		if save_formats is not None:
+			for fmt in save_formats:
+				out_filepath = os.path.join(
+					paths['plots'],
+					"labels_distrib/distrib_{setname:s}_{maxiter:s}_{blocksz:s}_{filt:s}_{cum:s}.{fmt:s}".format(
+						setname = self.name,
+						maxiter = 'maxiter{:d}'.format(max_iter) if max_iter is not None else 'fullseq',
+						blocksz = 'blocksz{:d}'.format(shuffled_blocksz) if shuffled_blocksz is not None else 'orig',
+						filt = 'filtered_{:.0f}%'.format(filter_perc) if filter_perc is not None else 'unfiltered',
+						cum = 'cumulative' if cumulative else 'instantaneous',
+						fmt = fmt
+					)
+				)
+				if not os.path.exists(os.path.dirname(out_filepath)):
+				    try:
+				        os.makedirs(os.path.dirname(out_filepath))
+				    except OSError as exc: # Guard against race condition
+				        if exc.errno != errno.EEXIST:
+				            raise
+
+				plt.savefig(out_filepath, format=fmt)
 
 		return fig, heatmap_ax, distr_ax
 			
@@ -582,7 +621,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			x_labels, var_acc_orig,
 			ls = 'solid',
 			color = hsv_to_rgb(rs.hsv_orig),
-			label=rs.set_name+' - No shuffling'
+			label=rs.descr+' - No shuffling'
 		)
 
 	if plt_confinter:
@@ -610,7 +649,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			x_labels, var_acc_shfl,
 			ls = '--',
 			color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-			label=rs.set_name+' - Shuffled w/ block size {0:d}'.format(block_sz)
+			label=rs.descr+' - Shuffled w/ block size {0:d}'.format(block_sz)
 		)
 
 		if plt_confinter:
@@ -648,6 +687,9 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 	ax.set_xlabel('Iterations')
 	ax.set_ylabel('Accuracy (%)')
 
+	#ax.set_xticks(xtick_pos)
+	#ax.set_xticklabels(xtick_labels)
+
 	if plot_window is not None:
 		ax.set_xlim(plot_window[0], plot_window[1])
 
@@ -655,7 +697,7 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 def get_acc(
 	rs, rs_altr=None, rs_unif=None,
 	seq_length=300000, n_tests=300, plot_window=None, blocks=None,
-	blocks_for_shared_plots=None, plt_confinter=False, n_ticks=10, save_format=None
+	blocks_for_shared_plots=None, plt_confinter=False, n_ticks=10, save_formats=None
 	):
 	"""
 	Creates accuracy plots from three ResultSet objects:
@@ -692,8 +734,8 @@ def get_acc(
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
 	n_ticks: int
 		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
-	save_format: str
-		if not None, plots will be saved in the provided format
+	save_formats: list(str)
+		if not None, plots will be saved in the provided formats
 	"""
 	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
@@ -712,7 +754,7 @@ def get_acc(
 
 	make_perfplot(rs, blocks=blocks, ax=acc_ax, plt_confinter=plt_confinter)
 
-	format_perf_plot(acc_ax, "Accuracy as a function of time for original and shuffled sequence - " + rs.set_name, xtick_pos, xtick_labels, plot_window)
+	format_perf_plot(acc_ax, "Accuracy as a function of time for original and shuffled sequence - " + rs.descr, xtick_pos, xtick_labels, plot_window)
 
 
 	### 2) UNIFORM + ALTERNATIVE ###
@@ -725,7 +767,7 @@ def get_acc(
 
 		make_perfplot(rs_altr, blocks=blocks, ax=acc_ax_altr, plt_confinter=plt_confinter)
 
-		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.set_name, xtick_pos, xtick_labels, plot_window)
+		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.descr, xtick_pos, xtick_labels, plot_window)
 
 
 	### 3) ALL SCENARIOS, REDUCED NUMBER OF BLOCKS ###
@@ -747,11 +789,30 @@ def get_acc(
 
 	fig.tight_layout(pad=10.0)
 
-	if save_format is not None:
-		plt.savefig(paths['plots']+'out_plots_acc.'+str(save_format), format=save_format)
+
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				"accuracy/accuracy_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{date:s}.{fmt:s}".format(
+					mainsetname = rs.name,
+					altersetname = rs_altr.name,
+					unifsetname = rs_unif.name,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
+
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			plt.savefig(out_filepath, format=fmt)
 
 	return fig, axes
-
 
 
 
@@ -850,7 +911,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 			cf_mean,
 			color = hsv_to_rgb(rs.hsv_orig),
 			ls = 'solid',
-			label = rs.set_name + ' - Original sequence'
+			label = rs.descr + ' - Original sequence'
 		)
 
 		if plt_confinter:
@@ -899,7 +960,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 				cf_mean,
 				color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
 				ls = '--',
-				label = rs.set_name + ' - Shuffled w/ block size {0:d}'.format(block_sz)
+				label = rs.descr + ' - Shuffled w/ block size {0:d}'.format(block_sz)
 			)
 
 			if plt_confinter:
@@ -922,7 +983,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 def load_cf_set(
 	rs, blocks=None,
 	seq_length=300000, n_tests=300,
-	xtick_scale=25, plt_confinter=False, save_format=None
+	xtick_scale=25, plt_confinter=False, save_formats=None
 	):
 # def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
@@ -946,13 +1007,33 @@ def load_cf_set(
 	cf_ax.set_ylabel('Accuracy loss from CF (%)', fontsize=14)
 
 	fig_cfscore.tight_layout(pad=10.0)
-	if save_format is not None:
-		plt.savefig(paths['plots']+'out_plots_cfscore.svg', format=save_format)
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				"CFscore/history/cfscoreshist_{setname:s}_{date:s}.{fmt:s}".format(
+					setname = rs.name,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
+
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			plt.savefig(out_filepath, format=fmt)
 
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1):
+def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None):
+	"""
+	Produces plots of the CF score as a function of 
+	"""
 	fig_mean_cfs = plt.figure(figsize=(18,12))
 	ax_mean_cfs = plt.subplot(111)
 
@@ -978,7 +1059,7 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 			markersize = 15,
 			markeredgewidth = 3,
 			color = hsv_to_rgb(rs.hsv_orig),
-			label = rs.set_name
+			label = rs.descr
 		)
 		ax_mean_cfs.set_xticks(xtick_pos, xtick_labels)
 		ax_mean_cfs.fill_between(
@@ -1053,9 +1134,27 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_{date:s}.{fmt:s}".format(
+					cf_dictname = utils.nameof(cf_sets),
+					method = method,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
 
-	plt.savefig(paths['plots']+'out_plots_cfscore_avg_linscale.svg', format='svg')
-	plt.savefig(paths['plots']+'out_plots_cfscore_avg_linscale.pdf', format='pdf')
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			plt.savefig(out_filepath, format=fmt)
+
 
 def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
 				axis_line_width=1.0, tick_size=12, tick_label_size=20,
