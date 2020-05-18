@@ -113,7 +113,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue, sim_struct='1toM'):
+	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue=0.5, sim_struct='1toM'):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -141,7 +141,7 @@ class ResultSet:
 			For ultrametric sequences, this is temperature (float)
 			For random_blocks2, this is the size of the shuffling block (int)
 		hue: int
-			Hue used for the color of the family of plots generated from this simulation
+			Hue used for the color of the family of plots generated from this simulation. Default 0.5
 		uniform: bool
 			True if the sequence the simulation is done on unifrom sequence
 		"""
