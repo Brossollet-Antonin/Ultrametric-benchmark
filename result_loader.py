@@ -113,7 +113,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue, sim_struct='1toM', uniform=False):
+	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue, sim_struct='1toM'):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -143,7 +143,7 @@ class ResultSet:
 		hue: int
 			Hue used for the color of the family of plots generated from this simulation
 		uniform: bool
-			Should be true if the sequence is generated using the uniform option. False (default)
+			True if the sequence the simulation is done on unifrom sequence
 		"""
 		self.set_name = set_name
 		self.sim_map_dict = sim_map_dict
@@ -153,7 +153,7 @@ class ResultSet:
 		self.seq_type = seq_type
 		self.simset_id = simset_id
 		self.hue = hue
-		self.uniform = uniform
+		self.uniform = "uniform" in self.seq_type
 
 
 	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False):
