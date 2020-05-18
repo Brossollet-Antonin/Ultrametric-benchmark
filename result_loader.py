@@ -113,7 +113,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue, sim_struct='1toM', uniform=False):
+	def __init__(self, set_name, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue=0.5, sim_struct='1toM'):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -140,11 +140,10 @@ class ResultSet:
 			For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
 			For ultrametric sequences, this is temperature (float)
 			For random_blocks2, this is the size of the shuffling block (int)
-		hsv_orig: tuple (h,s,v)
-			HSV description of the color that will be used for plots for the original sequence, meaning the sequence that has not been shuffled.
-		hsv_shfl_list: list((h,s,v))
-			A list of HSV descriptions of the colors that will be used for plots for the shuffled sequences.
-			This list should be at least as long as the maximum number of shuffling block sizes that you will perform, as each curve will need to be identified visually. 
+		hue: int
+			Hue used for the color of the family of plots generated from this simulation. Default 0.5
+		uniform: bool
+			True if the sequence the simulation is done on unifrom sequence
 		"""
 		self.set_name = set_name
 		self.sim_map_dict = sim_map_dict
@@ -154,7 +153,7 @@ class ResultSet:
 		self.seq_type = seq_type
 		self.simset_id = simset_id
 		self.hue = hue
-		self.uniform = uniform
+		self.uniform = "uniform" in self.seq_type
 
 
 	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False):
