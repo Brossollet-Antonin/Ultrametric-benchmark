@@ -2,6 +2,9 @@
 
 # Slurm outputs
 slurm-*.out
+.DS_Store
+plots/
+Results/
 
 ## General
 

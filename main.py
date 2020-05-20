@@ -16,7 +16,7 @@ import time
 import numpy as np
 import torch
 
-from local_tools import verbose
+from utils import verbose
 
 import dataset as ds
 import neuralnet
@@ -32,7 +32,7 @@ cwd = paths['root']
 parser = argparse.ArgumentParser('./main.py', description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
-parser.add_argument('-v', '--verbose', dest='verbose', action='count', default=0)
+parser.add_argument('--verbose', type=int, dest='verbose', default=0)
 
 # dataset parameters
 data_params = parser.add_argument_group('Dataset Parameters')
@@ -81,7 +81,7 @@ def run(args):
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 
-	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args)
+	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args.verbose, 0)
 
 	dataset = ds.Dataset(
 		data_origin = args.data_origin,
@@ -95,7 +95,7 @@ def run(args):
 		shuffle_classes=args.artif_shuffle_classes
 		)
 
-	verbose('Done generating dataset {0:s}'.format(args.data_origin), args)
+	verbose('Done generating dataset {0:s}'.format(args.data_origin), args.verbose, 0)
 
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
@@ -118,7 +118,7 @@ def run(args):
 				if (args.artif_shuffle_classes==0):
 					save_root = save_root[:-1]+"_noclassreshuffle/"
 
-				#save_folder = "T%.3f_Memory%d_block%d_%s" % (T, memory_sz, block_size_shuffle, datetime.now().strftime("%y%m%d_%H%M%S"))
+				verbose("Output directory for this simulation set: {:s}".format(save_root), args.verbose, 0)
 
 				if args.sequence_type == 'uniform':
 					T = 0.0
@@ -146,7 +146,7 @@ def run(args):
 
 				verbose(
 					'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
-					args
+					args.verbose, 0
 					)
 
 				if args.nnarchi == 'FCL':
@@ -185,7 +185,7 @@ def run(args):
 				trainer.network_orig = netfc_original
 				trainer.network_shfl = netfc_shuffle
 
-				verbose('...done', args)
+				verbose('...done', args.verbose, 0)
 
 				rs = ultrametric_analysis(trainer, args, args.block_size_shuffle_list)
 				rs.parameters = parameters

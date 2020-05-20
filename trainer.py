@@ -27,6 +27,8 @@ import sequence_generator_spatial
 import rates_correlation
 import preprocessing
 
+from utils import verbose
+
 
 def mem_SGD(net, mini_batch, lr, momentum, device):
     # Instanciates optimizer and computes the loss for mini_batch
@@ -298,7 +300,7 @@ class Trainer:
         self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
-    def train(self, mem_sz, lr, momentum, training_range, seq=None, method='sgd'):
+    def train(self, mem_sz, lr, momentum, training_range, seq=None, method='sgd', verbose_lvl=0):
         """
         Train a network on the specified training protocol.
 
@@ -321,6 +323,8 @@ class Trainer:
         training_range : list
             Range of the data to train on. training_range[0] is the begining
             sample, training_range[1] is the end sample
+        verbose_lvl: int
+            verbove level used to decide whether to output performance throughout training
 
         Returns
         -------
@@ -365,11 +369,11 @@ class Trainer:
                 memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
                 first_train_id += self.batch_sz
                 if first_train_id % (1000*self.batch_sz) == 999*self.batch_sz:
-                    print('[%d] loss: %.4f' % (first_train_id//self.batch_sz + 1, running_loss/1000))
+                    verbose('[%d] loss: %.4f' % (first_train_id//self.batch_sz + 1, running_loss/1000), verbose_lvl, 2)
                     running_loss = 0.0
 
 
-            print("--- Finished Experience Replay training on %s ---" % (training_range,))
+            verbose("--- Finished Experience Replay training on %s ---"%(training_range), verbose_lvl, 2)
 
         else:
             raise NotImplementedError("training type not supported")
@@ -488,7 +492,7 @@ class Trainer:
         return shuffled_labels
 
 
-    def testing_final(self):
+    def testing_final(self, verbose_lvl=1):
         # Define which label to exclude in the testing phase (for simplicity, to have a simple tree structure, certain labels have to be excluded
         # depending on the branching and depth of the tree)
         if self.dataset.data_origin=='MNIST' or self.dataset.data_origin=='CIFAR10':
@@ -518,6 +522,5 @@ class Trainer:
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
-        print('Accuracy of the network on the %d test images: %.2f %%' % (total,
-        100 * correct / total))
+        verbose('Accuracy of the network on the %d test images: %.2f %%' % (total, 100 * correct / total), verbose_lvl)
         return (100*correct/total, test_sequence)

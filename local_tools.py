@@ -76,7 +76,6 @@ def simulate_sequence(T_list, seq_length=200000, tree_depth=3, tree_branching=2,
         ttl = 'History of labels in the original training sequence - T='+str(T)
         plt.title(ttl)
 
-
 def get_lbl_distr(shuffled_sequence, min_range, max_range, n_classes):
     """
     Inputs:

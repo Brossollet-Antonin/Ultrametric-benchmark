@@ -420,7 +420,7 @@ class ResultSet:
 				ax = heatmap_ax
 				)
 
-		heatmap_ax.set_xticks(xtick_pos)
+		#heatmap_ax.set_xticks(xtick_pos)
 
 		heatmap_ax.set_xlabel('Iteration')
 		heatmap_ax.set_ylabel('Class label')
