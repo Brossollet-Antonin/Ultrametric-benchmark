@@ -24,6 +24,7 @@ import time
 import matplotlib
 
 from matplotlib import pyplot as plt
+from matplotlib import rcParams, rcParamsDefault
 from matplotlib.colors import hsv_to_rgb
 import seaborn as sns
 from tqdm.notebook import tqdm
@@ -180,7 +181,6 @@ class ResultSet:
 		self.train_data_shfl = {}
 		self.train_labels_shfl = {}
 		self.dstr_train = {}
-		self.params = {}
 		self.atc_orig = {}
 		self.atc_shfl = {}
 		self.eval_orig = {}
@@ -194,20 +194,22 @@ class ResultSet:
 
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
-		folderpath = "{0:s}{1:s}/{2:s}/{3:s}/{4:s}/".format(
+		folderpath = os.path.join(
 			paths['simus'],
 			self.sim_struct,
 			self.dataset_name,
 			self.nn_config,
 			self.sim_battery_params['folder']
 		)
+		with open(os.path.join(folderpath, 'parameters.json'), 'r') as param_file:
+			self.params = json.load(param_file)
 
 		if ("uniform" in self.seq_type) or ("ultrametric" in self.seq_type):
 			T = self.sim_battery_params["T"]
 		else:
 			T = 0.0
 
-		if self.seq_type in ("uniform"):
+		if "uniform" in self.seq_type:
 			self.shuffle_sizes = []
 		else:
 			self.shuffle_sizes = self.sim_battery_params["shuffle_sizes"]
@@ -220,7 +222,6 @@ class ResultSet:
 		self.train_labels_orig = []
 		self.train_labels_shfl = {}
 		self.dstr_train = []
-		self.params = []
 		self.eval_orig = []
 		self.eval_shfl = {}
 		self.var_acc_orig = []
@@ -237,26 +238,24 @@ class ResultSet:
 				# A terme, il faut qu'on trouve pourquoi la structure de nos folders diffère
 			block_folders = os.listdir(folderpath)
 			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
-			folderpath = folderpath+'/'+block_folder+'/'
+			folderpath = os.path.join(folderpath, block_folder)
 		
-		for simuset in os.listdir(folderpath):
-			simuset_path = folderpath+'/'+simuset+'/'
+		simuset_list = [simuset for simuset in os.listdir(folderpath) if os.path.isdir(os.path.join(folderpath, simuset))]
+		for simuset in simuset_list:
+			simuset_path = os.path.join(folderpath, simuset)
 
-			with open(simuset_path+'train_labels_orig.pickle', 'rb') as file:
+			with open(os.path.join(simuset_path, 'train_labels_orig.pickle'), 'rb') as file:
 				self.train_labels_orig.append(pickle.load(file))
 
-			with open(simuset_path+'distribution_train.pickle', 'rb') as file:
+			with open(os.path.join(simuset_path, 'distribution_train.pickle'), 'rb') as file:
 				self.dstr_train.append(pickle.load(file))
 
-			with open(simuset_path+'parameters.json', 'r') as file:
-				self.params.append(json.load(file))
-
-			self.eval_orig.append(np.load(simuset_path+'evaluation_original.npy', allow_pickle=True))
-			self.var_acc_orig.append(np.load(simuset_path+'var_original_accuracy.npy'))
-			self.var_pred_orig.append(np.load(simuset_path+'var_original_classes_prediction.npy', allow_pickle=True))
+			self.eval_orig.append(np.load(os.path.join(simuset_path, 'evaluation_original.npy'), allow_pickle=True))
+			self.var_acc_orig.append(np.load(os.path.join(simuset_path, 'var_original_accuracy.npy')))
+			self.var_pred_orig.append(np.load(os.path.join(simuset_path, 'var_original_classes_prediction.npy'), allow_pickle=True))
 
 			if load_htmp:
-				with open(simuset_path+'labels_heatmap_shfl.pickle', 'rb') as file:
+				with open(os.path.join(simuset_path, 'labels_heatmap_shfl.pickle'), 'rb') as file:
 					self.lbl_htmp_orig.append(pickle.load(file))
 
 			if load_shuffle:
@@ -270,16 +269,16 @@ class ResultSet:
 						self.var_acc_shfl[shuffle_sz] = []
 						self.var_pred_shfl[shuffle_sz] = []
 
-					with open(simuset_path+'shuffle_'+str(shuffle_sz)+'/train_labels_shfl.pickle', 'rb') as file:
+					with open(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'train_labels_shfl.pickle'), 'rb') as file:
 						self.train_labels_shfl[shuffle_sz].append(pickle.load(file))
 
 					if load_htmp:
-						with open(simuset_path+'shuffle_'+str(shuffle_sz)+'/labels_heatmap_shfl.pickle', 'rb') as file:
+						with open(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'labels_heatmap_shfl.pickle'), 'rb') as file:
 							self.lbl_htmp_shfl[shuffle_sz].append(pickle.load(file))
 
-					self.eval_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/evaluation_shuffled.npy', allow_pickle=True))
-					self.var_acc_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/var_shuffle_accuracy.npy'))
-					self.var_pred_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/var_shuffle_classes_prediction.npy', allow_pickle=True))
+					self.eval_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'evaluation_shuffled.npy'), allow_pickle=True))
+					self.var_acc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_accuracy.npy')))
+					self.var_pred_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_classes_prediction.npy'), allow_pickle=True))
 
 
 			if load_atc:
@@ -287,7 +286,7 @@ class ResultSet:
 				if load_shuffle:
 					for shuffle_sz in self.shuffle_sizes:
 						self.atc_shfl[shuffle_sz] = []
-						self.atc_shfl[shuffle_sz].append(np.load(simuset_path+'shuffle_'+str(shuffle_sz)+'/autocorr_shuffle.npy'))
+						self.atc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'autocorr_shuffle.npy')))
 
 		if load_atc:
 			print("load_atc set to True. Autocorrelations loaded.")
@@ -370,9 +369,9 @@ class ResultSet:
 		"""
 		from scipy.ndimage import gaussian_filter1d
 
-		seq_length = self.params[0]["Sequence Length"]
-		n_tests = self.params[0]["Number of tests"]
-		n_classes = self.params[0]["Tree Branching"]**self.params[0]["Tree Depth"]
+		seq_length = self.params["Sequence Length"]
+		n_tests = self.params["Number of tests"]
+		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
 		distrib = np.zeros(shape=(seq_length, n_classes))
 
 		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
@@ -460,7 +459,7 @@ class ResultSet:
 				        if exc.errno != errno.EEXIST:
 				            raise
 
-				plt.savefig(out_filepath, format=fmt)
+				fig.savefig(out_filepath, format=fmt)
 
 		return fig, heatmap_ax, distr_ax
 			
@@ -696,7 +695,7 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 
 def get_acc(
 	rs, rs_altr=None, rs_unif=None,
-	seq_length=300000, n_tests=300, plot_window=None, blocks=None,
+	seq_length=300000, n_tests=300, plot_window=None, blocks=None, blocks_sizes='small',
 	blocks_for_shared_plots=None, plt_confinter=False, n_ticks=10, save_formats=None
 	):
 	"""
@@ -742,10 +741,10 @@ def get_acc(
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	n_plots = 1 + 2*int(rs_altr is not None)
-	fig = plt.figure(1, figsize=(18,12*n_plots))
+	fig = plt.figure(figsize=(18,12*n_plots))
 	axes = []
 
-	acc_ax = plt.subplot(n_plots, 1, 1)
+	acc_ax = fig.add_subplot(n_plots, 1, 1)
 	axes.append(acc_ax)
 
 	### 1) UNIFORM + ORIGINAL ###
@@ -759,7 +758,7 @@ def get_acc(
 
 	### 2) UNIFORM + ALTERNATIVE ###
 	if rs_altr is not None:
-		acc_ax_altr = plt.subplot(n_plots, 1, 2)
+		acc_ax_altr = fig.add_subplot(n_plots, 1, 2)
 		axes.append(acc_ax_altr)
 
 		if rs_unif is not None:
@@ -772,7 +771,7 @@ def get_acc(
 
 	### 3) ALL SCENARIOS, REDUCED NUMBER OF BLOCKS ###
 	if rs_altr is not None:
-		acc_ax_all = plt.subplot(n_plots, 1, 3)
+		acc_ax_all = fig.add_subplot(n_plots, 1, 3)
 		axes.append(acc_ax_all)
 
 		if blocks_for_shared_plots is None and blocks is not None:
@@ -794,10 +793,11 @@ def get_acc(
 		for fmt in save_formats:
 			out_filepath = os.path.join(
 				paths['plots'],
-				"accuracy/accuracy_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{date:s}.{fmt:s}".format(
+				"accuracy/accuracy_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
 					mainsetname = rs.name,
 					altersetname = rs_altr.name,
 					unifsetname = rs_unif.name,
+					blocksz = blocks_sizes,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
 				)
@@ -810,7 +810,7 @@ def get_acc(
 			        if exc.errno != errno.EEXIST:
 			            raise
 
-			plt.savefig(out_filepath, format=fmt)
+			fig.savefig(out_filepath, format=fmt)
 
 	return fig, axes
 
@@ -879,11 +879,15 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 	init_cf = {}
 	init_cf_std = {}
 
-	n_labels = rs.params[0]["Tree Branching"]**rs.params[0]["Tree Depth"]
+	n_labels = rs.params["Tree Branching"]**rs.params["Tree Depth"]
 
 	for seq_id, seq in enumerate(rs.train_labels_orig):
 		t_explr = []
 		cf = []
+		## DEBUG ##
+		#if "RbMixed" in rs.name:
+		#	pdb.set_trace()
+		###########
 		_cf, _t_explr = get_raw_cf(
 			seq,
 			rs.var_acc_orig[seq_id][:,0],
@@ -891,10 +895,11 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 			n_labels
 		)
 		if _t_explr is not None:
-			cf_aligned = np.concatenate([
-				np.array(_cf[_t_explr:]),
-				np.zeros(_t_explr)
-			])
+			cf_aligned = _cf
+			#cf_aligned = np.concatenate([
+			#	np.array(_cf[_t_explr:]),
+			#	np.zeros(_t_explr)
+			#])
 			cf.append(cf_aligned)
 			t_explr.append(_t_explr)
 
@@ -940,10 +945,11 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 				n_labels
 			)
 			if _t_explr is not None:
-				cf_aligned = np.concatenate([
-					np.array(_cf[_t_explr:]),
-					np.zeros(_t_explr)
-				])
+				cf_aligned = _cf
+				#cf_aligned = np.concatenate([
+				#	np.array(_cf[_t_explr:]),
+				#	np.zeros(_t_explr)
+				#])
 				cf.append(cf_aligned)
 				t_explr.append(_t_explr)
 
@@ -977,6 +983,7 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 			init_cf[block_sz] = cf_mean[0]
 			init_cf_std[block_sz] = cf_std[0]
 
+
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
@@ -989,7 +996,7 @@ def load_cf_set(
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
-	fig_cfscore = plt.figure(figsize=(18,12))
+	fig_cfscore = plt.figure(figsize=(18,14))
 	cf_ax = plt.subplot(1,1,1)
 
 	avg_cf, avg_cf_std, init_cf, init_cf_std = get_cf_stats(rs, blocks, ax=cf_ax, plt_confinter=plt_confinter)
@@ -1001,10 +1008,11 @@ def load_cf_set(
 	box = cf_ax.get_position()
 	cf_ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 
-	cf_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=2, prop={'size': 16})
+	handles, labels = cf_ax.get_legend_handles_labels()
+	lgd = cf_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=1, prop={'size': 16})
 
-	cf_ax.set_xlabel('Iterations', fontsize=14)
-	cf_ax.set_ylabel('Accuracy loss from CF (%)', fontsize=14)
+	xlabels = cf_ax.set_xlabel('Iterations', fontsize=14)
+	ylabels = cf_ax.set_ylabel('Accuracy loss from CF (%)', fontsize=14)
 
 	fig_cfscore.tight_layout(pad=10.0)
 	if save_formats is not None:
@@ -1025,19 +1033,19 @@ def load_cf_set(
 			        if exc.errno != errno.EEXIST:
 			            raise
 
-			plt.savefig(out_filepath, format=fmt)
+			fig_cfscore.savefig(out_filepath, format=fmt, bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None):
+def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
 	fig_mean_cfs = plt.figure(figsize=(18,12))
 	ax_mean_cfs = plt.subplot(111)
 
-	for cf_set in cf_sets:
+	for cf_set in cf_stats['stat_list']:
 		rs = cf_set['rs']
 
 		if method=='mean':
@@ -1048,7 +1056,6 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 			cf_std = cf_set['init_cf_std']
 
 		xtick_pos = [k for k in sorted(cf.keys()) if k>0]
-		xtick_labels = [str(k) for k in sorted(cf.keys()) if k>0]
 
 		ax_mean_cfs.plot(
 			xtick_pos,
@@ -1061,7 +1068,6 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 			color = hsv_to_rgb(rs.hsv_orig),
 			label = rs.descr
 		)
-		ax_mean_cfs.set_xticks(xtick_pos, xtick_labels)
 		ax_mean_cfs.fill_between(
 			x = xtick_pos,
 			y1 = [cf[k] - var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
@@ -1101,16 +1107,17 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 			alpha = 0.2
 		)
 
-		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
+		plt.xticks(xtick_pos)
+		#ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
 
 	# Plot formatting for figure 4 of paper
 
 	#xtick_pos = [k for k in xtick_pos] + [x_origpos]
 	#xtick_labels = [str(k) for k in xtick_pos] + [25000]
-	ax_mean_cfs.set_xticks(xtick_pos)
-	ax_mean_cfs.set_xticklabels(xtick_labels)
+	#ax_mean_cfs.set_xticks(xtick_pos)
+	#ax_mean_cfs.set_xticklabels(xtick_labels)
 
-	ax_mean_cfs.set_title('Per-label loss in classification performance as a function of shuffle block size', fontsize = 18)
+	#ax_mean_cfs.set_title('Per-label loss in classification performance as a function of shuffle block size', fontsize = 18)
 
 	ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 16})
 
@@ -1125,12 +1132,12 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 	if ylog:
 		ax_mean_cfs.set_yscale("log")
 
-	for tick in ax_mean_cfs.xaxis.get_major_ticks():
-		tick.label.set_rotation('vertical')
+	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
+	#	tick.label.set_rotation('vertical')
 
-	ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
-	ylim = ax_mean_cfs.get_ylim()
-	ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
+	#ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
+	#ylim = ax_mean_cfs.get_ylim()
+	#ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
 	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
@@ -1138,9 +1145,11 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 		for fmt in save_formats:
 			out_filepath = os.path.join(
 				paths['plots'],
-				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_{date:s}.{fmt:s}".format(
-					cf_dictname = utils.nameof(cf_sets),
+				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_x{xscl:s}_y{yscl:s}_{date:s}.{fmt:s}".format(
+					cf_dictname = cf_stats['name'],
 					method = method,
+					xscl = "log" if xlog is True else "lin",
+					yscl = "log" if ylog is True else "lin",
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
 				)
@@ -1153,7 +1162,9 @@ def plot_cf_profile(cf_sets, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xl
 			        if exc.errno != errno.EEXIST:
 			            raise
 
-			plt.savefig(out_filepath, format=fmt)
+			fig_mean_cfs.savefig(out_filepath, format=fmt)
+
+	return fig_mean_cfs, ax_mean_cfs
 
 
 def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
