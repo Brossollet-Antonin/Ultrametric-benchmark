@@ -158,7 +158,7 @@ class ResultSet:
 		self.uniform = "uniform" in self.seq_type
 
 
-	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False):
+	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False, hue=None):
 		"""
 		Loads the data from sim_map_dict for self hyperparameters
 
@@ -175,6 +175,9 @@ class ResultSet:
 
 
 		"""
+		if hue is not None:
+			self.hue = hue
+
 		print("Loading result set for {0:s}...".format(self.descr))
 		self.train_data_orig = {}
 		self.train_labels_orig = {}
@@ -192,6 +195,7 @@ class ResultSet:
 		self.lbl_htmp_orig = {}
 		self.lbl_htmp_shfl = {}
 
+		self.block_sizes = []
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
 		folderpath = os.path.join(
@@ -263,7 +267,8 @@ class ResultSet:
 					self.shuffle_sizes = [self.shuffle_sizes]
 
 				for shuffle_sz in self.shuffle_sizes:
-					if shuffle_sz not in self.train_labels_shfl.keys():
+					if shuffle_sz not in self.block_sizes:
+						self.block_sizes.append(shuffle_sz)
 						self.train_labels_shfl[shuffle_sz] = []
 						self.eval_shfl[shuffle_sz] = []
 						self.var_acc_shfl[shuffle_sz] = []
@@ -589,7 +594,10 @@ class ResultSet:
 			)
 
 			return hlocs_stat_orig, hlocs_stat_shfl_list
-	  
+
+#######################################################
+### Functions to output accuracy=f(iteration) plots ###
+#######################################################
 
 def make_perfplot(rs, blocks, ax, plt_confinter=False):
 	"""
@@ -608,7 +616,6 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 		if True, confidence intervals for confidence level 95% will be printed.
 		Defaults to False
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
-
 	"""
 
 	### ORIGINAL ###
@@ -634,7 +641,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 
 	### SHUFFLES ###
 	if blocks is None and hasattr(rs, 'var_acc_shfl'):
-		blocks = sorted(rs.var_acc_shfl.keys())
+		blocks = sorted(rs.blocks_sizes)
 
 	for block_id, block_sz in enumerate(blocks):
 		if block_sz not in rs.var_acc_shfl.keys():
@@ -693,10 +700,10 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 		ax.set_xlim(plot_window[0], plot_window[1])
 
 
-def get_acc(
-	rs, rs_altr=None, rs_unif=None,
-	seq_length=300000, n_tests=300, plot_window=None, blocks=None, blocks_sizes='small',
-	blocks_for_shared_plots=None, plt_confinter=False, n_ticks=10, save_formats=None
+def make_perfplot_comparison(
+	rs, blocks, rs_altr=None, rs_unif=None,
+	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	plt_confinter=False, n_ticks=10, save_formats=None
 	):
 	"""
 	Creates accuracy plots from three ResultSet objects:
@@ -749,9 +756,9 @@ def get_acc(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, blocks=blocks, ax=acc_ax, plt_confinter=plt_confinter)
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
 
-	make_perfplot(rs, blocks=blocks, ax=acc_ax, plt_confinter=plt_confinter)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
 
 	format_perf_plot(acc_ax, "Accuracy as a function of time for original and shuffled sequence - " + rs.descr, xtick_pos, xtick_labels, plot_window)
 
@@ -762,9 +769,9 @@ def get_acc(
 		axes.append(acc_ax_altr)
 
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks, ax=acc_ax_altr, plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
 
-		make_perfplot(rs_altr, blocks=blocks, ax=acc_ax_altr, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
 
 		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.descr, xtick_pos, xtick_labels, plot_window)
 
@@ -774,20 +781,18 @@ def get_acc(
 		acc_ax_all = fig.add_subplot(n_plots, 1, 3)
 		axes.append(acc_ax_all)
 
-		if blocks_for_shared_plots is None and blocks is not None:
-			blocks_for_shared_plots = blocks
-
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks_for_shared_plots, ax=acc_ax_all, plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
-		make_perfplot(rs_altr, blocks=blocks_for_shared_plots, ax=acc_ax_all, plt_confinter=plt_confinter)
-		make_perfplot(rs, blocks=blocks_for_shared_plots, ax=acc_ax_all, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
+		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
 
 		format_perf_plot(acc_ax_all, "Comparative accuracy as a function of time for different scenarios", xtick_pos, xtick_labels, plot_window)
 
 	fig.tight_layout(pad=10.0)
 
+	plt.show()
 
 	if save_formats is not None:
 		for fmt in save_formats:
@@ -797,7 +802,7 @@ def get_acc(
 					mainsetname = rs.name,
 					altersetname = rs_altr.name,
 					unifsetname = rs_unif.name,
-					blocksz = blocks_sizes,
+					blocksz = blocks_to_plot,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
 				)
@@ -815,8 +820,11 @@ def get_acc(
 	return fig, axes
 
 
+######################################################
+### Catastrophic Forgetting Score graphs functions ###
+######################################################
 
-def get_raw_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
+def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	"""
 	Computes the RPLF score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
 
@@ -860,7 +868,8 @@ def get_raw_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	except:
 		pdb.set_trace()
 
-	cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(spl_nobs_seq)
+	#cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(spl_nobs_seq)
+	cf = np.array(acc_unif)-np.array(acc_orig)
 
 	if plot:
 		fig = plt.figure(1, figsize=(18,12))
@@ -870,25 +879,30 @@ def get_raw_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 			label='Forgetting score as a fct of #iteration'
 		)
 
-	return cf, t_explr
+	return np.concatenate((cf[2:], np.array([0, 0])), axis=0), t_explr
 
 
-def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
+def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
+	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1):
+
 	avg_cf = {}
 	avg_cf_std = {}
 	init_cf = {}
 	init_cf_std = {}
+
+	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+
+	fig_cfscore = plt.figure(figsize=(18,14))
+	cf_ax = plt.subplot(1,1,1)
 
 	n_labels = rs.params["Tree Branching"]**rs.params["Tree Depth"]
 
 	for seq_id, seq in enumerate(rs.train_labels_orig):
 		t_explr = []
 		cf = []
-		## DEBUG ##
-		#if "RbMixed" in rs.name:
-		#	pdb.set_trace()
-		###########
-		_cf, _t_explr = get_raw_cf(
+
+		_cf, _t_explr = get_cf(
 			seq,
 			rs.var_acc_orig[seq_id][:,0],
 			rs.var_acc_shfl[1][seq_id][:,0],
@@ -933,12 +947,12 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 		init_cf[0] = cf_mean[0]
 		init_cf_std[0] = cf_std[0]
 
-	for block_id, block_sz in enumerate(blocks):
-		assert block_sz in rs.train_labels_shfl.keys()
+	for block_id, block_sz in enumerate(blocks['all']):
+		assert block_sz in rs.block_sizes
 		t_explr = []
 		cf = []
 		for seq_id, seq in enumerate(rs.train_labels_shfl[block_sz]):
-			_cf, _t_explr = get_raw_cf(
+			_cf, _t_explr = get_cf(
 				seq,
 				rs.var_acc_shfl[block_sz][seq_id][:,0],
 				rs.var_acc_shfl[1][seq_id][:,0],
@@ -962,57 +976,38 @@ def get_cf_stats(rs, blocks, ax, var_scale=1, plt_confinter=False):
 				np.stack(cf, axis=1),
 				axis=1
 			)
-			ax.plot(
-				cf_mean,
-				color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-				ls = '--',
-				label = rs.descr + ' - Shuffled w/ block size {0:d}'.format(block_sz)
-			)
 
-			if plt_confinter:
-				ax.fill_between(
-					x = range(len(cf_mean)),
-					y1 = cf_mean - var_scale*cf_std,
-					y2 = cf_mean + var_scale*cf_std,
+			if block_sz in blocks['cfhist_plots']:
+				ax.plot(
+					cf_mean,
 					color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-					alpha = 0.4
+					ls = '--',
+					label = rs.descr + ' - Shuffled w/ block size {0:d}'.format(block_sz)
 				)
+
+				if plt_confinter:
+					ax.fill_between(
+						x = range(len(cf_mean)),
+						y1 = cf_mean - var_scale*cf_std,
+						y2 = cf_mean + var_scale*cf_std,
+						color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
+						alpha = 0.4
+					)
 
 			avg_cf[block_sz] = np.mean(cf_mean)
 			avg_cf_std[block_sz] = np.mean(cf_std)
 			init_cf[block_sz] = cf_mean[0]
 			init_cf_std[block_sz] = cf_std[0]
 
-
-	return avg_cf, avg_cf_std, init_cf, init_cf_std
-
-
-def load_cf_set(
-	rs, blocks=None,
-	seq_length=300000, n_tests=300,
-	xtick_scale=25, plt_confinter=False, save_formats=None
-	):
-# def get_cf(lbl_seq, acc_orig, acc_unif, plot=False):
-	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
-
-	fig_cfscore = plt.figure(figsize=(18,14))
-	cf_ax = plt.subplot(1,1,1)
-
-	avg_cf, avg_cf_std, init_cf, init_cf_std = get_cf_stats(rs, blocks, ax=cf_ax, plt_confinter=plt_confinter)
-
-	cf_ax.set_xticks(xtick_pos)
-	cf_ax.set_xticklabels(xtick_labels)
-	cf_ax.set_title('Per-label loss in classification performance from the moment all classes are explored', fontsize = 18)
-
 	box = cf_ax.get_position()
 	cf_ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 
-	handles, labels = cf_ax.get_legend_handles_labels()
-	lgd = cf_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=1, prop={'size': 16})
+	lgd = cf_ax.legend(loc='upper right', ncol=1, prop={'size': 16})
 
 	xlabels = cf_ax.set_xlabel('Iterations', fontsize=14)
 	ylabels = cf_ax.set_ylabel('Accuracy loss from CF (%)', fontsize=14)
+
+	plt.show()
 
 	fig_cfscore.tight_layout(pad=10.0)
 	if save_formats is not None:
@@ -1107,8 +1102,8 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 			alpha = 0.2
 		)
 
-		plt.xticks(xtick_pos)
-		#ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
+		#plt.xticks(xtick_pos)
+		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
 
 	# Plot formatting for figure 4 of paper
 
@@ -1119,7 +1114,7 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 
 	#ax_mean_cfs.set_title('Per-label loss in classification performance as a function of shuffle block size', fontsize = 18)
 
-	ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 16})
+	lgd = ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 16}, loc='upper left')
 
 	ax_mean_cfs.set_xlabel('Shuffle length')
 	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)')
@@ -1129,8 +1124,11 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 
 	if xlog:
 		ax_mean_cfs.set_xscale("log")
+
 	if ylog:
 		ax_mean_cfs.set_yscale("log")
+
+	plt.show()
 
 	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
 	#	tick.label.set_rotation('vertical')
@@ -1165,37 +1163,3 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 			fig_mean_cfs.savefig(out_filepath, format=fmt)
 
 	return fig_mean_cfs, ax_mean_cfs
-
-
-def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
-				axis_line_width=1.0, tick_size=12, tick_label_size=20,
-				label_pad=4, legend_loc='lower right'):
-	def cm2inch(x): return x/2.54
-	fig_height = cm2inch(fig_height)
-	fig_width = cm2inch(fig_width)
-	rcParams = matplotlib.rcParams
-
-	rcParams["figure.figsize"] = [fig_width, fig_height]   #default is [6.4, 4.8]
-	rcParams["font.sans-serif"] = "Tahoma"
-	rcParams["font.size"] = size
-	rcParams["legend.fontsize"] = size
-	rcParams["legend.frameon"] = False
-	rcParams["legend.loc"] = legend_loc
-	rcParams["axes.labelsize"] = size
-	rcParams["xtick.labelsize"] = tick_label_size
-	rcParams["ytick.labelsize"] = tick_label_size
-	rcParams["xtick.major.size"] = tick_size
-	rcParams["ytick.major.size"] = tick_size
-	rcParams["axes.titlesize"] = 0 # no title for paper
-	rcParams["axes.labelpad"] = label_pad  # default is 4.0
-	rcParams["axes.linewidth"] = axis_line_width
-	rcParams["lines.linewidth"] = line_width
-	rcParams["xtick.direction"] = "in"
-	rcParams["ytick.direction"] = "in"
-	rcParams["lines.antialiased"] = True
-	rcParams["savefig.dpi"] = 320
-
-
-def add_letter_figure(ax, letter, fontsize=15):
-	ax.text(-0.1, 1.15, letter, transform=ax.transAxes, fontsize=fontsize
-			, fontweight='bold', va='top', ha='right')

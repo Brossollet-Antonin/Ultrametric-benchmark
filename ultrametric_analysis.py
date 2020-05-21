@@ -202,7 +202,7 @@ def ultrametric_analysis(trainer, args, block_sizes):
 
     verbose('...done\n', args.verbose)
 
-
+    trainer.network = trainer.network_orig
     for test_id in range(args.test_nbr):
         training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)     #Part of the sequence on which the training will be done
         verbose('Training network on original sequence...', args.verbose)
