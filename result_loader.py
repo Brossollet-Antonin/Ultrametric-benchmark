@@ -41,6 +41,7 @@ conf_fscore={
 }
 
 paths = utils.get_project_paths()
+default_figset_name = 'Common_Figures'
 
 class ResultSet:
 	"""Contains the results of a simulation
@@ -353,7 +354,7 @@ class ResultSet:
 		return lbls_fig, lbls_axes
 
 
-	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10):
+	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10, figset_name=default_figset_name):
 		"""
 		Plots the distribution of relative representation of labels for the sequence, averaged over all sequences of the simulation set.
 		If shuffle_blocksz is left None, the set of original sequences will be used for plotting.
@@ -379,7 +380,7 @@ class ResultSet:
 		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
 		distrib = np.zeros(shape=(seq_length, n_classes))
 
-		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
+		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=1, ncols=2, figsize=(20,18))
 
 		if shuffled_blocksz is None:
 			seq_set = self.train_labels_orig
@@ -448,6 +449,7 @@ class ResultSet:
 			for fmt in save_formats:
 				out_filepath = os.path.join(
 					paths['plots'],
+					figset_name,
 					"labels_distrib/distrib_{setname:s}_{maxiter:s}_{blocksz:s}_{filt:s}_{cum:s}.{fmt:s}".format(
 						setname = self.name,
 						maxiter = 'maxiter{:d}'.format(max_iter) if max_iter is not None else 'fullseq',
@@ -703,7 +705,7 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 def make_perfplot_comparison(
 	rs, blocks, rs_altr=None, rs_unif=None,
 	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
-	plt_confinter=False, n_ticks=10, save_formats=None
+	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
 	):
 	"""
 	Creates accuracy plots from three ResultSet objects:
@@ -748,10 +750,10 @@ def make_perfplot_comparison(
 	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	n_plots = 1 + 2*int(rs_altr is not None)
-	fig = plt.figure(figsize=(18,12*n_plots))
+	fig = plt.figure(figsize=(18*n_plots,12))
 	axes = []
 
-	acc_ax = fig.add_subplot(n_plots, 1, 1)
+	acc_ax = fig.add_subplot(1, n_plots, 1)
 	axes.append(acc_ax)
 
 	### 1) UNIFORM + ORIGINAL ###
@@ -765,7 +767,7 @@ def make_perfplot_comparison(
 
 	### 2) UNIFORM + ALTERNATIVE ###
 	if rs_altr is not None:
-		acc_ax_altr = fig.add_subplot(n_plots, 1, 2)
+		acc_ax_altr = fig.add_subplot(1, n_plots, 2)
 		axes.append(acc_ax_altr)
 
 		if rs_unif is not None:
@@ -778,7 +780,7 @@ def make_perfplot_comparison(
 
 	### 3) ALL SCENARIOS, REDUCED NUMBER OF BLOCKS ###
 	if rs_altr is not None:
-		acc_ax_all = fig.add_subplot(n_plots, 1, 3)
+		acc_ax_all = fig.add_subplot(1, n_plots, 3)
 		axes.append(acc_ax_all)
 
 		if rs_unif is not None:
@@ -792,12 +794,12 @@ def make_perfplot_comparison(
 
 	fig.tight_layout(pad=10.0)
 
-	plt.show()
 
 	if save_formats is not None:
 		for fmt in save_formats:
 			out_filepath = os.path.join(
 				paths['plots'],
+				figset_name,
 				"accuracy/accuracy_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
 					mainsetname = rs.name,
 					altersetname = rs_altr.name,
@@ -883,7 +885,7 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 
 
 def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
-	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1):
+	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1, figset_name=default_figset_name):
 
 	avg_cf = {}
 	avg_cf_std = {}
@@ -926,7 +928,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 			np.stack(cf, axis=1),
 			axis=1
 		)
-		ax.plot(
+		cf_ax.plot(
 			cf_mean,
 			color = hsv_to_rgb(rs.hsv_orig),
 			ls = 'solid',
@@ -934,7 +936,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 		)
 
 		if plt_confinter:
-			ax.fill_between(
+			cf_ax.fill_between(
 				x = range(len(cf_mean)),
 				y1 = cf_mean - var_scale*cf_std,
 				y2 = cf_mean + var_scale*cf_std,
@@ -978,7 +980,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 			)
 
 			if block_sz in blocks['cfhist_plots']:
-				ax.plot(
+				cf_ax.plot(
 					cf_mean,
 					color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
 					ls = '--',
@@ -986,7 +988,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 				)
 
 				if plt_confinter:
-					ax.fill_between(
+					cf_ax.fill_between(
 						x = range(len(cf_mean)),
 						y1 = cf_mean - var_scale*cf_std,
 						y2 = cf_mean + var_scale*cf_std,
@@ -1007,13 +1009,13 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 	xlabels = cf_ax.set_xlabel('Iterations', fontsize=14)
 	ylabels = cf_ax.set_ylabel('Accuracy loss from CF (%)', fontsize=14)
 
-	plt.show()
 
 	fig_cfscore.tight_layout(pad=10.0)
 	if save_formats is not None:
 		for fmt in save_formats:
 			out_filepath = os.path.join(
 				paths['plots'],
+				figset_name,
 				"CFscore/history/cfscoreshist_{setname:s}_{date:s}.{fmt:s}".format(
 					setname = rs.name,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
@@ -1033,7 +1035,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None):
+def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1128,7 +1130,6 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 	if ylog:
 		ax_mean_cfs.set_yscale("log")
 
-	plt.show()
 
 	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
 	#	tick.label.set_rotation('vertical')
@@ -1143,6 +1144,7 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 		for fmt in save_formats:
 			out_filepath = os.path.join(
 				paths['plots'],
+				figset_name,
 				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_x{xscl:s}_y{yscl:s}_{date:s}.{fmt:s}".format(
 					cf_dictname = cf_stats['name'],
 					method = method,

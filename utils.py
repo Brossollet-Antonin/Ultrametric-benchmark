@@ -1,5 +1,6 @@
 import getpass
 import inspect
+import ast
 
 def get_project_paths():
     paths = {}
