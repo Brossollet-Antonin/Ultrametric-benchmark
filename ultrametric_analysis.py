@@ -75,7 +75,7 @@ def ultrametric_analysis_single(trainer, args, block_size_shuffle):
             lr = args.lr,
             momentum = 0.5,
             training_range = training_range,
-            verbose = args.verbose
+            verbose_lvl = args.verbose
             )
 
         verbose('...done\nComputing performance for original sequence...', args.verbose, 2)
@@ -126,7 +126,7 @@ def ultrametric_analysis_single(trainer, args, block_size_shuffle):
             shuffled_sequence = trainer.shuffle_block_partial(block_size_shuffle, training_range[1])
             _time_shfl_stop = time.time()
             #rs.atc_shfl.append(sequence_generator_temporal.sequence_autocor(shuffled_sequence, n_labels=trainer.dataset.num_classes))
-            trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range, verbose=args.verbose)
+            trainer.train(seq=shuffled_sequence, mem_sz=trainer.memory_size, lr=args.lr, momentum=0.5, training_range=training_range, verbose_lvl=args.verbose)
             _time_training_stop = time.time()
             rs.eval_shfl = trainer.evaluate_hierarchical()
             _time_eval_stop = time.time()

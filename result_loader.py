@@ -703,7 +703,7 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 
 
 def make_perfplot_comparison(
-	rs, blocks, rs_altr=None, rs_unif=None,
+	rs, blocks, rs_altr=None, blocks_altr=None, rs_unif=None,
 	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
 	):
@@ -731,9 +731,11 @@ def make_perfplot_comparison(
 		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
 	plot_window: tuple like (x_min, x_max)
 		if not None, will restrict plotting to a subset of iterations with (x_min, x_max)
-	blocks: list(int)
-		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in order to assess the effect of shuffling.
-		Note that the same set of shuffle block sizes must be used by the main result set and the alternative result set
+	blocks: dict
+		dictionnary containing, for a set of contexts (stored as keys) a list of block sizes to display, for the main ResultSet
+	blocks_altr: dict
+		dictionnary containing, for a set of contexts (stored as keys) a list of block sizes to display, for the alternative ResultSet.
+		If none is provided and an alternative set is displayed, the block dictionnary provided for the main set will be used
 	blocks_for_shared_plots: list(int)
 		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in the third plot.
 	plt_confinter: bool
@@ -770,10 +772,13 @@ def make_perfplot_comparison(
 		acc_ax_altr = fig.add_subplot(1, n_plots, 2)
 		axes.append(acc_ax_altr)
 
+		if blocks_altr is None:
+			blocks_altr = blocks
+
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
 
-		make_perfplot(rs_altr, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
 
 		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.descr, xtick_pos, xtick_labels, plot_window)
 
@@ -786,7 +791,7 @@ def make_perfplot_comparison(
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
-		make_perfplot(rs_altr, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
 
@@ -804,6 +809,103 @@ def make_perfplot_comparison(
 					mainsetname = rs.name,
 					altersetname = rs_altr.name,
 					unifsetname = rs_unif.name,
+					blocksz = blocks_to_plot,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
+
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			fig.savefig(out_filepath, format=fmt)
+
+	return fig, axes
+
+def make_perfplot_matrix(
+	rs_list, blocks, rs_unif=None,
+	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
+	):
+	"""
+	Creates a matrix of accuracy plots for a list of ResultSets, with:
+	- diagonal elements being the plots of classification performance as a function of time for original and shuffled sequences
+	- non-diagonal elements comparing two ResultSet classification performances
+
+	Parameters
+	----------
+	rs_list : list(ResultSet)
+		list of ResultSet objects that will be used for plotting on the matrix
+	rs_unif : ResultSet
+		baseline result set with uniform generation strategy
+	seq_length: int
+		length of the sequences
+	n_tests: int
+		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
+	plot_window: tuple like (x_min, x_max)
+		if not None, will restrict plotting to a subset of iterations with (x_min, x_max)
+	blocks: dict
+		dictionnary containing, for a set of contexts (stored as keys) a list of block sizes to display, for the main ResultSet
+	blocks_altr: dict
+		dictionnary containing, for a set of contexts (stored as keys) a list of block sizes to display, for the alternative ResultSet.
+		If none is provided and an alternative set is displayed, the block dictionnary provided for the main set will be used
+	blocks_for_shared_plots: list(int)
+		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in the third plot.
+	plt_confinter: bool
+		if True, confidence intervals for confidence level 95% will be printed.
+		Defaults to False
+		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
+	n_ticks: int
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+	save_formats: list(str)
+		if not None, plots will be saved in the provided formats
+	"""
+	import itertools
+
+	n_rs = len(rs_list)
+	fig, axes = plt.subplots(n_rs, n_rs, sharex=True, sharey=True, figsize=(15*n_rs,15*n_rs))
+
+	### Diagonal elements
+	for rs_id, rs in enumerate(rs_list):
+		if rs_unif is not None:
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter)
+
+		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter)
+
+		axes[rs_id, rs_id].set_facecolor((0.87, 0.87, 0.87))
+		axes[rs_id, rs_id].legend()
+		if plot_window is not None:
+			axes[rs_id, rs_id].set_xlim(plot_window[0], plot_window[1])
+
+
+	### Non-diagonal elements
+	for rs1_id, rs2_id in itertools.permutations(range(n_rs), 2):
+		if rs_unif is not None:
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+
+		rs1 = rs_list[rs1_id]
+		rs2 = rs_list[rs2_id]
+		make_perfplot(rs1, blocks=blocks['acc_plots_shared'], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+		make_perfplot(rs2, blocks=blocks['acc_plots_shared'], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+
+		axes[rs1_id, rs2_id].legend()
+		if plot_window is not None:
+			axes[rs1_id, rs2_id].set_xlim(plot_window[0], plot_window[1])
+
+	fig.tight_layout(pad=10.0)
+
+
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				figset_name,
+				"accuracy/accuracyMatrix_{rs_name_:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
+					rs_name_ = rs_list[0].name,
 					blocksz = blocks_to_plot,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
@@ -1035,7 +1137,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, xlog=False, ylog=False, var_scale=1, save_formats=None, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, normalize=False, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1053,6 +1155,9 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 			cf_std = cf_set['init_cf_std']
 
 		xtick_pos = [k for k in sorted(cf.keys()) if k>0]
+
+		if normalize and cf[0]>0:
+			cf = {k: v/cf[0] for k,v in cf.items()}
 
 		ax_mean_cfs.plot(
 			xtick_pos,
@@ -1127,16 +1232,16 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 	if xlog:
 		ax_mean_cfs.set_xscale("log")
 
-	if ylog:
+	if ylog: 
 		ax_mean_cfs.set_yscale("log")
 
 
 	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
 	#	tick.label.set_rotation('vertical')
 
-	#ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
-	#ylim = ax_mean_cfs.get_ylim()
-	#ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
+	ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
+	ylim = ax_mean_cfs.get_ylim()
+	ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
 	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
@@ -1145,11 +1250,12 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=8.5e4, vline_pos=8.2e4, x
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_x{xscl:s}_y{yscl:s}_{date:s}.{fmt:s}".format(
+				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
 					cf_dictname = cf_stats['name'],
 					method = method,
 					xscl = "log" if xlog is True else "lin",
 					yscl = "log" if ylog is True else "lin",
+					norm = "_norm" if normalize else "",
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
 				)
