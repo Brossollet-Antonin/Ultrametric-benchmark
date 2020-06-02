@@ -2,11 +2,8 @@ import os, sys
 sys.path.append('../')
 
 import numpy as np
-from scipy.io import savemat
-import pdb
 import utils
-import ast, json
-from distutils.dir_util import copy_tree
+import json
 import argparse
 
 paths = utils.get_project_paths()

@@ -227,6 +227,7 @@ class ResultSet:
 		self.train_labels_orig = []
 		self.train_labels_shfl = {}
 		self.dstr_train = []
+		self.classes_templates = []
 		self.eval_orig = []
 		self.eval_shfl = {}
 		self.var_acc_orig = []
@@ -255,8 +256,10 @@ class ResultSet:
 			with open(os.path.join(simuset_path, 'distribution_train.pickle'), 'rb') as file:
 				self.dstr_train.append(pickle.load(file))
 
+			self.classes_templates.append(np.load(os.path.join(simuset_path, 'classes_templates.npy'), allow_pickle=True))
+
 			self.eval_orig.append(np.load(os.path.join(simuset_path, 'evaluation_original.npy'), allow_pickle=True))
-			self.var_acc_orig.append(np.load(os.path.join(simuset_path, 'var_original_accuracy.npy')))
+			self.var_acc_orig.append(np.load(os.path.join(simuset_path, 'var_original_accuracy.npy'), allow_pickle=True))
 			self.var_pred_orig.append(np.load(os.path.join(simuset_path, 'var_original_classes_prediction.npy'), allow_pickle=True))
 
 			if load_htmp:

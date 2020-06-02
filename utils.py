@@ -1,3 +1,4 @@
+import matplotlib
 import getpass
 import inspect
 import ast

@@ -301,6 +301,9 @@ class Dataset:
         train_data = [[] for i in range(self.branching**self.depth)]
         test_data = [[] for i in range(self.branching**self.depth)]
 
+        if shuffle_labels:
+            random.shuffle(self.patterns[self.depth])
+
         for label in range(self.branching**self.depth):
             template = self.patterns[self.depth][label]
             for k in range(self.class_sz_train):
@@ -327,7 +330,3 @@ class Dataset:
 
         self.train_data = train_data
         self.test_data = test_data
-
-        if shuffle_labels:
-            random.shuffle(self.train_data)
-            random.shuffle(self.test_data)
