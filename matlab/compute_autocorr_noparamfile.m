@@ -1,4 +1,4 @@
-function [ output_args ] = compute_autocorr( dataset_name, nnarchi, um_battery, rb2_battery )
+function [ output_args ] = compute_autocorr_noparamfile( dataset_name, nnarchi, um_battery, rb2_battery, block_sizes, seq_length, tree_l )
 %COMPUTE_AUTOCORR Summary of this function goes here
 %   Detailed explanation goes here
 maxh=10000;
@@ -16,18 +16,6 @@ rb2_params = jsondecode(fileread(fullfile(rb2_root, 'parameters.json')));
 assert(um_params.TreeDepth==rb2_params.TreeDepth);
 assert(um_params.TreeBranching==rb2_params.TreeBranching);
 
-command=um_params.OriginalCommand;
-block_sizes_raw=split(command,"'--blocksz',");
-block_sizes_raw=block_sizes_raw(2,1);
-block_sizes = regexp(block_sizes_raw,'\d*','Match');
-block_sizes = [block_sizes{:}];
-tmp_sz = numel(block_sizes);
-tmp_blsz = NaN(tmp_sz,1);
-for k = 1:tmp_sz
-  tmp_blsz(k,1) = str2num(block_sizes{k});
-end
-block_sizes = tmp_blsz;
-
 % Reading block sizes, tree size, etc
 tree_levels=um_params.TreeDepth;
 branching=um_params.TreeBranching;
@@ -39,6 +27,7 @@ sequences.ultra.shfl = containers.Map;
 sequences.rb.orig = int16.empty;
 sequences.rb.shfl = containers.Map;
 
+block_sizes = cell2mat(block_sizes);
 for block_sz_id = 1:length(block_sizes)
     block_sz = int2str(block_sizes(block_sz_id));
     sequences.ultra.shfl(block_sz) = int16.empty;
@@ -60,7 +49,7 @@ for um_simuset_id = 1:length(um_simusets)
         matfilename = matfiles(matfile_id).name;
         new_seq = load(fullfile(um_root, um_simuset, 'matlab', matfilename));
         new_seq = new_seq.sequence;
-        new_seq = new_seq(1,1:300000);
+        new_seq = new_seq(1,1:seq_length);
         for block_sz_id = 1:length(block_sizes)
             block_sz = int2str(block_sizes(block_sz_id));
             if(contains(matfilename, strcat('_shfl_',block_sz,'.mat')))
@@ -90,7 +79,7 @@ for rb2_simuset_id = 1:length(rb2_simusets)
         matfilename = matfiles(matfile_id).name;
         new_seq = load(fullfile(rb2_root, rb2_simuset, 'matlab', matfilename));
         new_seq = new_seq.sequence;
-        new_seq = new_seq(1,1:300000);
+        new_seq = new_seq(1,1:seq_length);
         for block_sz_id = 1:length(block_sizes)
             block_sz = int2str(block_sizes(block_sz_id));
             if(contains(matfilename, strcat('_shfl_',block_sz,'.mat')))
@@ -268,6 +257,7 @@ xlabel("Sequence space", 'FontSize', 18);
 ylabel("Autocorrelation", 'FontSize', 18);
 
 columnlegend(2, legends);
+
 
 end
 

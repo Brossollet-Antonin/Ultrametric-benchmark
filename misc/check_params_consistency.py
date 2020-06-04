@@ -14,6 +14,8 @@ parser.add_argument('--simuset_root_dir', type=str, help="Root to the folder sim
 args = parser.parse_args()
 
 for simuset in os.listdir(args.simuset_root_dir):
+    if not os.path.isdir(os.path.join(args.simuset_root_dir, simuset)):
+        continue
     if "uniform" in simuset:
         continue
 
@@ -53,10 +55,11 @@ for simuset in os.listdir(args.simuset_root_dir):
             simu_params = json.loads(param_file.read())
 
         for param_name in params_that_should_match:
-            assert simu_params[param_name] == ref_params[param_name], "    {0:s} MISMATCH BETWEEN {1:s} AND {2:s}".format(param_name, simu_subdir, simu_ref_subdir)
+            if (param_name in simu_params.keys()) and (param_name in ref_params.keys()):
+                assert simu_params[param_name] == ref_params[param_name], "    {0:s} MISMATCH BETWEEN {1:s} AND {2:s}".format(param_name, simu_subdir, simu_ref_subdir)
 
     print("Simulation set {:s} is consistent! Producing a single parameters file for the simulation set...".format(simuset))
-    simuset_params = {k: ref_params[k] for k in params_that_should_match}
+    simuset_params = {k: ref_params[k] for k in params_that_should_match if k in ref_params.keys()}
     with open(os.path.join(simuset_path, "parameters.json"), 'w') as outfile:
         json.dump(simuset_params, outfile)
     print("done!\n\n")
