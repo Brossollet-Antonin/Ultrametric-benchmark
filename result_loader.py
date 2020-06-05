@@ -357,7 +357,7 @@ class ResultSet:
 		return lbls_fig, lbls_axes
 
 
-	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10, figset_name=default_figset_name):
+	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10, multi_simus=False, figset_name=default_figset_name):
 		"""
 		Plots the distribution of relative representation of labels for the sequence, averaged over all sequences of the simulation set.
 		If shuffle_blocksz is left None, the set of original sequences will be used for plotting.
@@ -386,9 +386,19 @@ class ResultSet:
 		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=1, ncols=2, figsize=(20,18))
 
 		if shuffled_blocksz is None:
-			seq_set = self.train_labels_orig
+			if multi_simus:
+				seq_set = self.train_labels_orig
+			else:
+				n_simus = len(self.train_labels_orig)
+				simu_id = random.randint(0,n_simus-1)
+				seq_set = [self.train_labels_orig[simu_id]]
 		else:
-			seq_set = self.train_labels_shfl[shuffled_blocksz]
+			if multi_simus:
+				seq_set = self.train_labels_shfl[shuffled_blocksz]
+			else:
+				n_simus = len(self.train_labels_orig)
+				simu_id = random.randint(0,n_simus-1)
+				seq_set = [self.train_labels_shfl[shuffled_blocksz][simu_id]]
 
 		n_seqs = len(seq_set)
 

@@ -2,30 +2,36 @@
 #
 # Script to execute parameter exploration
 
-tree_depth=$1
-hidden_size=$2
-flip_rate=$3
-T_str=$4
-IFS=';' read -r -a T_list <<< "$T_str"
+for ARGUMENT in "$@"
+do
+  KEY=$(echo $ARGUMENT | cut -f1 -d=)
+  VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
+  case "$KEY" in
+    tree_depth)           tree_depth=${VALUE} ;;
+    temperatures)         temperatures=${VALUE} ;;
+    hidden_size)          hidden_size=${VALUE} ;;
+    flip_rate)            flip_rate=${VALUE} ;;
+    shuffle_labels)       shuffle_labels=${VALUE} ;;
+    split_length)         split_length=${VALUE} ;;
+    *)   
+  esac    
+done
+
+IFS=';' read -r -a T_list <<< "$temperatures"
 
 minibatcheslist="10"
-blocksizearr=(1)
-seqtypelist="ultrametric"
-shuffle_labels="1"
-split_length="328"
+block_size=1
+seq_type="ultrametric"
 
 for temperature in "${T_list[@]}"
 do
-  for seqtype in $seqtypelist
+  for sl in $shuffle_labels
   do
-    for sl in $shuffle_labels
-    do
-      for value in {1..3}
+    for value in {1..3}
 	  do
-	    sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${flip_rate} ${blocksizearr[*]} 
+	    sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seq_type} ${sl} ${flip_rate} ${block_size} 
 	    sleep 1
 	  done
-    done
   done
 done
 
