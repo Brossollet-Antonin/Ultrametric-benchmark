@@ -383,7 +383,7 @@ class ResultSet:
 		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
 		distrib = np.zeros(shape=(seq_length, n_classes))
 
-		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=1, ncols=2, figsize=(20,18))
+		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
 
 		if shuffled_blocksz is None:
 			if multi_simus:
@@ -431,12 +431,14 @@ class ResultSet:
 		if max_iter is not None:
 			sns.heatmap(
 				np.transpose(filt_distrib[0:max_iter,:]),
-				ax = heatmap_ax
+				ax = heatmap_ax,
+				cbar=False
 				)
 		else:
 			sns.heatmap(
 				np.transpose(filt_distrib),
-				ax = heatmap_ax
+				ax = heatmap_ax,
+				cbar=False
 				)
 
 		#heatmap_ax.set_xticks(xtick_pos)
@@ -446,7 +448,7 @@ class ResultSet:
 
 		# Plot all distributions on one plot
 		for cl_id in range(n_classes):
-			hsv = [cl_id/n_classes, 1, 0.7]
+			hsv = [0.8*cl_id/n_classes, 1, 0.7]
 			if max_iter is not None:
 				distr_ax.plot(
 					filt_distrib[0:max_iter, cl_id],

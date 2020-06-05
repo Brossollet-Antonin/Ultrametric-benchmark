@@ -373,7 +373,7 @@ class Trainer:
                     running_loss = 0.0
 
 
-            verbose("--- Finished Experience Replay training on %s ---"%(training_range), verbose_lvl, 2)
+            verbose("--- Finished Experience Replay training on {0:d}-{1:d} ---".format(training_range[0], training_range[1]), verbose_lvl, 2)
 
         else:
             raise NotImplementedError("training type not supported")
@@ -522,5 +522,5 @@ class Trainer:
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
-        verbose('Accuracy of the network on the %d test images: %.2f %%' % (total, 100 * correct / total), verbose_lvl)
+        verbose('Accuracy of the network on the %d test images: %.2f %%' % (total, 100 * correct / total), verbose_lvl, 2)
         return (100*correct/total, test_sequence)

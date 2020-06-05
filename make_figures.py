@@ -395,12 +395,11 @@ if __name__ == '__main__':
 			))
 
 			rs_for_lbl_plots = ()
-		fs_name = 'artificial_' + fs_name
 
 	elif args.dataset == 'MNIST':
 		blocks = MNIST_blocks
 		if args.result_battery=="ultra_vs_rb2":
-			fs_name = "ultra_vs_rb2"
+			fs_name = "mlp_sgd"
 			rs_names = {
 				"MNIST_UltraMixed": 0,
 				"MNIST_RbMixed": 0.5,
@@ -418,7 +417,11 @@ if __name__ == '__main__':
 				"MNIST_UltraMixed",
 				"MNIST_RbMixed"
 			)
-		fs_name = 'MNIST_' + fs_name
+
+	fs_name = "{dataset:s}/{fs_base:s}".format(
+		dataset=args.dataset,
+		fs_base=fs_name
+	)
 
 	print("Making FigureSet object...")
 	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=300000, n_tests=300, artificial_seq_len=200)

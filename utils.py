@@ -3,6 +3,8 @@ import getpass
 import inspect
 import ast
 
+import numpy as np
+
 def get_project_paths():
     paths = {}
     if getpass.getuser() == 'slebst':

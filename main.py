@@ -81,6 +81,10 @@ def run(args):
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 
+    #----------------#
+    #----- DATA -----#
+    #----------------#
+
 	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args.verbose, 0)
 
 	dataset = ds.Dataset(
@@ -100,12 +104,23 @@ def run(args):
 	for batch_sz in args.minibatches_list:
 		for memory_sz in args.memory_list:
 			for T in args.temperature_list:
-				save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz)
+				save_root = os.path.join(
+					paths['simus'],
+					"1toM/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
+						data_origin = args.data_origin,
+						n_classes = dataset.num_classes,
+						nnarchi = args.nnarchi,
+						hidlay_width = args.hidden_sizes,
+						seq_type = args.sequence_type,
+						seq_length = args.sequence_length,
+						batch_size = batch_sz
+					)
+				)
 				if dataset.data_origin == 'artificial':
-					if args.nnarchi == 'FCL':
-						save_root = paths['simus'] + "1toM/%s_%s/%s%d/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.hidden_sizes, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.data_sz*dataset.ratio_value)							
-					else:
-						save_root = paths['simus'] + "1toM/%s_%s/%s/%s_length%d_batches%d_seqlen%d_ratio%d/" % (args.data_origin, dataset.num_classes, args.nnarchi, args.sequence_type, args.sequence_length, batch_sz, args.artif_seq_size, dataset.data_sz*dataset.ratio_value)
+					save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
+						patterns_size = args.artif_seq_size,
+						bitflips = int(dataset.data_sz*dataset.ratio_value)
+					)
 				if 'blocks' in args.sequence_type:
 					T = float(0)
 					if args.sequence_type == 'random_blocks2_2freq':
@@ -146,6 +161,10 @@ def run(args):
 					'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
 					args.verbose, 0
 					)
+
+			    #------------------------------#
+			    #----- MODEL (CLASSIFIER) -----#
+			    #------------------------------#
 
 				if args.nnarchi == 'FCL':
 					netfc_original = neuralnet.Net_FCL(dataset, args.hidden_sizes)
