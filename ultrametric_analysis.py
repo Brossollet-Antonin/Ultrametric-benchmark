@@ -293,7 +293,6 @@ def ultrametric_analysis(trainer, args, block_sizes):
                     classes_correct[int(rs.eval_shfl[block_size_shuffle][1][k][0])] +=1
                 classes_correct = np.array([[classes_correct, (test_id+1)*args.test_stride]])
                 rs.classes_pred_shfl[block_size_shuffle] = np.append(rs.classes_pred_shfl[block_size_shuffle], classes_correct, axis=0)
-
                 verbose(
                     'Accuracy on shuffled sequence (block size {block_size:d}) at pos {seq_pos:d} ({n_test_spls:d} test images): {acc:.2f}%'.format(
                         block_size = block_size_shuffle,

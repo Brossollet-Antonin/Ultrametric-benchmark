@@ -1265,8 +1265,7 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlo
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/profile/cfscoresprofile_{cf_dictname:s}_{method:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
-					cf_dictname = cf_stats['name'],
+				"CFscore/profile/{method:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
 					method = method,
 					xscl = "log" if xlog is True else "lin",
 					yscl = "log" if ylog is True else "lin",
