@@ -17,11 +17,12 @@ do
   esac    
 done
 
-IFS=';' read -r -a T_list <<< "$temperatures"
+# IFS=';' read -r -a T_list <<< "$temperatures"
 
 minibatcheslist="10"
 block_size=1
 seq_type="ultrametric"
+split_length=1000
 
 for temperature in "${T_list[@]}"
 do
