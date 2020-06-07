@@ -8,23 +8,20 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     tree_depth)           tree_depth=${VALUE} ;;
-    temperatures)         temperatures=${VALUE} ;;
+    T_list)               T_list=${VALUE} ;;
     hidden_size)          hidden_size=${VALUE} ;;
     flip_rate)            flip_rate=${VALUE} ;;
     shuffle_labels)       shuffle_labels=${VALUE} ;;
-    split_length)         split_length=${VALUE} ;;
     *)   
   esac    
 done
-
-# IFS=';' read -r -a T_list <<< "$temperatures"
 
 minibatcheslist="10"
 block_size=1
 seq_type="ultrametric"
 split_length=1000
 
-for temperature in "${T_list[@]}"
+for temperature in $T_list
 do
   for sl in $shuffle_labels
   do
