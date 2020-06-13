@@ -30,7 +30,7 @@ for temperature in $T_list
 do
   for seqtype in $seq_types
   do
-    for ((value=1; value<=n_reps; value++))
+    for (( value = 1; value <= $n_reps; value++ ))
     do
       sbatch individualjobMNIST.sh ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${block_sizes[*]}
       sleep 1

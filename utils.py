@@ -2,6 +2,8 @@ import matplotlib
 import getpass
 import inspect
 import ast
+import copy
+from torchvision import transforms
 
 import numpy as np
 
@@ -54,9 +56,28 @@ def get_lbl_distr(shuffled_sequence, min_range, max_range, n_classes):
 
     return hist_tuple[0]
 
-### Figure handling methods
+### Data-handling functions ###########
 
-def format_paper(fig_width=13.2, fig_height=9, size=15, line_width=1.5,
+def get_data_loader(dataset, batch_size, cuda=False, collate_fn=None, drop_last=False, augment=False):
+    '''Return <DataLoader>-object for the provided <DataSet>-object [dataset].'''
+
+    # If requested, make copy of original dataset to add augmenting transform (without altering original dataset)
+    if augment:
+        dataset_ = copy.deepcopy(dataset)
+        dataset_.transform = transforms.Compose([dataset.transform, *data.AVAILABLE_TRANSFORMS['augment']])
+    else:
+        dataset_ = dataset
+
+    # Create and return the <DataLoader>-object
+    return DataLoader(
+        dataset_, batch_size=batch_size, shuffle=True,
+        collate_fn=(collate_fn or default_collate), drop_last=drop_last,
+        **({'num_workers': 0, 'pin_memory': True} if cuda else {})
+    )
+
+### Figure handling methods ###########
+
+def format_paper(fig_width=13.2, fig_height=9, size=10, line_width=1.5,
                 axis_line_width=1.0, tick_size=12, tick_label_size=20,
                 label_pad=4, legend_loc='lower right'):
     def cm2inch(x): return x/2.54

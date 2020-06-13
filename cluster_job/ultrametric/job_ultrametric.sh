@@ -2,7 +2,7 @@
 #
 # Script to execute parameter exploration
 # Example use:
-# bash job_ultrametric tree_depth=5 T_list="0.4 0.5 0.6" n_reps=5 hidden_size=20 flip_rates="0.07 0.1 0.13" block_sizes="1 100 200 500 1000"
+# bash job_ultrametric.sh tree_depth=5 T_list="0.4 0.5 0.6" n_reps=5 hidden_size=20 flip_rates="0.07 0.1 0.13" block_sizes="1 100 200 500 1000"
 # seq_types="ultrametric random_blocks2 uniform" split_length=1000
 
 for ARGUMENT in "$@"
@@ -34,7 +34,7 @@ do
     do
       for sl in $shuffle_labels
       do
-        for ((value=1; value<=n_reps; value++))
+        for (( value = 1; value <= $n_reps; value++ ))
         	do
         	  sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${flip_rate} ${block_sizes[*]} 
         	  sleep 1

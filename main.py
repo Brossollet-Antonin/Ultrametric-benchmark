@@ -12,9 +12,12 @@ import getpass
 import random
 from datetime import datetime
 import time
+from copy import deepcopy
 
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.optim as optim
 
 from utils import verbose
 
@@ -23,8 +26,8 @@ import neuralnet
 
 import utils
 from trainer import Trainer
-from ultrametric_analysis import ultrametric_analysis
-from data_saver import save_results
+from ultrametric_analysis import train_sequenceset
+import data_saver
 
 paths = utils.get_project_paths()
 cwd = paths['root']
@@ -34,38 +37,46 @@ parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 parser.add_argument('--verbose', type=int, dest='verbose', default=0)
 
-# dataset parameters
+# dataset and ultrametric tree parameters
 data_params = parser.add_argument_group('Dataset Parameters')
+
 data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIFAR100', choices=['MNIST', 'CIFAR10', 'CIFAR100', 'artificial'])
+
 data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
 data_params.add_argument('--data_flips_rate', type=float, default=0.04)
-data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
+data_params.add_argument('-T', '--temperature', type=float, dest='temperature', default=0.4, help='Temperature for the random walk (the energy step is by default equal to 1)')
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
-data_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=[100])
+data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
+model_params.add_argument('--nnarchi', type=str, default='ResNet', choices=['FCL', 'CNN', 'ResNet'], help='Architure of the neural network used')
+model_params.add_argument('--resnettype', type=int, default=50, choices=[18, 34, 50, 101, 152], help='Type of ResNet network to use')
+model_params.add_argument('--hidden_sizes', type=int, default=20, help='A list of hidden sizes in case of a FCL network')
 model_params.add_argument('--lr', type=int, default=0.01, help='Learning rate')
-model_params.add_argument('--minibatch', type=int, dest='minibatches_list', nargs='*', default=[10], help='Size of the training mini-batches')
-model_params.add_argument('--memory', type=int, dest='memory_list', nargs='*', default=[0], help='Size of the memory for replay training')
-model_params.add_argument('--nbrtest', type=int, default=100, dest='test_nbr', help='Number of data points to get during training (number of test of the dataset')
+model_params.add_argument('--batch_sz', type=int, default=10, help='Size of the training mini-batches')
+model_params.add_argument('--memory_sz', type=int, default=0, help='Size of the memory for replay training')
+model_params.add_argument('--loss_fn', type=str, default='cross_entropy', help='Loss function')
+model_params.add_argument('--optimizer', type=str, default='sgd')
+
+# "Memory allocation" parameters, from methods that aim specifically at mitigating catastrophic interference
+cl_params.add_argument('--ewc', action='store_true', help="use 'EWC' (Kirkpatrick et al, 2017)")
+cl_params.add_argument('--lambda', type=float, dest="ewc_lambda", help="--> EWC: regularisation strength")
+cl_params.add_argument('--fisher-n', type=int, help="--> EWC: sample size estimating Fisher Information")
+cl_params.add_argument('--gamma', type=float, help="--> EWC: forgetting coefficient (for 'online EWC')")
+cl_params.add_argument('--emp-fi', action='store_true', help="--> EWC: estimate FI with provided labels")
 
 # sequence parameters
 seq_params = parser.add_argument_group('Sequence Parameters')
-seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'spatial_correlation', 'random', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2', 'random_blocks2_2freq'], help='Method used to generate the training sequence')
-seq_params.add_argument('--seqlength', type=int, default=100000, dest='sequence_length', help='Length of the training sequence')
+seq_params.add_argument('--seqtype', type=str, default='ultrametric', dest='sequence_type', choices=['ultrametric', 'uniform', 'ladder_blocks1', 'random_blocks1', 'ladder_blocks2', 'random_blocks2', 'random_blocks2_2freq'], help='Method used to generate the training sequence')
+seq_params.add_argument('--seqlength', type=int, default=300000, dest='sequence_length', help='Length of the training sequence')
+seq_params.add_argument('--nbrtest', type=int, default=300, dest='test_nbr', help='Number of data points to get during training (number of test of the dataset')
 seq_params.add_argument('--blocksz', type=int, dest='block_size_shuffle_list', nargs='*', default=[], help='Size of the block used to shuffle the sequence')
-seq_params.add_argument('-T', '--temperature', type=float, dest='temperature_list', nargs='*', default=[0.4], help='Temperature for the random walk (the energy step is by default equal to 1)')
 seq_params.add_argument('--force_switch', type=int, default=1, help='When true, the training sequence cannot remain at the same value from one state to the next through time')
 seq_params.add_argument('--min_state_visit', type=int, default=0, help='Indicated the number of times each state must be visited in the generated training sequence (no constraint by default)')
 seq_params.add_argument('--T_adaptive', type=float, default=0, help='When specified, a temperature is computed so that a all states have an inbound transition probability above the given threshold')
-
-# neural network parameters
-nn_params = parser.add_argument_group('Neural Network Parameters')
-nn_params.add_argument('--nnarchi', type=str, default='ResNet', choices=['FCL', 'CNN', 'ResNet'], help='Architure of the neural network used')
-nn_params.add_argument('--resnettype', type=int, default=50, choices=[18, 34, 50, 101, 152], help='Type of ResNet network to use')
-nn_params.add_argument('--hidden_sizes', type=int, default=20, help='A list of hidden sizes in case of a FCL network')
+seq_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=[100], help='Size of task sequence in the RB scenario')
 
 def run(args):
 	step = 1
@@ -81,9 +92,9 @@ def run(args):
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 
-    #----------------#
-    #----- DATA -----#
-    #----------------#
+    #------------------------------#
+    #----- DATASET GENERATION -----#
+    #------------------------------#
 
 	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args.verbose, 0)
 
@@ -101,115 +112,146 @@ def run(args):
 
 	verbose('Done generating dataset {0:s}'.format(args.data_origin), args.verbose, 0)
 
-	for batch_sz in args.minibatches_list:
-		for memory_sz in args.memory_list:
-			for T in args.temperature_list:
-				save_root = os.path.join(
-					paths['simus'],
-					"1toM/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
-						data_origin = args.data_origin,
-						n_classes = dataset.num_classes,
-						nnarchi = args.nnarchi,
-						hidlay_width = args.hidden_sizes,
-						seq_type = args.sequence_type,
-						seq_length = args.sequence_length,
-						batch_size = batch_sz
-					)
-				)
-				if dataset.data_origin == 'artificial':
-					save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
-						patterns_size = args.artif_seq_size,
-						bitflips = int(dataset.data_sz*dataset.ratio_value)
-					)
-				if 'blocks' in args.sequence_type:
-					T = float(0)
-					if args.sequence_type == 'random_blocks2_2freq':
-						save_root = save_root[:-1]+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
-					else:
-						save_root = save_root[:-1]+"_splitlength"+str(args.split_length_list[0])+"/"
+    #----------------------------------#
+    #----- PREPARING FILE OUTPUTS -----#
+    #----------------------------------#
 
-				if (args.artif_shuffle_classes==0):
-					save_root = save_root[:-1]+"_noclassreshuffle/"
+	save_root = os.path.join(
+		paths['simus'],
+		"1toM/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
+			data_origin = args.data_origin,
+			n_classes = dataset.num_classes,
+			nnarchi = args.nnarchi,
+			hidlay_width = args.hidden_sizes,
+			seq_type = args.sequence_type,
+			seq_length = args.sequence_length,
+			batch_size = args.batch_sz
+		)
+	)
+	if dataset.data_origin == 'artificial':
+		save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
+			patterns_size = args.artif_seq_size,
+			bitflips = int(dataset.data_sz*dataset.ratio_value)
+		)
+	if 'blocks' in args.sequence_type:
+		args.T = float(0)
+		if args.sequence_type == 'random_blocks2_2freq':
+			save_root = save_root[:-1]+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
+		else:
+			save_root = save_root[:-1]+"_splitlength"+str(args.split_length_list[0])+"/"
 
-				verbose("Output directory for this simulation set: {:s}".format(save_root), args.verbose, 0)
+	if (args.artif_shuffle_classes==0):
+		save_root = save_root[:-1]+"_noclassreshuffle/"
 
-				if args.sequence_type == 'uniform':
-					T = 0.0
+	verbose("Output directory for this simulation set: {:s}".format(save_root), args.verbose, 0)
 
-				parameters = {
-					"Temperature": T,
-					"Tree Depth": dataset.depth,
-					"Tree Branching": dataset.branching,
-					"Flips ratio": args.data_flips_rate,
-					"Sequence Length": args.sequence_length,
-					"Minibatches Size": batch_sz,
-					"Number of tests": args.test_nbr,
-					"Energy Step": step,
-					"Replay Memory Size": memory_sz,
-					"Learning rate": args.lr,
-					"Dataset": args.data_origin,
-					"Random Seed": systime,
-					"device_type": 'GPU' if args.cuda else 'CPU',
-					"NN architecture": args.nnarchi,
-					"Split total length": args.split_length_list[0],
-					"Original command": str(sys.argv) # We store the original command for this set of simulations
-				}
-				# ToDo: - turn parameters into a dictionnary
-				#       - export as JSON
+	if args.sequence_type == 'uniform':
+		args.T = 0.0
 
-				verbose(
-					'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
-					args.verbose, 0
-					)
 
-			    #------------------------------#
-			    #----- MODEL (CLASSIFIER) -----#
-			    #------------------------------#
+	verbose(
+		'Instanciating network and trainer (sequence generation with {0:s}, length {1:d})...'.format(args.sequence_type, args.sequence_length),
+		args.verbose, 0
+		)
 
-				if args.nnarchi == 'FCL':
-					netfc_original = neuralnet.Net_FCL(dataset, args.hidden_sizes)
-				elif args.nnarchi == 'CNN':
-					netfc_original = neuralnet.Net_CNN(dataset)
-				else:
-					netfc_original = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
-				netfc_original.to(device)
+    #------------------------------#
+    #----- MODEL (CLASSIFIER) -----#
+    #------------------------------#
+    # neuralnet models are now subclasses of ContinualLearner and can all implement CL strategies such as EWC
 
-				if args.nnarchi == 'FCL':
-					netfc_shuffle = neuralnet.Net_FCL(dataset, args.hidden_sizes)
-				elif args.nnarchi == 'CNN':
-					netfc_shuffle = neuralnet.Net_CNN(dataset)
-				else:
-					netfc_shuffle = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
-				netfc_shuffle.to(device)
+	if args.nnarchi == 'FCL':
+		model = neuralnet.Net_FCL(dataset, args.hidden_sizes)
+	elif args.nnarchi == 'CNN':
+		model = neuralnet.Net_CNN(dataset)
+	else:
+		model = neuralnet.resnetN(type=args.resnettype, dataset=dataset)
+	model.to(device)
 
-				trainer = Trainer(
-					dataset = dataset,
-					network = netfc_original,
-					training_type = args.sequence_type,
-					memory_sampling = 'reservoir sampling',
-					memory_sz = memory_sz,
-					batch_sz = batch_sz,
-					preprocessing = False,
-					device = device,
-					min_visit = args.min_state_visit,
-					sequence_length = args.sequence_length,
-					energy_step = step,
-					proba_transition = args.proba_transition,
-					T = T,
-					dynamic_T_thr = args.T_adaptive,
-					split_length_list = args.split_length_list
-					)
-				trainer.network_orig = netfc_original
-				trainer.network_shfl = netfc_shuffle
+	#-----------------------------------#
+    #----- CL-STRATEGY: ALLOCATION -----#
+    #-----------------------------------#
 
-				verbose('...done', args.verbose, 0)
+    # Elastic Weight Consolidation (EWC)
+    if isinstance(model, ContinualLearner):
+        model.ewc_lambda = args.ewc_lambda if args.ewc else 0
+        if args.ewc:
+            model.fisher_n = args.fisher_n
+            model.gamma = args.gamma
+            model.online = True
+            model.emp_FI = args.emp_fi
 
-				rs = ultrametric_analysis(trainer, args, args.block_size_shuffle_list)
-				rs.parameters = parameters
-				rs.T = trainer.T
-				rs.memory_sz = memory_sz
+            # Force batch size to equal block size for RB scenarios
+            # Note: Will not work with RB2_2freq mode for now
+            if "blocks" in args.sequence_type:
+            	args.batch_sz = args.split_length_list[0]
 
-				save_results(rs, save_root)
+
+
+    # Instanciating loss function and optimizer
+    if args.loss_fn == 'cross_entropy':
+    	loss_fn = nn.CrossEntropyLoss()
+    else:
+    	loss_fn = nn.CrossEntropyLoss()
+
+    if args.optimizer == 'sgd':
+    	optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.5)
+    elif args.optimizer == 'adam':
+		optimizer = optim.Adam(model.parameters(), lr=args.lr)
+	elif args.optimizer == 'adagrad':
+		optimizer = optim.Adagrad(model.parameters(), lr=args.lr)
+
+	#----------------------------------#
+	#----- SEQUENCE-BASED TRAINER -----#
+	#----------------------------------#
+
+	trainer = Trainer(
+		dataset = dataset,
+		network = model,
+		training_type = args.sequence_type,
+		memory_sampling = 'reservoir sampling',
+		memory_sz = args.memory_sz,
+		criterion = loss_fn,
+		optimizer = optimizer,
+		batch_sz = args.batch_sz,
+		preprocessing = False,
+		device = device,
+		min_visit = args.min_state_visit,
+		sequence_length = args.sequence_length,
+		energy_step = step,
+		proba_transition = args.proba_transition,
+		T = args.T,
+		dynamic_T_thr = args.T_adaptive,
+		split_length_list = args.split_length_list
+	)
+
+	verbose('...done', args.verbose, 0)
+
+	rs = train_sequenceset(trainer, args, args.block_size_shuffle_list)
+	rs.parameters = {
+		"Temperature": args.T,
+		"Tree Depth": dataset.depth,
+		"Tree Branching": dataset.branching,
+		"Flips ratio": args.data_flips_rate,
+		"Sequence Length": args.sequence_length,
+		"Minibatches Size": args.batch_sz,
+		"Number of tests": args.test_nbr,
+		"Energy Step": step,
+		"Replay Memory Size": args.memory_sz,
+		"Learning rate": args.lr,
+		"Loss function": args.loss_fn,
+		"Optimizer": args.optimizer,
+		"Continual learner": "EWC" if args.ewc is True else "None",
+		"Dataset": args.data_origin,
+		"Random Seed": systime,
+		"device_type": 'GPU' if args.cuda else 'CPU',
+		"NN architecture": args.nnarchi,
+		"Split total length": args.split_length_list[0],
+		"Original command": str(sys.argv) # We store the original command for this set of simulations
+	}
+	rs.T = trainer.T
+	rs.memory_sz = args.memory_sz
+
+	data_saver.save_results(rs, save_root)
 
 
 

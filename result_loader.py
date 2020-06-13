@@ -616,7 +616,7 @@ class ResultSet:
 ### Functions to output accuracy=f(iteration) plots ###
 #######################################################
 
-def make_perfplot(rs, blocks, ax, plt_confinter=False):
+def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
 	"""
 	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
 
@@ -644,7 +644,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			x_labels, var_acc_orig,
 			ls = 'solid',
 			color = hsv_to_rgb(rs.hsv_orig),
-			label=rs.descr+' - No shuffling'
+			label='Original sequence' if uniform is False else 'Uniform sequence'
 		)
 
 	if plt_confinter:
@@ -672,7 +672,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			x_labels, var_acc_shfl,
 			ls = '--',
 			color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-			label=rs.descr+' - Shuffled w/ block size {0:d}'.format(block_sz)
+			label='Shuffled w/ block size {0:d}'.format(block_sz)
 		)
 
 		if plt_confinter:
@@ -685,7 +685,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False):
 			)
 
 
-def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
+def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_window=None):
 	"""
 	Formats an accuracy plot to fit paper conventions and standards. 
 
@@ -703,18 +703,94 @@ def format_perf_plot(ax, title, xtick_pos, xtick_labels, plot_window=None):
 		tuple of extrema positions to use for formating x-axis
 	"""
 	box = ax.get_position()
-	ax.set_position([box.x0, box.y0 + box.height * 0.1,
-					 box.width, box.height * 0.9])
+	ax.set_position([box.x0, box.y0 + box.height * 0.2,
+					 box.width, box.height * 0.8])
 
-	ax.legend()
-	ax.set_xlabel('Iterations')
-	ax.set_ylabel('Accuracy (%)')
+	ax.legend(fontsize=20, loc='upper center', bbox_to_anchor=(0.5, -0.1), title=legend_title, title_fontsize=22, frameon=True, fancybox=True, ncol=2)
+	ax.set_xlabel('Iterations', fontsize=18)
+	ax.set_ylabel('Accuracy (%)', fontsize=18)
 
 	#ax.set_xticks(xtick_pos)
 	#ax.set_xticklabels(xtick_labels)
 
 	if plot_window is not None:
 		ax.set_xlim(plot_window[0], plot_window[1])
+
+
+def make_perfplot_unit(
+	rs, blocks, rs_unif=None,
+	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
+	):
+	"""
+	Creates accuracy plots from a single ResultSet object, comparing the result set vs baseline uniform, with shuffling block sizes in argument "blocks"
+
+	Parameters
+	----------
+	rs : ResultSet
+		main result set
+	rs_unif : ResultSet
+		baseline result set with uniform generation strategy
+	seq_length: int
+		length of the sequences
+	n_tests: int
+		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
+	plot_window: tuple like (x_min, x_max)
+		if not None, will restrict plotting to a subset of iterations with (x_min, x_max)
+	blocks: dict
+		dictionnary containing, for a set of contexts (stored as keys) a list of block sizes to display, for the main ResultSet
+	blocks_for_shared_plots: list(int)
+		list of shuffle block sizes that were used for shuffling. Those will be plotted in dotted line in the third plot.
+	plt_confinter: bool
+		if True, confidence intervals for confidence level 95% will be printed.
+		Defaults to False
+		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
+	n_ticks: int
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+	save_formats: list(str)
+		if not None, plots will be saved in the provided formats
+	"""
+	xtick_scale = n_tests//n_ticks
+	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+
+	fig = plt.figure(figsize=(18,12))
+	acc_ax = fig.add_subplot(1, 1, 1)
+
+	### 1) UNIFORM + ORIGINAL ###
+	if rs_unif is not None:
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
+
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
+
+	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
+		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
+
+
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				figset_name,
+				"accuracy/accuracy1_main{mainsetname:s}_unif{unifsetname:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
+					mainsetname = rs.name,
+					unifsetname = rs_unif.name,
+					blocksz = blocks_to_plot,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
+
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			fig.savefig(out_filepath, format=fmt)
+
+	return fig, acc_ax
 
 
 def make_perfplot_comparison(
@@ -775,11 +851,12 @@ def make_perfplot_comparison(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
 
 	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
 
-	format_perf_plot(acc_ax, "Accuracy as a function of time for original and shuffled sequence - " + rs.descr, xtick_pos, xtick_labels, plot_window)
+	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
+		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
 
 
 	### 2) UNIFORM + ALTERNATIVE ###
@@ -791,11 +868,12 @@ def make_perfplot_comparison(
 			blocks_altr = blocks
 
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, uniform=True)
 
 		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
 
-		format_perf_plot(acc_ax_altr, "Accuracy as a function of time for original and shuffled sequence - " + rs_altr.descr, xtick_pos, xtick_labels, plot_window)
+		format_perf_plot(ax=acc_ax_altr, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
+			xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
 
 
 	### 3) ALL SCENARIOS, REDUCED NUMBER OF BLOCKS ###
@@ -804,13 +882,13 @@ def make_perfplot_comparison(
 		axes.append(acc_ax_all)
 
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, uniform=True)
 
 		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
-
-		format_perf_plot(acc_ax_all, "Comparative accuracy as a function of time for different scenarios", xtick_pos, xtick_labels, plot_window)
+		format_perf_plot(ax=acc_ax_all, title="Comparative accuracy as a function of time for different scenarios", legend_title=rs.descr,
+			xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
 
 	fig.tight_layout(pad=10.0)
 
@@ -820,7 +898,7 @@ def make_perfplot_comparison(
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"accuracy/accuracy_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
+				"accuracy/accuracy3_main{mainsetname:s}_altr{altersetname:s}_unif{unifsetname:s}_{blocksz:s}blocks_{date:s}.{fmt:s}".format(
 					mainsetname = rs.name,
 					altersetname = rs_altr.name,
 					unifsetname = rs_unif.name,
@@ -887,7 +965,7 @@ def make_perfplot_matrix(
 	### Diagonal elements
 	for rs_id, rs in enumerate(rs_list):
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, uniform=True)
 
 		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter)
 
@@ -900,7 +978,7 @@ def make_perfplot_matrix(
 	### Non-diagonal elements
 	for rs1_id, rs2_id in itertools.permutations(range(n_rs), 2):
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter, uniform=True)
 
 		rs1 = rs_list[rs1_id]
 		rs2 = rs_list[rs2_id]

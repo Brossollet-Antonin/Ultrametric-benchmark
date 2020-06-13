@@ -30,14 +30,15 @@ import preprocessing
 from utils import verbose
 
 
-def mem_SGD(net, mini_batch, lr, momentum, device):
+def mem_SGD(net, mini_batch, lr, momentum, device, optimizer=None):
     # Instanciates optimizer and computes the loss for mini_batch
     # Backpropagates
     # Returns avg loss on mini-batch
     inputs, labels = mini_batch
     inputs, labels = inputs.to(device), labels.to(device=device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
+    if optimizer is None:
+        optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
     optimizer.zero_grad()
     outputs = net(inputs)
 
@@ -70,20 +71,26 @@ class Trainer:
     random_blocks2_2freq: like random_blocks2 but with two different timescales
     of switches, lenghts stored in split_length_list
     """
-    def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, batch_sz=None,
+    def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, criterion=None, optimizer=None, batch_sz=None,
                  sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0, split_length_list=None):
 
         self.dataset = dataset
-        self.network = network
-        self.network_orig = deepcopy(network)
-        self.network_shfl = deepcopy(network)
+        self.network_tmpl = network
+        self.network = deepcopy(self.network_tmpl)
         self.training_type = training_type
 
         self.batch_sz = batch_sz
         self.memory_sampling = memory_sampling
         self.memory_size = memory_sz
+
+        if criterion is None:
+            criterion = nn.CrossEntropyLoss()
+        if optimizer is None:
+            optimizer = optim.SGD(self.network.parameters(), lr=lr, momentum=momentum)
+        self.criterion = criterion
+        self.optimizer = optimizer
 
         self.sequence_first = sequence_first
         self.sequence_length = sequence_length
@@ -103,6 +110,25 @@ class Trainer:
         if self.training_type=="random_blocks1" or self.training_type=="random_blocks2" or self.training_type=="random_blocks2_2freq":
             self.split_block_lengths = split_length_list
 
+
+    def mem_optim(self, mini_batch, lr, momentum):
+        # Instanciates optimizer and computes the loss for mini_batch
+        # Backpropagates
+        # Returns avg loss on mini-batch
+        inputs, labels = mini_batch
+        inputs, labels = inputs.to(self.device), labels.to(device=self.device)
+        outputs = self.network(inputs)
+        loss = self.criterion(outputs, labels)
+
+        ### Additional losses for method-specific continual learning:
+        # Add EWC-loss
+        ewc_loss = self.ewc_loss()
+        if self.network.ewc_lambda>0:
+            loss += self.network.ewc_lambda * ewc_loss
+
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
 
     def heuristic_temperature(self, rate_law, dT=0.01):
         # Only relevant when self.training_type = 'ultrametric'
@@ -332,6 +358,8 @@ class Trainer:
 
         """
         if self.training_type in ("ultrametric", "ladder_blocks1", "ladder_blocks2", "random_blocks1", "random_blocks2", "random_blocks2_2freq", "spatial_correlation", "random", "uniform"):
+            # Set model in training-mode
+            self.network.train()
             # For temporal and spatial correlation tests
             if seq is not None:
                 train_sequence = seq
@@ -360,11 +388,10 @@ class Trainer:
                     ]
                 else:
                     train_mini_batch = mini_batch
-                # Perform SGD on the mini_batch and memory
-                if method == 'sgd':
-                    running_loss += mem_SGD(self.network, train_mini_batch, lr, momentum, self.device)
-                if method == 'ewc':
-                    running_loss += EWC(self.network, train_mini_batch, lr, momentum, self.device)
+
+                # Perform loss computation (including CL method-specific loss), and optimization step on the mini_batch and memory
+                running_loss += mem_optim(self, train_mini_batch, lr, momentum)
+
                 # Update memory
                 memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
                 first_train_id += self.batch_sz
@@ -375,11 +402,18 @@ class Trainer:
 
             verbose("--- Finished Experience Replay training on {0:d}-{1:d} ---".format(training_range[0], training_range[1]), verbose_lvl, 2)
 
-        else:
-            raise NotImplementedError("training type not supported")
+            # EWC: estimate Fisher Information matrix (FIM) and update term for quadratic penalty
+            if isinstance(self.network, ContinualLearner) and (self.network.ewc_lambda>0):
+                # -estimate FI-matrix
+                self.network.estimate_fisher(train_sequence)
+
+            else:
+                raise NotImplementedError("training type not supported")
 
 
     def evaluate(self):
+        # Set model in training-mode
+        self.network.eval()
         # Return the accuracy, the predicted and real label for the whole test set and the difference between the two
         # Creation of the testing sequence
         j = 0

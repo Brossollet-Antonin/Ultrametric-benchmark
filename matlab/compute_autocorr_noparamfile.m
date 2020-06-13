@@ -207,57 +207,14 @@ for block_sz_id = 1:length(block_sizes)
     end
 end
 
+% Saving mat files
+atc_um_filename = sprintf("atc_um_%s_%s.%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
+atc_rb2_filename = sprintf("atc_rb2_%s_%s.%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
+save(atc_um_filename, 'hlocs_stat_ultra');
+save(atc_rb2_filename, 'hlocs_stat_rb');
 
 % Plotting results
-figure(1);
-clf;
-hold on;
-
-ultra_cb = [1, 0, 0];
-ultra_ce = [230, 130, 130]/255;
-ultra_colors = [linspace(ultra_cb(1),ultra_ce(1),1+length(block_sizes))', linspace(ultra_cb(2),ultra_ce(2),1+length(block_sizes))', linspace(ultra_cb(3),ultra_ce(3),1+length(block_sizes))'];
-
-%legends = char.empty;
-legends = {};
-
-h=plot(hlocs_stat_ultra(1,2:2:end-1)./hlocs_stat_ultra(1,2),'Color',ultra_colors(1,:),'LineStyle','-');%,'DisplayName','Ultrametric - Original sequence');
-legends{1} = 'Ultrametric - Original sequence';
-set(h,'linewidth',2);
-
-for block_sz_id = 1:length(block_sizes)
-    fig_name = strcat('Ultrametric - Shuffled with block size ', int2str(block_sizes(block_sz_id)));
-    h=plot(hlocs_stat_ultra(1+block_sz_id,2:2:end-1)./hlocs_stat_ultra(1+block_sz_id,2),'Color',ultra_colors(1+block_sz_id,:),'LineStyle','--');%,'DisplayName',fig_name);
-    legends{1+block_sz_id} = fig_name;
-    set(h,'linewidth',2);
-end
-
-rb_cb = [0, 110, 0]/255;
-rb_ce = [145, 225, 145]/255;
-rb_colors = [linspace(rb_cb(1),rb_ce(1),1+length(block_sizes))', linspace(rb_cb(2),rb_ce(2),1+length(block_sizes))', linspace(rb_cb(3),rb_ce(3),1+length(block_sizes))'];
-
-h=plot(hlocs_stat_rb(1,2:2:end-1)./hlocs_stat_rb(1,2),'Color',rb_colors(1,:),'LineStyle','-');%,'DisplayName','Random blocks - Original sequence');
-legends{2+length(block_sizes)} = 'Random blocks - Original sequence';
-set(h,'linewidth',2);
-
-for block_sz_id = 1:length(block_sizes)
-    fig_name = strcat('Random blocks - Split size ', int2str(block_sizes(block_sz_id)));
-    h=plot(hlocs_stat_rb(1+block_sz_id,2:2:end-1)./hlocs_stat_rb(1+block_sz_id,2),'Color',rb_colors(1+block_sz_id,:),'LineStyle','--');%,'DisplayName',fig_name);
-    legends{2+length(block_sizes)+block_sz_id} = fig_name;
-    set(h,'linewidth',2);
-end
-
-% Figure configuration
-ax = gca;
-ax.FontSize = 16; 
-
-set(gca,'Xscale','log');
-set(gca,'Yscale','log');
-
-xlabel("Sequence space", 'FontSize', 18);
-ylabel("Autocorrelation", 'FontSize', 18);
-
-columnlegend(2, legends);
-
+plot_autocorr(atc_um_filename, atc_rb2_filename, block_sizes);
 
 end
 
