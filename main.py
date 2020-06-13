@@ -44,7 +44,7 @@ data_params.add_argument('--dataset', type=str, dest='data_origin', default='CIF
 
 data_params.add_argument('--data_tree_depth', type=int, dest='artif_tree_depth', default=3)
 data_params.add_argument('--data_flips_rate', type=float, default=0.04)
-data_params.add_argument('-T', '--temperature', type=float, dest='temperature', default=0.4, help='Temperature for the random walk (the energy step is by default equal to 1)')
+data_params.add_argument('-T', '--temperature', type=float, dest='T', default=0.4, help='Temperature for the random walk (the energy step is by default equal to 1)')
 data_params.add_argument('--shuffle_classes', type=int, dest='artif_shuffle_classes', default=1)
 data_params.add_argument('--proba_transition', type=float, default=0.1)
 data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', default=200)
@@ -61,10 +61,11 @@ model_params.add_argument('--loss_fn', type=str, default='cross_entropy', help='
 model_params.add_argument('--optimizer', type=str, default='sgd')
 
 # "Memory allocation" parameters, from methods that aim specifically at mitigating catastrophic interference
+cl_params = parser.add_argument_group('Continual leanrning capabilities')
 cl_params.add_argument('--ewc', action='store_true', help="use 'EWC' (Kirkpatrick et al, 2017)")
-cl_params.add_argument('--lambda', type=float, dest="ewc_lambda", help="--> EWC: regularisation strength")
-cl_params.add_argument('--fisher-n', type=int, help="--> EWC: sample size estimating Fisher Information")
-cl_params.add_argument('--gamma', type=float, help="--> EWC: forgetting coefficient (for 'online EWC')")
+cl_params.add_argument('--lambda', type=float, dest="ewc_lambda", default=0.0, help="--> EWC: regularisation strength")
+cl_params.add_argument('--fisher_n', type=int, help="--> EWC: sample size estimating Fisher Information")
+cl_params.add_argument('--gamma', type=float, default=0.95, help="--> EWC: forgetting coefficient (for 'online EWC')")
 cl_params.add_argument('--emp-fi', action='store_true', help="--> EWC: estimate FI with provided labels")
 
 # sequence parameters
@@ -92,9 +93,9 @@ def run(args):
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 
-    #------------------------------#
-    #----- DATASET GENERATION -----#
-    #------------------------------#
+	#------------------------------#
+	#----- DATASET GENERATION -----#
+	#------------------------------#
 
 	verbose('Generating dataset {0:s} - data_seq_size={1:d}'.format(args.data_origin, args.artif_seq_size), args.verbose, 0)
 
@@ -112,13 +113,16 @@ def run(args):
 
 	verbose('Done generating dataset {0:s}'.format(args.data_origin), args.verbose, 0)
 
-    #----------------------------------#
-    #----- PREPARING FILE OUTPUTS -----#
-    #----------------------------------#
+	#----------------------------------#
+	#----- PREPARING FILE OUTPUTS -----#
+	#----------------------------------#
+
+	cl_strategy = 'EWC' if args.ewc is not None else '1toM'
 
 	save_root = os.path.join(
 		paths['simus'],
-		"1toM/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
+		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
+			cl_strat = cl_strategy,
 			data_origin = args.data_origin,
 			n_classes = dataset.num_classes,
 			nnarchi = args.nnarchi,
@@ -154,10 +158,10 @@ def run(args):
 		args.verbose, 0
 		)
 
-    #------------------------------#
-    #----- MODEL (CLASSIFIER) -----#
-    #------------------------------#
-    # neuralnet models are now subclasses of ContinualLearner and can all implement CL strategies such as EWC
+	#------------------------------#
+	#----- MODEL (CLASSIFIER) -----#
+	#------------------------------#
+	# neuralnet models are now subclasses of ContinualLearner and can all implement CL strategies such as EWC
 
 	if args.nnarchi == 'FCL':
 		model = neuralnet.Net_FCL(dataset, args.hidden_sizes)
@@ -168,37 +172,21 @@ def run(args):
 	model.to(device)
 
 	#-----------------------------------#
-    #----- CL-STRATEGY: ALLOCATION -----#
-    #-----------------------------------#
+	#----- CL-STRATEGY: ALLOCATION -----#
+	#-----------------------------------#
 
-    # Elastic Weight Consolidation (EWC)
-    if isinstance(model, ContinualLearner):
-        model.ewc_lambda = args.ewc_lambda if args.ewc else 0
-        if args.ewc:
-            model.fisher_n = args.fisher_n
-            model.gamma = args.gamma
-            model.online = True
-            model.emp_FI = args.emp_fi
+	# Elastic Weight Consolidation (EWC)
+	if isinstance(model, neuralnet.ContinualLearner):
+		model.ewc_lambda = args.ewc_lambda if args.ewc else 0
+		if args.ewc:
+			if args.fisher_n is None or args.fisher_n < args.batch_sz:
+				model.fisher_n = args.batch_sz
+			else:
+				model.fisher_n = args.fisher_n
+			model.online = True
+			model.gamma = args.gamma
+			model.emp_FI = args.emp_fi
 
-            # Force batch size to equal block size for RB scenarios
-            # Note: Will not work with RB2_2freq mode for now
-            if "blocks" in args.sequence_type:
-            	args.batch_sz = args.split_length_list[0]
-
-
-
-    # Instanciating loss function and optimizer
-    if args.loss_fn == 'cross_entropy':
-    	loss_fn = nn.CrossEntropyLoss()
-    else:
-    	loss_fn = nn.CrossEntropyLoss()
-
-    if args.optimizer == 'sgd':
-    	optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.5)
-    elif args.optimizer == 'adam':
-		optimizer = optim.Adam(model.parameters(), lr=args.lr)
-	elif args.optimizer == 'adagrad':
-		optimizer = optim.Adagrad(model.parameters(), lr=args.lr)
 
 	#----------------------------------#
 	#----- SEQUENCE-BASED TRAINER -----#
@@ -210,8 +198,10 @@ def run(args):
 		training_type = args.sequence_type,
 		memory_sampling = 'reservoir sampling',
 		memory_sz = args.memory_sz,
-		criterion = loss_fn,
-		optimizer = optimizer,
+		lr=args.lr,
+        momentum=0.5,
+		criterion = args.loss_fn,
+		optimizer = args.optimizer,
 		batch_sz = args.batch_sz,
 		preprocessing = False,
 		device = device,

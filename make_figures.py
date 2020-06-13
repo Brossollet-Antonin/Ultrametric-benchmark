@@ -14,7 +14,7 @@ paths = utils.get_project_paths()
 
 import result_loader as ld
 from rs_registry import RS_DIR
-#ld.format_paper()
+utils.format_paper()
 
 ## PARAMETERS COMMON TO ALL SIMULATIONS ##
 seq_length = 300000
@@ -62,11 +62,13 @@ tree_depths_tested = (5, 7)
 ## ARGUMENT PARSING
 parser = argparse.ArgumentParser('./make_figures.py', description='Produces figures')
 parser.add_argument('--dataset', type=str, choices=["artificial", "MNIST"], help="Dataset to produce figures for")
-parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed"], help="Battery of results to generate graphs for")
 parser.add_argument('--bf_ratio', type=float, help="Bit-flipping ratio per level in the ultrametric tree that generate patterns")
-parser.add_argument('--make_lbl_history', type=int, default=0, help="Whether to output label history heatmaps and curve-like figures (takes a little time)")
 parser.add_argument('--tree_depth', type=int, default=5)
 
+parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed"], help="Battery of results to generate graphs for")
+parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unif')
+
+parser.add_argument('--make_lbl_history', type=int, default=0, help="Whether to output label history heatmaps and curve-like figures (takes a little time)")
 parser.add_argument('--first_iters_focus', type=int, default=50000)
 
 
@@ -91,16 +93,16 @@ class FigureSet:
 			self.rs_for_lbl_plots.append(self.rs[rs_name])
 
 
-def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], cfprof_method='mean', cfprof_x_origpos=1.3e5, cfprof_var_scale=1, cfprof_ylog=False, wipe_mem=True):
+def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], acc_mode='unit', cfprof_method='mean', cfprof_x_origpos=1.3e5, cfprof_var_scale=1, cfprof_ylog=False, wipe_mem=True):
 
 	## Producing accuracy plots
 	print("Making accuracy figures...")
-	if fs.accuracy_plot_style == "comp":
+	if fs.accuracy_plot_style == "comp" and acc_mode=='compare':
 		for (main_set, altr_set, unif_set) in fs.accuracy_to_compare:
 			print("    {:s} vs {:s}".format(main_set, altr_set))
 			depth_mainset = fs.rs[main_set].params["Tree Depth"]
 			depth_altrset = fs.rs[altr_set].params["Tree Depth"]
-		
+			
 			ld.make_perfplot_comparison(
 				rs=fs.rs[main_set], blocks=blocks[depth_mainset], blocks_altr=blocks[depth_altrset], rs_altr=fs.rs[altr_set], rs_unif=fs.rs[unif_set],
 				seq_length=fs.seq_length, n_tests=fs.n_tests,
@@ -108,6 +110,23 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], cfprof_method='mean'
 			)
 			ld.make_perfplot_comparison(
 				rs=fs.rs[main_set], blocks=blocks[depth_mainset], blocks_altr=blocks[depth_altrset], rs_altr=fs.rs[altr_set], rs_unif=fs.rs[unif_set],
+				seq_length=fs.seq_length, n_tests=fs.n_tests,
+				blocks_to_plot = 'large', save_formats=save_formats, figset_name=fs_name
+			)
+
+	elif fs.accuracy_plot_style == "comp" and acc_mode=='unit':
+		unit_acc_plots = set([(main_set, unif_set) for (main_set, altr_set, unif_set) in fs.accuracy_to_compare] + [(altr_set, unif_set) for (main_set, altr_set, unif_set) in fs.accuracy_to_compare])
+		for (main_set, unif_set) in unit_acc_plots:
+			print("    {:s} vs unif".format(main_set))
+			depth_mainset = fs.rs[main_set].params["Tree Depth"]
+		
+			ld.make_perfplot_unit(
+				rs=fs.rs[main_set], blocks=blocks[depth_mainset], rs_unif=fs.rs[unif_set],
+				seq_length=fs.seq_length, n_tests=fs.n_tests,
+				blocks_to_plot = 'small', save_formats=save_formats, figset_name=fs_name
+			)
+			ld.make_perfplot_unit(
+				rs=fs.rs[main_set], blocks=blocks[depth_mainset], rs_unif=fs.rs[unif_set],
 				seq_length=fs.seq_length, n_tests=fs.n_tests,
 				blocks_to_plot = 'large', save_formats=save_formats, figset_name=fs_name
 			)
@@ -429,7 +448,7 @@ if __name__ == '__main__':
 
 	if args.make_lbl_history < 2:
 		print("Making CF-related figures...")
-		make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], cfprof_method='mean', cfprof_x_origpos=8.5e4, cfprof_var_scale=0.5, cfprof_ylog=False)
+		make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], acc_mode=args.acc_mode, cfprof_method='mean', cfprof_x_origpos=8.5e4, cfprof_var_scale=0.5, cfprof_ylog=False)
 		print("Done")
 
 	if args.make_lbl_history:

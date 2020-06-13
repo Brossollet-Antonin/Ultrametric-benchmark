@@ -5,6 +5,8 @@ Created on Fri Apr 19 11:14:53 2019
 @author: Antonin
 """
 
+import abc
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,6 +14,8 @@ from torch.utils.data import DataLoader
 
 from torch.autograd import Variable 
 import pdb
+
+from utils import verbose
 
 
 # 2 hidden layers MLP with 256 ReLU units in each layers (similar to Chaudhry et al. (2019))
@@ -46,10 +50,11 @@ class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
 
     #----------------- EWC-specifc functions -----------------#
 
-    def estimate_fisher(self, dataset, allowed_classes=None, collate_fn=None):
+    def estimate_fisher(self, data_batch, allowed_classes=None, collate_fn=None):
+
         '''After completing training on a task, estimate diagonal of Fisher Information matrix.
 
-        [dataset]:          <DataSet> to be used to estimate FI-matrix
+        [data_batch]:       batch of (x,y) to be used to estimate FI-matrix
         [allowed_classes]:  <list> with class-indeces of 'allowed' or 'active' classes'''
 
         # Prepare <dict> to store estimated Fisher Information matrix
@@ -63,8 +68,7 @@ class ContinualLearner(nn.Module, metaclass=abc.ABCMeta):
         mode = self.training
         self.eval()
 
-        # Create data-loader to give batches of size 1
-        data_loader = utils.get_data_loader(dataset, batch_size=1, cuda=self._is_on_cuda(), collate_fn=collate_fn)
+        data_loader = [(data_batch[0][k],data_batch[1][k]) for k in range(len(data_batch[0]))]
 
         # Estimate the FI-matrix for [self.fisher_n] batches of size 1
         for index,(x,y) in enumerate(data_loader):
@@ -176,7 +180,7 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
+class Bottleneck(ContinualLearner):
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
@@ -204,7 +208,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNet(nn.Module):
+class ResNet(ContinualLearner):
     def __init__(self, block, num_blocks, dataset):
 
         super(ResNet, self).__init__()
@@ -261,7 +265,7 @@ def resnetN(dataset, type=50):
 
 
 
-class Net_FCRU(nn.Module):
+class Net_FCRU(ContinualLearner):
     def __init__(self):
         super(Net_FCRU, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
@@ -304,7 +308,7 @@ class Net_FCRU(nn.Module):
 
 # 2 hidden layers CNN
 
-class Net_CNN(nn.Module):
+class Net_CNN(ContinualLearner):
     def __init__(self, dataset):
         super(Net_CNN, self).__init__()
         self.dataset = dataset
@@ -343,7 +347,7 @@ class Net_CNN(nn.Module):
 hidden_size = 100
 
 
-class Net_FCL(nn.Module):
+class Net_FCL(ContinualLearner):
     def __init__(self, dataset, hidden_size):
         super(Net_FCL, self).__init__()
         self.dataset = dataset

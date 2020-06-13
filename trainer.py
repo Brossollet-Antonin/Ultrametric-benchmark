@@ -26,6 +26,7 @@ import sequence_generator_temporal
 import sequence_generator_spatial
 import rates_correlation
 import preprocessing
+from neuralnet import ContinualLearner
 
 from utils import verbose
 
@@ -71,8 +72,8 @@ class Trainer:
     random_blocks2_2freq: like random_blocks2 but with two different timescales
     of switches, lenghts stored in split_length_list
     """
-    def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, criterion=None, optimizer=None, batch_sz=None,
-                 sequence_first=0, sequence_length=60000, min_visit=0, energy_step=3, T=1,
+    def __init__(self, dataset, network, training_type, memory_sampling, memory_sz, lr, momentum, criterion=None, optimizer=None, batch_sz=None,
+                 sequence_first=0, sequence_length=60000, min_visit=0, energy_step=1, T=0.4,
                  device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                  preprocessing=True, proba_transition=1e-3, dynamic_T_thr=0, split_length_list=None):
 
@@ -85,12 +86,23 @@ class Trainer:
         self.memory_sampling = memory_sampling
         self.memory_size = memory_sz
 
-        if criterion is None:
-            criterion = nn.CrossEntropyLoss()
+        self.lr = lr
+        self.momentum = momentum
+
         if optimizer is None:
-            optimizer = optim.SGD(self.network.parameters(), lr=lr, momentum=momentum)
-        self.criterion = criterion
-        self.optimizer = optimizer
+            optimizer = 'sgd'
+        self.optimizer_type = optimizer
+
+        if criterion is None:
+            criterion = 'cross_entropy'
+        if criterion.lower()=='l1':
+            self.criterion = nn.L1Loss()
+        if criterion.lower()=='l2' or criterion.lower()=='mse':
+            self.criterion = nn.MSELoss()
+        if criterion.lower()=='nll':
+            self.criterion = nn.NLLLoss()
+        else:
+            self.criterion = nn.CrossEntropyLoss()
 
         self.sequence_first = sequence_first
         self.sequence_length = sequence_length
@@ -110,8 +122,18 @@ class Trainer:
         if self.training_type=="random_blocks1" or self.training_type=="random_blocks2" or self.training_type=="random_blocks2_2freq":
             self.split_block_lengths = split_length_list
 
+    def assign_model(self, model):
+        self.network = model
+        
+        if self.optimizer_type == 'sgd':
+            self.optimizer = optim.SGD(self.network.parameters(), lr=self.lr, momentum=self.momentum)
+        elif self.optimizer_type == 'adam':
+            self.optimizer = optim.Adam(self.network.parameters(), lr=self.lr)
+        elif self.optimizer_type == 'adagrad':
+            self.optimizer = optim.Adagrad(self.network.parameters(), lr=self.lr)
 
-    def mem_optim(self, mini_batch, lr, momentum):
+
+    def mem_optim(self, mini_batch):
         # Instanciates optimizer and computes the loss for mini_batch
         # Backpropagates
         # Returns avg loss on mini-batch
@@ -122,10 +144,11 @@ class Trainer:
 
         ### Additional losses for method-specific continual learning:
         # Add EWC-loss
-        ewc_loss = self.ewc_loss()
         if self.network.ewc_lambda>0:
+            ewc_loss = self.network.ewc_loss()
             loss += self.network.ewc_lambda * ewc_loss
 
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
         return loss.item()
@@ -141,18 +164,32 @@ class Trainer:
         return T
 
 
-    def generate_batch(self, train_sequence, first_train_id):
+    def generate_batch(self, train_sequence, train_range):
+        """
+        Generates a data batch using train_range=[first_train_id, last_train_id), taking the first self.batch_sz elements of that range
+        Note that the interval above is closed on the left and open on the right, meaning that first_train_id is included, but last_train_id never is.
+        If first_train_id+self.batch_sz >= last_train_id, then a batch containing [first_train_id, last_train_id) is returned
+        Else a batch containing [first_train_id, first_train_id+self.batch_sz) is returned
+        """
+        if train_range[0] >= train_range[1]:
+            return (), None
 
-        train_labels = train_sequence[first_train_id:first_train_id+self.batch_sz]
+        first_train_id = train_range[0]
+        last_train_id = min(first_train_id+self.batch_sz, train_range[1])
+        batch_sz = last_train_id - first_train_id
+
+        train_labels = train_sequence[first_train_id:last_train_id]
         first_couple = next(self.data_iterator[train_labels[0]])
         train_data = first_couple[0]
         train_tensorlabels = first_couple[1]
-        for seq_locid in range(1,self.batch_sz):
+        for seq_locid in range(1,batch_sz):
             next_couple = next(self.data_iterator[train_labels[seq_locid]])
             train_data = torch.cat((train_data, next_couple[0]))
             train_tensorlabels = torch.cat((train_tensorlabels, next_couple[1]))
 
-        return [train_data, train_tensorlabels]
+        train_range = (first_train_id, last_train_id)
+        train_batch = (train_data, train_tensorlabels)
+        return train_range, train_batch
 
 
     def make_train_sequence(self):
@@ -326,7 +363,7 @@ class Trainer:
         self.data_iterator = [itertools.cycle(self.dataset.train_data[i]) for i in range(len(self.dataset.train_data))]
 
 
-    def train(self, mem_sz, lr, momentum, training_range, seq=None, method='sgd', verbose_lvl=0):
+    def train(self, mem_sz, training_range, seq=None, method='sgd', verbose_lvl=0):
         """
         Train a network on the specified training protocol.
 
@@ -367,34 +404,38 @@ class Trainer:
                 train_sequence = self.train_sequence
 
             first_train_id = training_range[0]
+            last_train_id = training_range[1]
             running_loss = 0.0
 
             memory_list = [next(self.data_iterator[train_sequence[0]])]
             # Define mini-batches of size training.batch_sz and SGD and update the memory for each of them
-            while first_train_id + self.batch_sz < training_range[1]:
-                try:
-                    mini_batch = self.generate_batch(train_sequence, first_train_id)
-                    # mini_batch = deepcopy(train_data[first_train_id])        # train_data[first_train_id] is a two elements lists containing tensors
-                except:
-                    pdb.set_trace()
+            batch_range, batch = self.generate_batch(train_sequence, (first_train_id, last_train_id))
+            while batch is not None:
+                # EWC: estimate Fisher Information matrix (FIM) and update term for quadratic penalty
+                if isinstance(self.network, ContinualLearner) and (self.network.ewc_lambda>0):
+                    verbose("Estimating Fisher information on last {:d} elements".format(self.batch_sz), verbose_lvl, 2)
+                    self.network.estimate_fisher(batch)
 
                 # Sample elements from memory at random and add it to the mini batch expect for the first iteration
                 if first_train_id != 0 and mem_sz != 0:
                     # Sample the memory. We could choose to reduce the number of elements taken from memory, should make things more difficult
                     sample_memory = memory.sample_memory(memory_list, self.batch_sz)
-                    train_mini_batch = [
-                        torch.cat((mini_batch[0], sample_memory[0])),
-                        torch.cat((mini_batch[1], sample_memory[1]))
+                    train_batch = [
+                        torch.cat((batch[0], sample_memory[0])),
+                        torch.cat((batch[1], sample_memory[1]))
                     ]
                 else:
-                    train_mini_batch = mini_batch
+                    train_batch = batch
 
-                # Perform loss computation (including CL method-specific loss), and optimization step on the mini_batch and memory
-                running_loss += mem_optim(self, train_mini_batch, lr, momentum)
+                # Perform loss computation (including CL method-specific loss), and optimization step on the batch and memory
+                running_loss += self.mem_optim(train_batch)
 
                 # Update memory
-                memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, mini_batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, mini_batch)
+                memory_list = memory.reservoir(memory_list, mem_sz, first_train_id, batch) if self.memory_sampling == "reservoir sampling" else memory.ring_buffer(memory, mem_sz, first_train_id, batch)
+
+                # Get new batch
                 first_train_id += self.batch_sz
+                batch_range, batch = self.generate_batch(train_sequence, (first_train_id, last_train_id))
                 if first_train_id % (1000*self.batch_sz) == 999*self.batch_sz:
                     verbose('[%d] loss: %.4f' % (first_train_id//self.batch_sz + 1, running_loss/1000), verbose_lvl, 2)
                     running_loss = 0.0
@@ -402,13 +443,8 @@ class Trainer:
 
             verbose("--- Finished Experience Replay training on {0:d}-{1:d} ---".format(training_range[0], training_range[1]), verbose_lvl, 2)
 
-            # EWC: estimate Fisher Information matrix (FIM) and update term for quadratic penalty
-            if isinstance(self.network, ContinualLearner) and (self.network.ewc_lambda>0):
-                # -estimate FI-matrix
-                self.network.estimate_fisher(train_sequence)
-
-            else:
-                raise NotImplementedError("training type not supported")
+        else:
+            raise NotImplementedError("sequence generation not recognized.")
 
 
     def evaluate(self):
@@ -483,6 +519,7 @@ class Trainer:
                                 - (result[1][:, 1]//(self.tree_branching**(i-2))))
             result[0].append((np.sum(result[1][:, i] == zero)/len(test_sequence))*100)
 
+        #pdb.set_trace()
         return result
 
 
