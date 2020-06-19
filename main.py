@@ -117,7 +117,7 @@ def run(args):
 	#----- PREPARING FILE OUTPUTS -----#
 	#----------------------------------#
 
-	cl_strategy = 'EWC' if args.ewc is not None else '1toM'
+	cl_strategy = 'EWC' if args.ewc else '1toM'
 
 	save_root = os.path.join(
 		paths['simus'],
@@ -215,6 +215,10 @@ def run(args):
 	)
 
 	verbose('...done', args.verbose, 0)
+
+	# 0 is passed as a dummy block size by our slurm batch script, it should be removed
+	if 0 in args.block_size_shuffle_list:
+		args.block_size_shuffle_list.remove(0)
 
 	rs = train_sequenceset(trainer, args, args.block_size_shuffle_list)
 	rs.parameters = {

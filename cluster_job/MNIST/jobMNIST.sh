@@ -11,6 +11,7 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     T_list)               T_list=${VALUE} ;;
+    seq_length)           seq_length=${VALUE} ;;
     n_reps)               n_reps=${VALUE} ;;
     hidden_size)          hidden_size=${VALUE} ;;
     block_sizes)          block_sizes=${VALUE} ;;
