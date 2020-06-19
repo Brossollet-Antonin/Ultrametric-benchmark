@@ -216,6 +216,10 @@ def run(args):
 
 	verbose('...done', args.verbose, 0)
 
+	# 0 is passed as a dummy block size by our slurm batch script, it should be removed
+	if 0 in args.block_size_shuffle_list:
+		args.block_size_shuffle_list.remove(0)
+
 	rs = train_sequenceset(trainer, args, args.block_size_shuffle_list)
 	rs.parameters = {
 		"Temperature": args.T,
