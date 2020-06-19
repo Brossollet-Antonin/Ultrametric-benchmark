@@ -117,7 +117,7 @@ def run(args):
 	#----- PREPARING FILE OUTPUTS -----#
 	#----------------------------------#
 
-	cl_strategy = 'EWC' if args.ewc is not None else '1toM'
+	cl_strategy = 'EWC' if args.ewc else '1toM'
 
 	save_root = os.path.join(
 		paths['simus'],

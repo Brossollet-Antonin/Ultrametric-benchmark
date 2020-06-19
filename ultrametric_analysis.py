@@ -32,16 +32,18 @@ def train_sequenceset(trainer, args, block_sizes):
     # Define a family of models, all based on the same architecture template
     trainer.assign_model(deepcopy(trainer.network_tmpl))
 
-    rs.eval_orig = trainer.evaluate_hierarchical()
+    # rs.eval_orig will contain, for each test, an analysis of the ultrametric distance between the labels and the predictions
+    eval_orig = trainer.evaluate_hierarchical()
+    rs.eval_orig = [eval_orig,]
 
     # Counting the number of correct responses per classes before the training
-    rs.acc_orig = np.array([[rs.eval_orig[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
+    rs.acc_orig = np.array([[eval_orig[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
     nbr_test_samples = trainer.dataset.class_sz_test*(trainer.dataset.branching**trainer.dataset.depth)    # number of test examples
     rs.lbls_htmp_orig = np.zeros((args.test_nbr, trainer.n_classes))
 
     classes_correct = np.zeros(len(trainer.dataset.test_data))
     for k in range(nbr_test_samples):
-        classes_correct[int(rs.eval_orig[1][k][0])] += 1     # The value in the array correspond to the prediction of the network for the k-th test example
+        classes_correct[int(eval_orig[1][k][0])] += 1     # The value in the array correspond to the prediction of the network for the k-th test example
 
     rs.classes_pred_orig = np.array([[classes_correct, 0]])   # This array will stock the prediction of the network during the training
 
@@ -66,18 +68,19 @@ def train_sequenceset(trainer, args, block_sizes):
 
         verbose('...done\nComputing performance for original sequence...', args.verbose, 2)
 
-        rs.eval_orig = trainer.evaluate_hierarchical()
+        eval_orig = trainer.evaluate_hierarchical()
+        rs.eval_orig.append(eval_orig)
         rs.lbls_htmp_orig[test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
 
         verbose('...done\n', args.verbose, 2)
 
-        original_accuracy_current = rs.eval_orig[0][0]      # Recover the standard accuracy
+        original_accuracy_current = eval_orig[0][0]      # Recover the standard accuracy
         original_accuracy_current = np.array([[original_accuracy_current, (test_id+1)*args.test_stride]])
         rs.acc_orig = np.append(rs.acc_orig, original_accuracy_current, axis=0)
 
         classes_correct = np.zeros(len(trainer.dataset.test_data))
         for k in range(nbr_test_samples):
-            classes_correct[int(rs.eval_orig[1][k][0])] +=1
+            classes_correct[int(eval_orig[1][k][0])] +=1
         classes_correct = np.array([[classes_correct, (test_id+1)*args.test_stride]])
         rs.classes_pred_orig = np.append(rs.classes_pred_orig, classes_correct, axis=0)
 
@@ -105,7 +108,7 @@ def train_sequenceset(trainer, args, block_sizes):
 
         rs.train_labels_shfl = {block_size: [] for block_size in block_sizes}
         rs.classes_pred_shfl = {block_size: np.array([[classes_correct, 0]]) for block_size in block_sizes} # This array will stock the prediction of the network during the training
-        rs.eval_shfl = {block_size: eval_shfl for block_size in block_sizes}
+        rs.eval_shfl = {block_size: [eval_shfl,] for block_size in block_sizes}
         rs.acc_shfl = {block_size: acc_shfl for block_size in block_sizes}
         rs.lbls_htmp_shfl = {}
 
@@ -126,8 +129,9 @@ def train_sequenceset(trainer, args, block_sizes):
                     seq = shuffled_sequence,
                     verbose_lvl = args.verbose
                 )
-                rs.eval_shfl[block_size_shuffle] = trainer.evaluate_hierarchical()
-                shuffle_accuracy_current = rs.eval_shfl[block_size_shuffle][0][0]      # Recover the standard accuracy
+                eval_shfl = trainer.evaluate_hierarchical()
+                rs.eval_shfl[block_size_shuffle].append(eval_shfl)
+                shuffle_accuracy_current = eval_shfl[0][0]      # Recover the standard accuracy
                 shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (test_id+1)*args.test_stride]])
                 rs.acc_shfl[block_size_shuffle] = np.append(rs.acc_shfl[block_size_shuffle], shuffle_accuracy_current, axis=0)
 
@@ -135,7 +139,7 @@ def train_sequenceset(trainer, args, block_sizes):
 
                 classes_correct = np.zeros(len(trainer.dataset.test_data))
                 for k in range(nbr_test_samples):
-                    classes_correct[int(rs.eval_shfl[block_size_shuffle][1][k][0])] +=1
+                    classes_correct[int(eval_shfl[1][k][0])] +=1
                 classes_correct = np.array([[classes_correct, (test_id+1)*args.test_stride]])
                 rs.classes_pred_shfl[block_size_shuffle] = np.append(rs.classes_pred_shfl[block_size_shuffle], classes_correct, axis=0)
                 verbose(
