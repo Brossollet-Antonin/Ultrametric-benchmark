@@ -17,6 +17,7 @@ do
     seq_types)            seq_types=${VALUE} ;;
     shuffle_labels)       shuffle_labels=${VALUE} ;;
     split_length)         split_length=${VALUE} ;;
+    optimizer)            optimizer=${VALUE} ;;
     *)   
   esac    
 done
@@ -32,7 +33,7 @@ do
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${block_sizes[*]}
+      sbatch individualjobMNIST.sh ${hidden_size} ${split_length} ${temperature} ${seqtype} ${shuffle_labels} ${optimizer} ${block_sizes[*]}
       sleep 1
     done
   done
