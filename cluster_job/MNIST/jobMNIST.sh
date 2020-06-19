@@ -11,6 +11,7 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     T_list)               T_list=${VALUE} ;;
+    seq_length)           seq_length=${VALUE} ;;
     n_reps)               n_reps=${VALUE} ;;
     hidden_size)          hidden_size=${VALUE} ;;
     block_sizes)          block_sizes=${VALUE} ;;
@@ -32,7 +33,7 @@ do
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${block_sizes[*]}
+      sbatch individualjobMNIST.sh ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${sl} ${block_sizes[*]}
       sleep 1
     done
   done
