@@ -58,7 +58,7 @@ model_params.add_argument('--lr', type=int, default=0.01, help='Learning rate')
 model_params.add_argument('--batch_sz', type=int, default=10, help='Size of the training mini-batches')
 model_params.add_argument('--memory_sz', type=int, default=0, help='Size of the memory for replay training')
 model_params.add_argument('--loss_fn', type=str, default='cross_entropy', help='Loss function')
-model_params.add_argument('--optimizer', type=str, default='sgd')
+model_params.add_argument('--optimizer', type=str, default='sgd', choices=['sgd', 'adam', 'adagrad'], help='Optimizer used for training')
 
 # "Memory allocation" parameters, from methods that aim specifically at mitigating catastrophic interference
 cl_params = parser.add_argument_group('Continual leanrning capabilities')
