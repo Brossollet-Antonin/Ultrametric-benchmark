@@ -2,7 +2,7 @@
 #
 # Script to execute parameter exploration
 # Example use:
-# bash job_MNIST T_list="0.2 0.225 0.25" n_reps=5 hidden_size=256 block_sizes="1 100 200 500 1000"
+# bash jobMNIST.sh T_list="0.2 0.225 0.25" n_reps=5 hidden_size=256 block_sizes="1 100 200 500 1000"
 # seq_types="ultrametric random_blocks2 uniform" split_length=1000
 
 for ARGUMENT in "$@"
@@ -16,14 +16,11 @@ do
     hidden_size)          hidden_size=${VALUE} ;;
     block_sizes)          block_sizes=${VALUE} ;;
     seq_types)            seq_types=${VALUE} ;;
-    shuffle_labels)       shuffle_labels=${VALUE} ;;
     split_length)         split_length=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     *)   
   esac    
 done
-
-tree_depth=3
 
 # IFS=';' read -r -a T_list <<< "$temperatures"
 # IFS=';' read -r -a block_sizes <<< "$blocksizes"
@@ -34,7 +31,7 @@ do
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh ${hidden_size} ${split_length} ${temperature} ${seqtype} ${shuffle_labels} ${optimizer} ${block_sizes[*]}
+      sbatch individualjobMNIST.sh ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} "${block_sizes[*]}"
       sleep 1
     done
   done
