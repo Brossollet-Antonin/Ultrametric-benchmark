@@ -15,5 +15,5 @@ source activate /rigel/theory/users/sl4744/anaconda3/envs/ultrametric
 
 #Command to execute Python program
 python3 /rigel/theory/users/sl4744/projects/Ultrametric-benchmark/main.py --dataset artificial --data_tree_depth ${1} --nnarch FCL --hidden_sizes ${2} \
---seqlength 300000 --split_length ${3} --nbrtest 300 \
--T ${4} --seqtype ${5} --shuffle_classes ${6} --data_flips_rate ${7} --blocksz ${8}
+--seqlength ${3} --split_length ${4} --nbrtest 300 \
+-T ${5} --seqtype ${6} --shuffle_classes ${7} --data_flips_rate ${8} --blocksz ${9}
