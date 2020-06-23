@@ -10,6 +10,7 @@ do
   KEY=$(echo $ARGUMENT | cut -f1 -d=)
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
+    path)                 path=${VALUE};; # path of main.py 
     T_list)               T_list=${VALUE} ;;
     seq_length)           seq_length=${VALUE} ;;
     n_reps)               n_reps=${VALUE} ;;
@@ -18,6 +19,12 @@ do
     seq_types)            seq_types=${VALUE} ;;
     split_length)         split_length=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
+    dataset)              dataset=${VALUE};;
+    nbr_test)             nbr_test=${VALUE};;
+    time)                 time=${VALUE};; # requiered time to run simulation
+    nbr_cpu)              nbr_cpu=${VALUE};; # number of cpu to request on cluster
+    mem_per_cpu)          mem_per_cpu=${VALUE};; # memory per cpu
+    mail)                 mail=${VALUE};; # email adress to receive notifications
     *)   
   esac    
 done
@@ -31,7 +38,9 @@ do
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} "${block_sizes[*]}"
+      sbatch individualjobMNIST.sh -t ${time} -c ${nbr_cpu} --mail-user ${mail} --mem-per-cpu ${mem_per_cpu} \
+      ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_test} "${block_sizes[*]}" \
+      ${path}
       sleep 1
     done
   done
