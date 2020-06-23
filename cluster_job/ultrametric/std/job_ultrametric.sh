@@ -19,6 +19,7 @@ do
     seq_types)            seq_types=${VALUE} ;;
     shuffle_labels)       shuffle_labels=${VALUE} ;;
     seq_length)           seq_length={VALUE} ;;
+    nbr_tests)            nbr_tests={VALUE} ;;
     split_length)         split_length=${VALUE} ;;
     *)   
   esac    
@@ -37,7 +38,7 @@ do
       do
         for (( value = 1; value <= $n_reps; value++ ))
         	do
-        	  sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${sl} ${flip_rate} "${block_sizes[*]}" 
+        	  sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${nbr_tests} ${temperature} ${seqtype} ${sl} ${flip_rate} "${block_sizes[*]}" 
         	  sleep 1
         	done
       done
