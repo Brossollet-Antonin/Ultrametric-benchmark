@@ -29,27 +29,18 @@ do
   esac    
 done
 
-# IFS=';' read -r -a T_list <<< "$temperatures"
-# IFS=';' read -r -a block_sizes <<< "$blocksizes"
-
 for temperature in $T_list
 do
   for seqtype in $seq_types
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh -t ${time} -c ${nbr_cpu} --mail-user ${mail} --mem-per-cpu ${mem_per_cpu} \
+      sbatch individual_simu.sh -t ${time} -c ${nbr_cpu} --mail-user ${mail} --mem-per-cpu ${mem_per_cpu} \
       ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_test} "${block_sizes[*]}" \
       ${path}
       sleep 1
     done
   done
 done
-
-
-
-
-
-
 
 	#End of script
