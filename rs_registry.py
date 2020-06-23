@@ -25,6 +25,17 @@ params = {
 		'seq_length': 1000000,
 		'n_tests': 150
 	},
+	'artificial_d3': {
+		'tree_depth': 3,
+		'dataset': 'artificial_8',
+		'nnarchi': 'FCL20',
+		'T': 0.225,
+		'shuffle_size': 1000,
+		'seq_length': 300000,
+		'n_tests': 300,
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.1, 0.13)
+	},
 	'artificial_d5': {
 		'tree_depth': 5,
 		'dataset': 'artificial_32',
@@ -33,7 +44,8 @@ params = {
 		'shuffle_size': 1000,
 		'seq_length': 300000,
 		'n_tests': 300,
-		'artificial_seq_len': 200
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.04, 0.07, 0.1, 0.13)
 	},
 	'artificial_d7': {
 		'tree_depth': 7,
@@ -43,7 +55,19 @@ params = {
 		'shuffle_size': 328,
 		'seq_length': 300000,
 		'n_tests': 300,
-		'artificial_seq_len': 200
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.04, 0.07, 0.1, 0.13)
+	},
+	'artificial_d10': {
+		'tree_depth': 10,
+		'dataset': 'artificial_1024',
+		'nnarchi': 'FCL100',
+		'T': 0.85,
+		'shuffle_size': 328,
+		'seq_length': 300000,
+		'n_tests': 300,
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.04,)
 	}
 }
 
@@ -51,8 +75,10 @@ name_to_descr = {
 	'Ultra': 'Ultrametric',
 	'Rb': 'Random blocks',
 	'Unif': 'Uniform',
+	'd3': 'depth 3',
 	'd5': 'depth 5',
 	'd7': 'depth 7',
+	'd10': 'depth 10',
 	'Mixed': 'mixed tree leaves',
 	'Unmixed': 'unmixed tree leaves'
 }
@@ -67,9 +93,10 @@ name_to_path = {
 RS_DIR = {}
 
 ## Instanciating ResultSet objects for artificial datasets
-for depth in ('d5', 'd7'):
-	for bf_ratio in (0.04, 0.07, 0.1, 0.13):
-		bit_flips_per_lvl = int(bf_ratio*params["artificial_{:s}".format(depth)]["artificial_seq_len"])
+for depth in ('d3', 'd5', 'd7', 'd10'):
+	paramset = params["artificial_{:s}".format(depth)]
+	for bf_ratio in paramset['bf_ratios']:
+		bit_flips_per_lvl = int(bf_ratio*paramset["artificial_seq_len"])
 		for seq_type in ('Ultra', 'Rb'):
 			for leaves_mix in ('Mixed', 'Unmixed'):
 				rs_name = "artificial_{depth_:s}{seq_type_:s}{leaves_mix_:s}{bit_flips_per_lvl_:d}bits".format(
@@ -94,11 +121,14 @@ for depth in ('d5', 'd7'):
 					rs_name = rs_name,
 					rs_descr = rs_descr,
 					sim_map_dict = sim_directory,
-					dataset_name = params["artificial_{:s}".format(depth)]["dataset"],
-					nn_config = params["artificial_{:s}".format(depth)]["nnarchi"],
+					dataset_name = paramset["dataset"],
+					nn_config = paramset["nnarchi"],
 					seq_type = rs_path,
-					simset_id = params["artificial_{:s}".format(depth)]["T"] if seq_type=='Ultra' else params["artificial_{:s}".format(depth)]["shuffle_size"]
+					simset_id = paramset["T"] if seq_type=='Ultra' else paramset["shuffle_size"]
 				)
+
+		if depth == 'd10':
+			continue
 
 		unif_rs_name = "artificial_{depth_:s}Unif{bit_flips_per_lvl_:d}bits".format(
 			depth_ = depth,
@@ -116,8 +146,8 @@ for depth in ('d5', 'd7'):
 			rs_name = unif_rs_name,
 			rs_descr = unif_rs_descr,
 			sim_map_dict = sim_directory,
-			dataset_name = params["artificial_{:s}".format(depth)]["dataset"],
-			nn_config = params["artificial_{:s}".format(depth)]["nnarchi"],
+			dataset_name = paramset["dataset"],
+			nn_config = paramset["nnarchi"],
 			seq_type = unif_rs_path,
 			simset_id = 0.0
 		)
@@ -161,3 +191,12 @@ RS_DIR[unif_rs_name] = ld.ResultSet(
 	seq_type = unif_rs_path,
 	simset_id = 0.0
 )
+
+def get_directory_view():
+	print("Current directory\n")
+	for rs_name, rs in RS_DIR.items():
+		print("{name_:s} | {descr_:s} @ {path_:s}".format(
+			name_ = rs_name,
+			descr_ = rs.descr,
+			path_ = rs.seq_type
+		))

@@ -111,3 +111,28 @@ def add_letter_figure(ax, letter, fontsize=15):
             , fontweight='bold', va='top', ha='right')
 
 ##################################
+
+def get_ultrametric_timescales(depth, T, energy_step=1, self=False):
+    probs = np.exp(-(energy_step/T))
+    for d in range(2, depth+1):
+        probs = np.append(probs, np.exp(-d*(energy_step/T))*np.ones(2**(d-1)))
+    timescales = 1/np.unique(probs)
+    if self:
+        probs = np.append(1-np.sum(probs), probs)
+    else:
+        nrm = np.sum(probs)
+        probs = np.append(0, (1/nrm)*probs)
+    return probs, timescales
+
+
+def get_expected_exploration_time(depth, block_sz):
+    har_sum = 0
+    for k in range(1,2**(depth-1)):
+        har_sum += 1/k
+    return block_sz*(2**(depth-1))*har_sum
+
+def get_blocksz_tomatch_explorationtime(depth, tau):
+    har_sum = 0
+    for k in range(1,2**(depth-1)):
+        har_sum += 1/k
+    return tau/(har_sum*(2**(depth-1)))
