@@ -17,10 +17,6 @@ from rs_registry import RS_DIR, get_directory_view
 utils.format_paper()
 
 ## PARAMETERS COMMON TO ALL SIMULATIONS ##
-seq_length = 300000
-n_tests = 300
-artificial_seq_len = 200
-
 artificial_blocks = {
 	3: {
 		'all': (1, 200, 500, 1000, 2000, 8000, 20000, 40000, 80000),
@@ -73,6 +69,10 @@ parser.add_argument('--see_rsdir', action='store_true', help="See available resu
 parser.add_argument('--dataset', type=str, choices=["artificial", "MNIST"], help="Dataset to produce figures for")
 parser.add_argument('--bf_ratio', type=float, help="Bit-flipping ratio per level in the ultrametric tree that generate patterns")
 parser.add_argument('--tree_depth', type=int, default=5)
+
+parser.add_argument('--seq_length', type=int, default=300000, help="Length of the sequence used for training the model")
+parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluations of classification performance on test set")
+parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
 parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "d10_T_tryout"], help="Battery of results to generate graphs for")
 parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unif')
@@ -468,7 +468,7 @@ if __name__ == '__main__':
 	)
 
 	print("Making FigureSet object...")
-	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=300000, n_tests=300, artificial_seq_len=200)
+	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=args.seq_length, n_tests=args.n_tests, artificial_seq_len=args.artificial_seq_len)
 	print("Done")
 
 	if args.make_lbl_history < 2:

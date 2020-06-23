@@ -10,6 +10,6 @@
 module load anaconda
 
 #Command to execute Python program
-python3 ${10} --nnarch FCL --hidden_sizes ${1} --gpu \
---seqlength ${2} --split_length ${3} -T ${4} --seqtype ${5} \
---optimizer ${6} --dataset ${7} --nbrtest ${8} --blocksz ${9}
+python3 ${13} --nnarch FCL --data_tree_depth ${1} --hidden_sizes ${2} --gpu \
+--seqlength ${3} --split_length ${4} -T ${5} --seqtype ${6} \
+--optimizer ${7} --dataset ${8} --nbrtest ${9} --data_flips_rate ${10} --shuffle_classes ${11} --blocksz ${12}
