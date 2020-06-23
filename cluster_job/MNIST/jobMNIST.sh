@@ -18,6 +18,12 @@ do
     seq_types)            seq_types=${VALUE} ;;
     split_length)         split_length=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
+    dataset)              dataset=${VALUE};;
+    nbr_test)             nbr_test=${VALUE};;
+    time)                 time=${VALUE};;
+    nbr_cpu)              nbr_cpu=${VALUE};;
+    mem_per_cpu)          mem_per_cpu=${VALUE};;
+    mail)                 mail=${VALUE};;
     *)   
   esac    
 done
@@ -31,7 +37,8 @@ do
   do
     for (( value = 1; value <= $n_reps; value++ ))
     do
-      sbatch individualjobMNIST.sh ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} "${block_sizes[*]}"
+      sbatch individualjobMNIST.sh -t ${time} -c ${nbr_cpu} --mail-user ${mail} --mem-per-cpu ${mem_per_cpu} \
+      ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_test} "${block_sizes[*]}"
       sleep 1
     done
   done
