@@ -129,10 +129,10 @@ def get_expected_exploration_time(depth, block_sz):
     har_sum = 0
     for k in range(1,2**(depth-1)):
         har_sum += 1/k
-    return block_sz*har_sum
+    return block_sz*(2**(depth-1))*har_sum
 
 def get_blocksz_tomatch_explorationtime(depth, tau):
     har_sum = 0
     for k in range(1,2**(depth-1)):
         har_sum += 1/k
-    return tau/har_sum
+    return tau/(har_sum*(2**(depth-1)))
