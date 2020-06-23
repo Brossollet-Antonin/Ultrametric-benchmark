@@ -36,7 +36,7 @@ do
       do
         for (( value = 1; value <= $n_reps; value++ ))
         	do
-        	  sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${flip_rate} ${block_sizes[*]} 
+        	  sbatch individualjob_ultrametric.sh ${tree_depth} ${hidden_size} ${split_length} ${temperature} ${seqtype} ${sl} ${flip_rate} "${block_sizes[*]}" 
         	  sleep 1
         	done
       done

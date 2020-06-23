@@ -24,6 +24,7 @@ import time
 import matplotlib
 
 from matplotlib import pyplot as plt
+import matplotlib.ticker
 from matplotlib import rcParams, rcParamsDefault
 from matplotlib.colors import hsv_to_rgb
 import seaborn as sns
@@ -75,7 +76,7 @@ class ResultSet:
 		For random_blocks2, this is the size of the shuffling block (int)
 	hsv_orig: tuple (h,s,v)
 		HSV description of the color that will be used for plots for the original sequence, meaning the sequence that has not been shuffled.
-	hsv_shfl_list: list((h,s,v))
+	hsv_shfl_dict: list((h,s,v))
 		A list of HSV descriptions of the colors that will be used for plots for the shuffled sequences.
 		This list should be at least as long as the maximum number of shuffling block sizes that you will perform, as each curve will need to be identified visually.
 	train_labels_orig: list of arrays
@@ -305,10 +306,10 @@ class ResultSet:
 
 	def set_hsv(self, hue=0.5, uniform=False):
 		l_shfl = len(self.shuffle_sizes) if not uniform else 1
-		self.hsv_orig = [hue, 1, 0.7] if not uniform else [0, 0, 0.15]
-		sat_stride = 1/l_shfl
-		value_stride = 0.5/l_shfl
-		self.hsv_shfl_list = [[hue, 1-sat_stride*shfl_id, 0.45+value_stride*shfl_id] for shfl_id in range(l_shfl)]
+		self.hsv_orig = [0, 1, 0.9] if not uniform else [0, 0, 0.15]
+		sat_stride = 0.2/l_shfl
+		value_stride = 0.8/l_shfl
+		self.hsv_shfl_dict = {blck_sz: [hue, 1-sat_stride*shfl_id, 0.2+value_stride*shfl_id] for shfl_id, blck_sz in enumerate(self.shuffle_sizes)}
 
 
 	def lbl_history(self, shuffled_blocksz=None, strides=None):
@@ -354,7 +355,7 @@ class ResultSet:
 			ttl = ttl+' - tau_asym=' + str(t_explr)
 		plt.title(ttl)
 
-		return lbls_fig, lbls_axes
+		return nobs_seq
 
 
 	def lbl_distrib(self, max_iter:int=None, shuffled_blocksz=None, filter_perc:float=2, cumulative=False, save_formats=None, xaxis_n_ticks=10, multi_simus=False, figset_name=default_figset_name):
@@ -486,137 +487,11 @@ class ResultSet:
 		return fig, heatmap_ax, distr_ax
 			
 
-	@jit(nopython=True)
-	def get_atc(self, T_list, n_tests, out_filename, w_size=10000):
-		"""
-		Computes the (avg) autocorrelation function of a the sequences in a simulation set
-		Note: will only work in JIT compilation. Running this on JIT has not been fully tested yet, need more work.
-		Right now we're using Matlab to compute autocorrelation functions.
-
-		Parameters
-		----------
-		T_list : list of floats
-			List of temperatures for which simulations were ran and are registered in this simulation set
-		n_tests : ?
-		w_size : int
-			size of the window that is used for computing autocorrelation.
-			To reduce computation time, we only look a given number of elements forward on the sequence, corresponding to w_size
-		"""
-		n_Ts = len(T_list)
-		assert (n_Ts>0)
-
-		bins_hist = range(w_size)
-
-		plt.figure(1, figsize=(18,10*n_Ts))
-
-		for T_id, T in enumerate(T_list):
-			atc_ax = plt.subplot(n_Ts, 1, 1+T_id)
-
-			seq_list = self.train_labels_orig[T]
-			tree_l = max(seq_list)+1
-			hlocs_stat_orig = np.zeros(w_size)
-			hlocs_stat_shfl = np.zeros(w_size)
-
-			print("Computing autocorrelation on {0:d} sequences".format(len(seq_list)))
-
-			for seq_id, seq in enumerate(seq_list):
-				print("   Original sequence {0:d}...".format(seq_id))
-				for lbl_id in range(tree_l):
-					locs_orig = np.array([j for j in range(len(seq)) if seq[j]==lbl_id])
-					nlocs = len(locs_orig)
-					locs_orig = locs_orig.reshape((nlocs, 1))
-
-					locsd_mat_orig = cdist(locs_orig, locs_orig, 'cityblock')
-					#     iu_ids_couples = np.array([(i,j) for j in range(20) for i in range(20*cut_id, 20*cut_id+j)])
-					iu_ids = np.triu_indices(nlocs)
-					iu_len = len(iu_ids[0])
-					diffs = locsd_mat_orig[iu_ids].reshape((iu_len,1))
-					hlocs_stat_orig = hlocs_stat_orig + np.histogram(
-						diffs,
-						bins=w_size,
-						range=(0,w_size)
-					)[0]/tree_l
-
-				print("   ...done")
-
-
-			if hlocs_stat_orig[0] > 0:
-				hlocs_stat_orig = hlocs_stat_orig / hlocs_stat_orig[1]
-
-			bins_atc = range(w_size//2)
-			atc_ax.loglog(
-				bins_atc,
-				hlocs_stat_orig[::2],
-				marker='.',
-				color = hsv_to_rgb(hsv_orig),
-				ls = 'solid',
-				label='T={0:.2f} - Original sequence'.format(T)
-			)
-
-			hlocs_stat_shfl_list = []
-			for nfig, block_sz in enumerate(self.blocks_sizes):
-				print("   Block size {0:d}".format(block_sz))
-				hsv_shfl = tuple([0.6, 1-nfig*0.2, 0.5+nfig*0.15])
-				#plt.figure(nfig+2)
-				#plt.plot(shuffleseq)
-				#plt.title(block_sz)
-				for seq_id, seq in enumerate(seq_list):
-					shuffleseq = shuffleblocks(seq, block_sz, n_tests)
-					print("       Shuffled sequence {1:d}...".format(block_sz, seq_id))
-					for lbl_id in range(tree_l):
-						locs_shfl = np.array([j for j in range(len(shuffleseq)) if  shuffleseq[j]==lbl_id])
-						nlocs = len(locs_shfl)
-						locs_shfl = locs_shfl.reshape((nlocs, 1))
-						locsd_mat_shfl = cdist(locs_shfl, locs_shfl, 'cityblock')
-						iu_ids = np.triu_indices(nlocs)
-						bins = range(w_size)
-						hlocs_shfl = np.bincount(
-							locsd_mat_shfl[iu_ids].reshape((int(nlocs*(nlocs+1)/2),1))
-						)
-						# hlocs_shfl = np.histogram(
-						#     locsd_mat_shfl[iu_ids].reshape((int(nlocs*(nlocs+1)/2),1)),
-						#     bins=w_size,
-						#     range=(0, w_size)
-						# )
-
-						hlocs_stat_shfl = hlocs_stat_shfl + hlocs_shfl[0]/tree_l
-					print("       ...done")
-
-				if hlocs_stat_shfl[0] > 0:
-					hlocs_stat_shfl = hlocs_stat_shfl / hlocs_stat_shfl[0]
-
-				atc_ax.loglog(
-					bins_atc,
-					hlocs_stat_shfl[::2],
-					marker = markers[nfig],
-					ls = 'solid',
-					color = hsv_to_rgb(hsv_shfl),
-					label='T={0:.2f} - Shuffled with blocksz={1:d}'.format(T, block_sz),
-					alpha=0.5)
-				hlocs_stat_shfl_list.append(hlocs_stat_shfl)
-
-			plt.title('Autocorrelation of training sequence')
-			plt.xlabel('t, number of iterations /2', fontsize=12)
-			plt.ylabel('A(t)', fontsize=14)
-
-			atc_ax.set_position([box.x0, box.y0 + box.height * 0.1,
-				 box.width, box.height * 0.9])
-			atc_ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
-			  fancybox=True, shadow=True, ncol=2,
-			  prop={'size': 16})
-
-			plt.savefig(
-				fname=paths['plots']+filename+'.pdf',
-				format='pdf'
-			)
-
-			return hlocs_stat_orig, hlocs_stat_shfl_list
-
 #######################################################
 ### Functions to output accuracy=f(iteration) plots ###
 #######################################################
 
-def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
+def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3):
 	"""
 	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
 
@@ -643,8 +518,9 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
 	ax.plot(
 			x_labels, var_acc_orig,
 			ls = 'solid',
+			linewidth = linewidth,
 			color = hsv_to_rgb(rs.hsv_orig),
-			label='Original sequence' if uniform is False else 'Uniform sequence'
+			label='No shuffle' if uniform is False else 'Uniform sequence'
 		)
 
 	if plt_confinter:
@@ -660,7 +536,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
 	if blocks is None and hasattr(rs, 'var_acc_shfl'):
 		blocks = sorted(rs.blocks_sizes)
 
-	for block_id, block_sz in enumerate(blocks):
+	for block_sz in blocks:
 		if block_sz not in rs.var_acc_shfl.keys():
 			continue
 		n_shfl = len(rs.var_acc_shfl[block_sz])
@@ -670,9 +546,10 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
 		var_acc_shfl_std = np.std([acc[:,0] for acc in acc_data], axis=0)
 		ax.plot(
 			x_labels, var_acc_shfl,
-			ls = '--',
-			color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-			label='Shuffled w/ block size {0:d}'.format(block_sz)
+			ls = 'solid',
+			linewidth = linewidth,
+			color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
+			label='S={0:d}'.format(block_sz)
 		)
 
 		if plt_confinter:
@@ -680,7 +557,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False):
 				x = x_labels,
 				y1 = np.maximum(0, var_acc_shfl - conf_fscore[0.95]*np.sqrt(var_acc_shfl*(100-var_acc_shfl)/n_shfl)),
 				y2 = np.minimum(var_acc_shfl + conf_fscore[0.95]*np.sqrt(var_acc_shfl*(100-var_acc_shfl)/n_shfl), 100),
-				color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
+				color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
 				alpha = 0.2
 			)
 
@@ -703,15 +580,18 @@ def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_wind
 		tuple of extrema positions to use for formating x-axis
 	"""
 	box = ax.get_position()
-	ax.set_position([box.x0, box.y0 + box.height * 0.2,
-					 box.width, box.height * 0.8])
+	#ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+	#ax.legend(fontsize=24, loc='upper center', bbox_to_anchor=(0.5, -0.1), title=legend_title, title_fontsize=22, frameon=True, fancybox=True, ncol=2)
+	ax.legend(fontsize=24, loc='lower right', title=legend_title, title_fontsize=25, frameon=True, fancybox=True, ncol=2)
 
-	ax.legend(fontsize=20, loc='upper center', bbox_to_anchor=(0.5, -0.1), title=legend_title, title_fontsize=22, frameon=True, fancybox=True, ncol=2)
-	ax.set_xlabel('Iterations', fontsize=18)
-	ax.set_ylabel('Accuracy (%)', fontsize=18)
+	ax.set_xlabel('Iterations', fontsize=24)
+	ax.set_ylabel('Accuracy (%)', fontsize=24)
 
-	#ax.set_xticks(xtick_pos)
-	#ax.set_xticklabels(xtick_labels)
+	ax.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
+	#x_formatter = utils.OOMFormatter(5, "%1.1f")
+	#ax.xaxis.set_major_formatter(x_formatter)
+
+	#ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(8))
 
 	if plot_window is not None:
 		ax.set_xlim(plot_window[0], plot_window[1])
@@ -1144,7 +1024,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 		init_cf[0] = cf_mean[0]
 		init_cf_std[0] = cf_std[0]
 
-	for block_id, block_sz in enumerate(blocks['all']):
+	for block_sz in blocks['all']:
 		assert block_sz in rs.block_sizes
 		t_explr = []
 		cf = []
@@ -1177,8 +1057,8 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 			if block_sz in blocks['cfhist_plots']:
 				cf_ax.plot(
 					cf_mean,
-					color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
-					ls = '--',
+					color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
+					ls = 'solid',
 					label = rs.descr + ' - Shuffled w/ block size {0:d}'.format(block_sz)
 				)
 
@@ -1187,7 +1067,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 						x = range(len(cf_mean)),
 						y1 = cf_mean - var_scale*cf_std,
 						y2 = cf_mean + var_scale*cf_std,
-						color = hsv_to_rgb(rs.hsv_shfl_list[block_id]),
+						color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
 						alpha = 0.4
 					)
 
@@ -1230,12 +1110,15 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 	return avg_cf, avg_cf_std, init_cf, init_cf_std
 
 
-def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, normalize=False, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, normalize=False, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
 	fig_mean_cfs = plt.figure(figsize=(18,12))
 	ax_mean_cfs = plt.subplot(111)
+
+	min_y = None
+	max_y = None
 
 	for cf_set in cf_stats['stat_list']:
 		rs = cf_set['rs']
@@ -1257,35 +1140,36 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlo
 			[cf[k] for k in sorted(cf.keys()) if k>0],
 			ls = 'solid',
 			linewidth=3,
-			marker = '+',
+			marker = 'o',
 			markersize = 15,
 			markeredgewidth = 3,
-			color = hsv_to_rgb(rs.hsv_orig),
+			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
 			label = rs.descr
+		)
+		ax_mean_cfs.plot(
+			xtick_pos,
+			[cf[k] for k in sorted(cf.keys()) if k>0],
+			ls = 'none',
+			marker = 'o',
+			markersize = 10,
+			markeredgewidth = 3,
+			color = "white"
 		)
 		ax_mean_cfs.fill_between(
 			x = xtick_pos,
 			y1 = [cf[k] - var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
 			y2 = [cf[k] + var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
-			color = hsv_to_rgb(rs.hsv_orig),
-			alpha = 0.2
+			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
+			alpha = 0.08
 		)
 
-		ax_mean_cfs.plot(
-			x_origpos,
-			cf[0],
-			marker = '+',
-			markersize = 20,
-			markeredgewidth = 4,
-			color = hsv_to_rgb(rs.hsv_orig)
-		)
 		ax_mean_cfs.plot(
 			x_origpos,
 			cf[0] - var_scale*cf_std[0],
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
-			color = hsv_to_rgb(rs.hsv_orig)
+			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
 		)
 		ax_mean_cfs.plot(
 			x_origpos,
@@ -1293,31 +1177,50 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlo
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
-			color = hsv_to_rgb(rs.hsv_orig)
+			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
 		)
 		ax_mean_cfs.plot(
 			[x_origpos, x_origpos],
 			[cf[0] - var_scale*cf_std[0], cf[0] + var_scale*cf_std[0]],
-			color = hsv_to_rgb(rs.hsv_orig),
-			alpha = 0.2
+			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
+			alpha = 0.08
+		)
+
+		ax_mean_cfs.plot(
+			x_origpos,
+			cf[0],
+			marker = 'o',
+			markersize = 20,
+			markeredgewidth = 4,
+			color = hsv_to_rgb(rs.hsv_orig)
+		)
+		ax_mean_cfs.plot(
+			x_origpos,
+			cf[0],
+			marker = 'o',
+			markersize = 12,
+			markeredgewidth = 4,
+			color = "white"
 		)
 
 		#plt.xticks(xtick_pos)
 		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
 
-	# Plot formatting for figure 4 of paper
+		if min_y is None or (np.min(list(cf.values())) < min_y):
+			min_y = np.min(list(cf.values()))
+		if max_y is None or (np.max(list(cf.values())) > max_y):
+			max_y = np.max(list(cf.values()))
 
-	#xtick_pos = [k for k in xtick_pos] + [x_origpos]
-	#xtick_labels = [str(k) for k in xtick_pos] + [25000]
-	#ax_mean_cfs.set_xticks(xtick_pos)
-	#ax_mean_cfs.set_xticklabels(xtick_labels)
+	##############################
+	# Plot formatting for paper ##
+	##############################
 
 	#ax_mean_cfs.set_title('Per-label loss in classification performance as a function of shuffle block size', fontsize = 18)
 
-	lgd = ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 16}, loc='upper left')
+	lgd = ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 24}, loc='upper left')
 
-	ax_mean_cfs.set_xlabel('Shuffle length')
-	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)')
+	ax_mean_cfs.set_xlabel('Shuffle length', fontsize=24)
+	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)', fontsize=24)
 
 	fig_mean_cfs.tight_layout(pad=10.0)
 
@@ -1328,13 +1231,13 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=1.3e5, vline_pos=1e5, xlo
 	if ylog: 
 		ax_mean_cfs.set_yscale("log")
 
-
 	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
 	#	tick.label.set_rotation('vertical')
 
+	max_blocksz = max(list(cf.keys()))
 	ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
-	ylim = ax_mean_cfs.get_ylim()
-	ax_mean_cfs.vlines(x=vline_pos, ymin=ylim[0], ymax=ylim[1])
+	ax_mean_cfs.set_ylim(min_y, 1.15*max_y)
+	ax_mean_cfs.vlines(x=np.sqrt(x_origpos*max_blocksz), ymin=min_y, ymax=1.15*max_y, linewidth=3, color="black")
 	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
