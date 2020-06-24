@@ -63,43 +63,43 @@ fi
 
 # Deal with loop arguments when not provided as kwarg
 if [ -z ${tree_depth+x} ]; then
-  echo "No tree_depth provided. Using default: 3\n"
+  echo "No tree_depth provided. Using default: 3"
   tree_depth=3;
 fi
 if [ -z ${optimizer+x} ]; then
-  echo "No optimizer specified. Will use adam\n"
+  echo "No optimizer specified. Will use adam"
   optimizer="adam";
 fi
 if [ -z ${nbr_test+x} ]; then
-  echo "No nbr_test specified. Will perform 300 evaluations on test set\n"
+  echo "No nbr_test specified. Will perform 300 evaluations on test set"
   nbr_test=300;
 fi
 if [ -z ${split_length+x} ]; then
-  echo "No split_depth provided. For random_blocks2 examplar generation will use blocks of size 1000\n"
+  echo "No split_depth provided. For random_blocks2 examplar generation will use blocks of size 1000"
   split_length=1000;
 fi
 if [ -z ${T_list+x} ]; then
-  echo "No temperature provided. Using default: 0.4\n"
+  echo "No temperature provided. Using default: 0.4"
   T_list="0.4";
 fi
 if [ -z ${seq_types+x} ]; then
-  echo "No sequence type provided. Using default: ultrametric\n"
+  echo "No sequence type provided. Using default: ultrametric"
   seq_types="ultrametric";
 fi
 if [ -z ${flip_rates+x} ]; then
-  echo "No flipping ratio provided. If artificial dataset, using default: 0.1\n"
+  echo "No flipping ratio provided. If artificial dataset, using default: 0.1"
   flip_rates="0.1";
 fi
 if [ -z ${shuffle_labels+x} ]; then
-  echo "No shuffle_labels provided. If artificial dataset: will shuffle labels\n"
+  echo "No shuffle_labels provided. If artificial dataset: will shuffle labels"
   shuffle_labels="1";
 fi
 if [ -z ${n_reps+x} ]; then
-  echo "No n_reps provided. Will produce a single run for each simulation type\n"
+  echo "No n_reps provided. Will produce a single run for each simulation type"
   n_reps=1;
 fi
 if [ -z ${block_sizes+x} ]; then
-  echo "No block_sizes provided. Will not perform any shuffle\n"
+  echo "No block_sizes provided. Will not perform any shuffle"
   block_sizes="0";
 fi
 
