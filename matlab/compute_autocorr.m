@@ -107,7 +107,7 @@ end
 
 % compute P_0 for ultrametric sequences
 
-hlocs_stat_ultra=zeros(length(block_sizes)+1,maxh-1);
+hlocs_stat_um=zeros(length(block_sizes)+1,maxh-1);
 
 disp('Ultrametric - Computing P0 for original sequences...')
 for seq_id = 1:size(sequences.ultra.orig,1)
@@ -128,7 +128,7 @@ for seq_id = 1:size(sequences.ultra.orig,1)
         if(nd>1)
             edges=1:maxh;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
-            hlocs_stat_ultra(1,:)=hlocs_stat_ultra(1,:)+hlocs./tree_l;
+            hlocs_stat_um(1,:)=hlocs_stat_um(1,:)+hlocs./tree_l;
         end
     end
 end
@@ -155,7 +155,7 @@ for block_sz_id = 1:length(block_sizes)
             if(nd>1)
             edges=1:maxh;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
-            hlocs_stat_ultra(1+block_sz_id,:)=hlocs_stat_ultra(1+block_sz_id,:)+hlocs./tree_l;
+            hlocs_stat_um(1+block_sz_id,:)=hlocs_stat_um(1+block_sz_id,:)+hlocs./tree_l;
             end
         end
     end
@@ -219,9 +219,9 @@ for block_sz_id = 1:length(block_sizes)
 end
 
 % Saving mat files
-atc_um_filename = sprintf("atc_um_%s_%s.%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
-atc_rb2_filename = sprintf("atc_rb2_%s_%s.%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
-save(atc_um_filename, 'hlocs_stat_ultra');
+atc_um_filename = sprintf("atc_um_%s_%s_%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
+atc_rb2_filename = sprintf("atc_rb2_%s_%s_%s.mat", dataset_name, nnarchi, datetime('now','Format','yyyyMMMdd'));
+save(atc_um_filename, 'hlocs_stat_um');
 save(atc_rb2_filename, 'hlocs_stat_rb');
 
 % Plotting results

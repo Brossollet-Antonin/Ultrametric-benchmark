@@ -121,7 +121,7 @@ def run(args):
 
 	save_root = os.path.join(
 		paths['simus'],
-		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}/".format(
+		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
 			cl_strat = cl_strategy,
 			data_origin = args.data_origin,
 			n_classes = dataset.num_classes,
@@ -129,7 +129,8 @@ def run(args):
 			hidlay_width = args.hidden_sizes,
 			seq_type = args.sequence_type,
 			seq_length = args.sequence_length,
-			batch_size = args.batch_sz
+			batch_size = args.batch_sz,
+			optimizer = args.optimizer
 		)
 	)
 	if dataset.data_origin == 'artificial':

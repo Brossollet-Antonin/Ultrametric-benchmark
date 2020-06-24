@@ -59,7 +59,7 @@ MNIST_blocks = {
 }
 
 bf_ratio_tested = (0.04, 0.07, 0.1, 0.13)
-tree_depths_tested = (5, 7)
+tree_depths_tested = range(3, 8)
 
 
 ## ARGUMENT PARSING
@@ -69,6 +69,7 @@ parser.add_argument('--see_rsdir', action='store_true', help="See available resu
 parser.add_argument('--dataset', type=str, choices=["artificial", "MNIST"], help="Dataset to produce figures for")
 parser.add_argument('--bf_ratio', type=float, help="Bit-flipping ratio per level in the ultrametric tree that generate patterns")
 parser.add_argument('--tree_depth', type=int, default=5)
+parser.add_argument('--optimizer', type=str, default="sgd")
 
 parser.add_argument('--seq_length', type=int, default=300000, help="Length of the sequence used for training the model")
 parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluations of classification performance on test set")
@@ -242,28 +243,6 @@ if __name__ == '__main__':
 			rs_for_lbl_plots = (
 				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
 				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
-			)
-
-		elif args.result_battery=="d10_T_tryout":
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
-			fs_name = "tryout_d10_{bf_:d}bits_T".format(
-				bf_ = bit_flips_per_lvl
-			)
-			rs_names = {
-				"artificial_d10UltraMixed{bf_:d}bits".format(
-					bf_ = bit_flips_per_lvl
-				): 0
-			}
-			accuracy_to_compare = [
-				(
-					"artificial_d10UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-					"artificial_d10UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-					"artificial_d10UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				)
-			]
-			accuracy_plot_style = "comp"
-			rs_for_lbl_plots = (
-				"artificial_d10UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
 			)
 
 		elif args.result_battery=="ultra_vs_rb2_mixed":
@@ -443,24 +422,25 @@ if __name__ == '__main__':
 	elif args.dataset == 'MNIST':
 		blocks = MNIST_blocks
 		if args.result_battery=="ultra_vs_rb2":
-			fs_name = "mlp_sgd"
-			rs_names = {
-				"MNIST_UltraMixed": 0,
-				"MNIST_RbMixed": 0.5,
-				"MNIST_Unif": 0
-			}
-			accuracy_to_compare = [
-				(
+			if args.optimizer=="sgd":
+				fs_name = "mlp_sgd"
+				rs_names = {
+					"MNIST_UltraMixed": 0.6,
+					"MNIST_RbMixed": 0.3,
+					"MNIST_Unif": 0
+				}
+				accuracy_to_compare = [
+					(
+						"MNIST_UltraMixed",
+						"MNIST_RbMixed",
+						"MNIST_Unif"
+					)
+				]
+				accuracy_plot_style = "comp"
+				rs_for_lbl_plots = (
 					"MNIST_UltraMixed",
-					"MNIST_RbMixed",
-					"MNIST_Unif"
+					"MNIST_RbMixed"
 				)
-			]
-			accuracy_plot_style = "comp"
-			rs_for_lbl_plots = (
-				"MNIST_UltraMixed",
-				"MNIST_RbMixed"
-			)
 
 	fs_name = "{dataset:s}/{fs_base:s}".format(
 		dataset=args.dataset,

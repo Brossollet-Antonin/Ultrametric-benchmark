@@ -9,7 +9,9 @@ hlocs_stat_ultra = hlocs_stat_ultra.hlocs_stat_ultra;
 hlocs_stat_rb = load(atc_rb2_filename);
 hlocs_stat_rb = hlocs_stat_rb.hlocs_stat_rb;
 
-% Plotting results
+% ------------------------ %
+% 1) Ultrametric sequences %
+% ------------------------ %
 figure(1);
 clf;
 hold on;
@@ -27,10 +29,37 @@ set(h,'linewidth',2);
 
 for block_sz_id = 1:length(block_sizes)
     fig_name = strcat(sprintf('Shuffled, block size %s', int2str(block_sizes(block_sz_id))));
-    h=plot(hlocs_stat_ultra(1+block_sz_id,2:2:end-1)./hlocs_stat_ultra(1+block_sz_id,2),'Color',ultra_colors(1+block_sz_id,:),'LineStyle','--');%,'DisplayName',fig_name);
+    h=plot(hlocs_stat_ultra(1+block_sz_id,2:2:end-1)./hlocs_stat_ultra(1+block_sz_id,2),'Color',ultra_colors(1+block_sz_id,:),'LineStyle','-');%,'DisplayName',fig_name);
     legends{1+block_sz_id} = fig_name;
     set(h,'linewidth',2);
 end
+
+% Figure configuration
+ax = gca;
+ax.FontSize = 18; 
+
+set(gca,'Xscale','log');
+set(gca,'Yscale','log');
+
+xlabel("\Delta t", 'FontSize', 18);
+ylabel("P_{0}(\Delta t)", 'FontSize', 18);
+
+columnlegend(2, legends, 'FontSize', 18, 'padding', 0.6);
+hLegend = findobj(gcf, 'Type', 'Legend');
+pos = get(hLegend,'position');
+pos(1,1) = leg_x;
+pos(1,2) = leg_y;
+set(hLegend,'position',pos);
+
+%text(pos(1,1), 1.12*(pos(1,2)+pos(1,4)), 'Ultrametric sequence', 'Units', 'normalized', 'FontSize', 20, 'FontWeight', 'bold');
+
+% ------------------------- %
+% 2) Random block sequences %
+% ------------------------- %
+
+figure(2);
+clf;
+hold on;
 
 rb_cb = [0, 110, 0]/255;
 rb_ce = [145, 225, 145]/255;
@@ -63,8 +92,8 @@ pos = get(hLegend,'position');
 pos(1,1) = leg_x;
 pos(1,2) = leg_y;
 set(hLegend,'position',pos);
-text(pos(1,1), 1.12*(pos(1,2)+pos(1,4)), 'Ultrametric sequence', 'Units', 'normalized', 'FontSize', 20, 'FontWeight', 'bold');
-text(pos(1,1)+0.5*pos(1,3)+0.08, 1.12*(pos(1,2)+pos(1,4)), 'Random blocks sequence', 'Units', 'normalized', 'FontSize', 20, 'FontWeight', 'bold');
+
+%text(pos(1,1)+0.5*pos(1,3)+0.08, 1.12*(pos(1,2)+pos(1,4)), 'Random blocks sequence', 'Units', 'normalized', 'FontSize', 20, 'FontWeight', 'bold');
 
 end
 
