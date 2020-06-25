@@ -441,6 +441,46 @@ if __name__ == '__main__':
 					"MNIST_UltraMixed",
 					"MNIST_RbMixed"
 				)
+			
+			if args.optimizer == "adam":
+				fs_name = "mlp_adam"
+				rs_names = {
+					"MNIST_UltraMixed": 0.6,
+					"MNIST_RbMixed": 0.3,
+					"MNIST_Unif": 0
+				}
+				accuracy_to_compare = [
+					(
+						"MNIST_UltraMixed",
+						"MNIST_RbMixed",
+						"MNIST_Unif"
+					)
+				]
+				accuracy_plot_style = "comp"
+				rs_for_lbl_plots = (
+					"MNIST_UltraMixed",
+					"MNIST_RbMixed"
+				)
+
+			if args.optimizer == "adagrad":
+				fs_name = "mlp_adam"
+				rs_names = {
+					"MNIST_UltraMixed": 0.6,
+					"MNIST_RbMixed": 0.3,
+					"MNIST_Unif": 0
+				}
+				accuracy_to_compare = [
+					(
+						"MNIST_UltraMixed",
+						"MNIST_RbMixed",
+						"MNIST_Unif"
+					)
+				]
+				accuracy_plot_style = "comp"
+				rs_for_lbl_plots = (
+					"MNIST_UltraMixed",
+					"MNIST_RbMixed"
+				)
 
 	fs_name = "{dataset:s}/{fs_base:s}".format(
 		dataset=args.dataset,
