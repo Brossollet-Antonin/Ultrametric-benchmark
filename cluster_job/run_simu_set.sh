@@ -25,7 +25,7 @@ do
     seq_length)           seq_length=${VALUE} ;;
     n_reps)               n_reps=${VALUE} ;; # number of simulations that will be launched in parallel for each seq type and each T provided
     split_length)         split_length=${VALUE} ;; # used in the random_blocks2 scenario
-    nbr_test)             nbr_test=${VALUE};; # number of classification accuracy evaluations that will take place when learning on the sequence
+    nbr_tests)            nbr_tests=${VALUE};; # number of classification accuracy evaluations that will take place when learning on the sequence
 
     ## Model params
     hidden_size)          hidden_size=${VALUE} ;;
@@ -70,9 +70,9 @@ if [ -z ${optimizer+x} ]; then
   echo "No optimizer specified. Will use adam"
   optimizer="adam";
 fi
-if [ -z ${nbr_test+x} ]; then
+if [ -z ${nbr_tests+x} ]; then
   echo "No nbr_test specified. Will perform 300 evaluations on test set"
-  nbr_test=300;
+  nbr_tests=300;
 fi
 if [ -z ${split_length+x} ]; then
   echo "No split_depth provided. For random_blocks2 examplar generation will use blocks of size 1000"
@@ -115,7 +115,7 @@ do
         for (( value = 1; value <= $n_reps; value++ ))
         do
           sbatch individual_simu.sh -t ${time:-"40:00:00"} -c ${nbr_cpu:-2} --mail-user ${mail:-""} --mem-per-cpu ${mem_per_cpu:-"4gb"} \
-          ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_test} ${flip_rate} ${sl} "${block_sizes[*]}" \
+          ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" \
           ${path}
           sleep 1
         done
