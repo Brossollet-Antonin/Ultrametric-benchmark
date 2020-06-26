@@ -36,6 +36,17 @@ params = {
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.1, 0.13)
 	},
+	'artificial_d4': {
+		'tree_depth': 4,
+		'dataset': 'artificial_16',
+		'nnarchi': 'FCL10',
+		'T': 0.4,
+		'shuffle_size': 150,
+		'seq_length': 300000,
+		'n_tests': 300,
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.1)
+	},
 	'artificial_d5': {
 		'tree_depth': 5,
 		'dataset': 'artificial_32',
@@ -46,6 +57,17 @@ params = {
 		'n_tests': 300,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.04, 0.07, 0.1, 0.13)
+	},
+	'artificial_d6': {
+		'tree_depth': 6,
+		'dataset': 'artificial_64',
+		'nnarchi': 'FCL40',
+		'T': 0.4,
+		'shuffle_size': 2500,
+		'seq_length': 900000,
+		'n_tests': 300,
+		'artificial_seq_len': 200,
+		'bf_ratios': (0.1)
 	},
 	'artificial_d7': {
 		'tree_depth': 7,
@@ -93,7 +115,7 @@ name_to_path = {
 RS_DIR = {}
 
 ## Instanciating ResultSet objects for artificial datasets
-for depth in ('d3', 'd5', 'd7', 'd10'):
+for depth in ('d3', 'd4', 'd5', 'd6', 'd7', 'd10'):
 	paramset = params["artificial_{:s}".format(depth)]
 	for bf_ratio in paramset['bf_ratios']:
 		bit_flips_per_lvl = int(bf_ratio*paramset["artificial_seq_len"])
@@ -124,6 +146,7 @@ for depth in ('d3', 'd5', 'd7', 'd10'):
 					dataset_name = paramset["dataset"],
 					nn_config = paramset["nnarchi"],
 					seq_type = rs_path,
+					seq_length = paramset["seq_length"],
 					simset_id = paramset["T"] if seq_type=='Ultra' else paramset["shuffle_size"]
 				)
 
@@ -149,6 +172,7 @@ for depth in ('d3', 'd5', 'd7', 'd10'):
 			dataset_name = paramset["dataset"],
 			nn_config = paramset["nnarchi"],
 			seq_type = unif_rs_path,
+			seq_length = paramset["seq_length"],
 			simset_id = 0.0
 		)
 
@@ -175,6 +199,7 @@ for seq_type in ('Ultra', 'Rb'):
 			dataset_name = params["MNIST"]["dataset"],
 			nn_config = params["MNIST"]["nnarchi"],
 			seq_type = rs_path,
+			seq_length = paramset["seq_length"],
 			simset_id = params["MNIST"]["T"] if seq_type=='Ultra' else params["MNIST"]["shuffle_size"]
 		)
 
@@ -189,6 +214,7 @@ RS_DIR[unif_rs_name] = ld.ResultSet(
 	dataset_name = params["MNIST"]["dataset"],
 	nn_config = params["MNIST"]["nnarchi"],
 	seq_type = unif_rs_path,
+	seq_length = paramset["seq_length"],
 	simset_id = 0.0
 )
 

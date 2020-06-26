@@ -115,7 +115,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, rs_name, rs_descr, sim_map_dict, dataset_name, nn_config, seq_type, simset_id, hue=0.5, sim_struct='1toM'):
+	def __init__(self, rs_name, rs_descr, sim_map_dict, dataset_name, nn_config, seq_type, seq_length, simset_id, hue=0.5, sim_struct='1toM'):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -155,6 +155,7 @@ class ResultSet:
 		self.dataset_name = dataset_name
 		self.nn_config = nn_config
 		self.seq_type = seq_type
+		self.seq_length = seq_length
 		self.simset_id = simset_id
 		self.hue = hue
 		self.uniform = "uniform" in self.seq_type
@@ -379,10 +380,9 @@ class ResultSet:
 		"""
 		from scipy.ndimage import gaussian_filter1d
 
-		seq_length = self.params["Sequence Length"]
 		n_tests = self.params["Number of tests"]
 		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
-		distrib = np.zeros(shape=(seq_length, n_classes))
+		distrib = np.zeros(shape=(self.seq_length, n_classes))
 
 		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
 
@@ -404,13 +404,13 @@ class ResultSet:
 		n_seqs = len(seq_set)
 
 		for seq in seq_set:
-			if len(seq) > seq_length:
-				seq = seq[0:seq_length]
-			distrib[range(seq_length), seq] += 1/n_seqs
+			if len(seq) > self.seq_length:
+				seq = seq[0:self.seq_length]
+			distrib[range(self.seq_length), seq] += 1/n_seqs
 
 		# Optionally, cumulative summing over iterations
 		if cumulative:
-			norm = np.arange(1, 1+float(seq_length))
+			norm = np.arange(1, 1+float(self.seq_length))
 			distrib = np.divide(
 				np.cumsum(distrib, axis=0).transpose(),
 				norm
@@ -420,14 +420,14 @@ class ResultSet:
 		if max_iter is not None:
 			filter_sz = filter_perc*max_iter/100
 		else:
-			filter_sz = filter_perc*seq_length/100
+			filter_sz = filter_perc*self.seq_length/100
 		filt_distrib = np.copy(distrib)
 		for cl_id in range(n_classes):
 			filt_distrib[:, cl_id] = gaussian_filter1d(distrib[:, cl_id], filter_sz)
 
 		# Plot heatmap of different labels
 		xtick_scale = n_tests//xaxis_n_ticks
-		xtick_pos = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+		xtick_pos = int(self.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 		if max_iter is not None:
 			sns.heatmap(
@@ -510,27 +510,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
 	"""
 
-	### ORIGINAL ###
-	n_orig = len(rs.var_acc_orig)
-	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
-	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
 	x_labels = rs.var_acc_orig[0][:,1]
-	ax.plot(
-			x_labels, var_acc_orig,
-			ls = 'solid',
-			linewidth = linewidth,
-			color = hsv_to_rgb(rs.hsv_orig),
-			label='No shuffle' if uniform is False else 'Uniform sequence'
-		)
-
-	if plt_confinter:
-		ax.fill_between(
-			x = x_labels,
-			y1 = np.maximum(0, var_acc_orig - conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig)),
-			y2 = np.minimum(var_acc_orig + conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig), 100),
-			color = hsv_to_rgb(rs.hsv_orig),
-			alpha = 0.4
-		)
 
 	### SHUFFLES ###
 	if blocks is None and hasattr(rs, 'var_acc_shfl'):
@@ -560,6 +540,27 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 				color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
 				alpha = 0.2
 			)
+
+	### ORIGINAL ###
+	n_orig = len(rs.var_acc_orig)
+	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
+	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
+	ax.plot(
+			x_labels, var_acc_orig,
+			ls = 'solid',
+			linewidth = linewidth,
+			color = hsv_to_rgb(rs.hsv_orig),
+			label='No shuffle' if uniform is False else 'Uniform sequence'
+		)
+
+	if plt_confinter:
+		ax.fill_between(
+			x = x_labels,
+			y1 = np.maximum(0, var_acc_orig - conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig)),
+			y2 = np.minimum(var_acc_orig + conf_fscore[0.95]*np.sqrt(var_acc_orig*(100-var_acc_orig)/n_orig), 100),
+			color = hsv_to_rgb(rs.hsv_orig),
+			alpha = 0.4
+		)
 
 
 def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_window=None):
@@ -599,7 +600,7 @@ def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_wind
 
 def make_perfplot_unit(
 	rs, blocks, rs_unif=None,
-	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	n_tests=300, plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
 	):
 	"""
@@ -611,8 +612,6 @@ def make_perfplot_unit(
 		main result set
 	rs_unif : ResultSet
 		baseline result set with uniform generation strategy
-	seq_length: int
-		length of the sequences
 	n_tests: int
 		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
 	plot_window: tuple like (x_min, x_max)
@@ -626,13 +625,13 @@ def make_perfplot_unit(
 		Defaults to False
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
 	n_ticks: int
-		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and rs.seq_length
 	save_formats: list(str)
 		if not None, plots will be saved in the provided formats
 	"""
 	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	fig = plt.figure(figsize=(18,12))
 	acc_ax = fig.add_subplot(1, 1, 1)
@@ -675,7 +674,7 @@ def make_perfplot_unit(
 
 def make_perfplot_comparison(
 	rs, blocks, rs_altr=None, blocks_altr=None, rs_unif=None,
-	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	n_tests=300, plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
 	):
 	"""
@@ -696,8 +695,6 @@ def make_perfplot_comparison(
 		alternative result set
 	rs_unif : ResultSet
 		baseline result set with uniform generation strategy
-	seq_length: int
-		length of the sequences
 	n_tests: int
 		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
 	plot_window: tuple like (x_min, x_max)
@@ -714,13 +711,13 @@ def make_perfplot_comparison(
 		Defaults to False
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
 	n_ticks: int
-		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and rs.seq_length
 	save_formats: list(str)
 		if not None, plots will be saved in the provided formats
 	"""
 	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	n_plots = 1 + 2*int(rs_altr is not None)
 	fig = plt.figure(figsize=(18*n_plots,12))
@@ -801,7 +798,7 @@ def make_perfplot_comparison(
 
 def make_perfplot_matrix(
 	rs_list, blocks, rs_unif=None,
-	seq_length=300000, n_tests=300, plot_window=None, blocks_to_plot='small',
+	n_tests=300, plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, figset_name=default_figset_name
 	):
 	"""
@@ -813,10 +810,9 @@ def make_perfplot_matrix(
 	----------
 	rs_list : list(ResultSet)
 		list of ResultSet objects that will be used for plotting on the matrix
+		Warning: all ResultSet in the list should be run of sequences of the same length
 	rs_unif : ResultSet
 		baseline result set with uniform generation strategy
-	seq_length: int
-		length of the sequences
 	n_tests: int
 		number of tests during learning, corresponing to the number of time while moving forward on the sequence where we stop training and evaluate performance on a test set.
 	plot_window: tuple like (x_min, x_max)
@@ -833,7 +829,7 @@ def make_perfplot_matrix(
 		Defaults to False
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
 	n_ticks: int
-		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and seq_length
+		number of ticks to use on x-axis. Ticks will be uniformly distributed between 0 and rs_list[0].seq_length
 	save_formats: list(str)
 		if not None, plots will be saved in the provided formats
 	"""
@@ -959,7 +955,7 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	return np.concatenate((cf[2:], np.array([0, 0])), axis=0), t_explr
 
 
-def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
+def get_cf_history(rs, blocks, n_tests=300,
 	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1, figset_name=default_figset_name):
 
 	avg_cf = {}
@@ -968,7 +964,7 @@ def get_cf_history(rs, blocks, seq_length=300000, n_tests=300,
 	init_cf_std = {}
 
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	fig_cfscore = plt.figure(figsize=(18,14))
 	cf_ax = plt.subplot(1,1,1)

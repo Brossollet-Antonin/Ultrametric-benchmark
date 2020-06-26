@@ -25,12 +25,26 @@ artificial_blocks = {
 		'synth': (1, 200, 1000, 4000, 8000, 20000),
 		'cfhist_plots': (1, 500, 1000, 2000, 20000, 80000)
 	},
+	4: {
+		'all': (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200),
+		'small': (1, 25, 75, 150),
+		'large': (150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200),
+		'synth': (1, 25, 150, 1200, 8400, 19200),
+		'cfhist_plots': (1, 25, 150, 1200, 8400, 19200)
+	},
 	5: {
 		'all': (1, 200, 500, 1000, 2000, 8000, 20000, 40000, 80000),
 		'small': (1, 200, 500, 1000),
 		'large': (1000, 2000, 8000, 20000, 40000, 80000),
 		'synth': (1, 200, 1000, 4000, 8000, 20000),
 		'cfhist_plots': (1, 500, 1000, 2000, 20000, 80000)
+	},
+	6: {
+		'all': (1, 125, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000),
+		'small': (1, 125, 250, 500, 1000, 2500),
+		'large': (2500, 5000, 10000, 20000, 40000, 80000),
+		'synth': (1, 250, 2500, 5000, 20000, 80000),
+		'cfhist_plots': (1, 250, 2500, 5000, 20000, 80000)
 	},
 	7: {
 		'all': (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968),
@@ -118,7 +132,7 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_comparison(
 					rs=fs.rs[main_set], blocks=blocks[depth_mainset], blocks_altr=blocks[depth_altrset], rs_altr=fs.rs[altr_set], rs_unif=fs.rs[unif_set],
-					seq_length=fs.seq_length, n_tests=fs.n_tests,
+					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name
 				)
 
@@ -131,7 +145,7 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_unit(
 					rs=fs.rs[main_set], blocks=blocks[depth_mainset], rs_unif=fs.rs[unif_set],
-					seq_length=fs.seq_length, n_tests=fs.n_tests,
+					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name
 				)
 
@@ -142,7 +156,7 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_matrix(
 					rs_list=rs_list, blocks=blocks[depth], rs_unif=None,
-					seq_length=fs.seq_length, n_tests=fs.n_tests,
+					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name
 				)
 
@@ -371,22 +385,16 @@ if __name__ == '__main__':
 			)
 
 			n_tree_depths = 3
-			for depth_id, depth in enumerate((3,5,7)):
+			for depth_id, depth in enumerate((4,5,6)):
 				rs_names["artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = depth_id/(n_tree_depths+0.33)
 				rs_names["artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = (depth_id+0.33)/(n_tree_depths+0.33)
 				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = 0
 				
-			accuracy_to_compare.append((
-				"artificial_d3UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d7UltraMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d3Unif{bf_:d}bits".format(bf_ = bit_flips_per_lvl)
-			))
-
-			accuracy_to_compare.append((
-				"artificial_d3RbMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d7RbMixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d3Unif{bf_:d}bits".format(bf_ = bit_flips_per_lvl)
-			))
+				accuracy_to_compare.append((
+					"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
+				))
 
 			rs_for_lbl_plots = ()
 
@@ -400,22 +408,16 @@ if __name__ == '__main__':
 			)
 
 			n_tree_depths = 3
-			for depth_id, depth in enumerate((3,5,7)):
+			for depth_id, depth in enumerate((4,5,6)):
 				rs_names["artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = depth_id/(n_tree_depths+0.33)
 				rs_names["artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = (depth_id+0.33)/(n_tree_depths+0.33)
-				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.depth, bf_ = bit_flips_per_lvl)] = 0
-
-			accuracy_to_compare.append((
-				"artificial_d3UltraUnmixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d7UltraUnmixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d3Unif{bf_:d}bits".format(bf_ = bit_flips_per_lvl)
-			))
-
-			accuracy_to_compare.append((
-				"artificial_d3RbUnmixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d7RbUnmixed{bf_:d}bits".format(bf_ = bit_flips_per_lvl),
-				"artificial_d3Unif{bf_:d}bits".format(bf_ = bit_flips_per_lvl)
-			))
+				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = 0
+				
+				accuracy_to_compare.append((
+					"artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
+				))
 
 			rs_for_lbl_plots = ()
 
