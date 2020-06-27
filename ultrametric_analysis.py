@@ -26,6 +26,7 @@ def train_sequenceset(trainer, args, block_sizes):
     rs = ResultSet()
     rs.sequence_type = args.sequence_type
     rs.enable_shuffling = args.enable_shuffling
+    rs.save_um_distances = args.save_um_distances
 
     rs.classes_templates = trainer.dataset.patterns
 
@@ -34,7 +35,8 @@ def train_sequenceset(trainer, args, block_sizes):
 
     # rs.eval_orig will contain, for each test, an analysis of the ultrametric distance between the labels and the predictions
     eval_orig = trainer.evaluate_hierarchical()
-    rs.eval_orig = [eval_orig,]
+    if args.save_um_distances:
+        rs.eval_orig = [eval_orig,]
 
     # Counting the number of correct responses per classes before the training
     rs.acc_orig = np.array([[eval_orig[0][0], 0]])     # Will contain the accuracy through training and the number of train samples seen, dim 1 of diagnos_original contains the accuracies at different levels
@@ -69,7 +71,8 @@ def train_sequenceset(trainer, args, block_sizes):
         verbose('...done\nComputing performance for original sequence...', args.verbose, 2)
 
         eval_orig = trainer.evaluate_hierarchical()
-        rs.eval_orig.append(eval_orig)
+        if args.save_um_distances:
+            rs.eval_orig.append(eval_orig)
         rs.lbls_htmp_orig[test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
 
         verbose('...done\n', args.verbose, 2)
@@ -108,7 +111,8 @@ def train_sequenceset(trainer, args, block_sizes):
 
         rs.train_labels_shfl = {block_size: [] for block_size in block_sizes}
         rs.classes_pred_shfl = {block_size: np.array([[classes_correct, 0]]) for block_size in block_sizes} # This array will stock the prediction of the network during the training
-        rs.eval_shfl = {block_size: [eval_shfl,] for block_size in block_sizes}
+        if args.save_um_distances:
+            rs.eval_shfl = {block_size: [eval_shfl,] for block_size in block_sizes}
         rs.acc_shfl = {block_size: acc_shfl for block_size in block_sizes}
         rs.lbls_htmp_shfl = {}
 
@@ -130,7 +134,8 @@ def train_sequenceset(trainer, args, block_sizes):
                     verbose_lvl = args.verbose
                 )
                 eval_shfl = trainer.evaluate_hierarchical()
-                rs.eval_shfl[block_size_shuffle].append(eval_shfl)
+                if args.save_um_distances:
+                    rs.eval_shfl[block_size_shuffle].append(eval_shfl)
                 shuffle_accuracy_current = eval_shfl[0][0]      # Recover the standard accuracy
                 shuffle_accuracy_current = np.array([[shuffle_accuracy_current, (test_id+1)*args.test_stride]])
                 rs.acc_shfl[block_size_shuffle] = np.append(rs.acc_shfl[block_size_shuffle], shuffle_accuracy_current, axis=0)

@@ -78,6 +78,7 @@ seq_params.add_argument('--force_switch', type=int, default=1, help='When true, 
 seq_params.add_argument('--min_state_visit', type=int, default=0, help='Indicated the number of times each state must be visited in the generated training sequence (no constraint by default)')
 seq_params.add_argument('--T_adaptive', type=float, default=0, help='When specified, a temperature is computed so that a all states have an inbound transition probability above the given threshold')
 seq_params.add_argument('--split_length', type=int, dest='split_length_list', nargs='*', default=[100], help='Size of task sequence in the RB scenario')
+seq_params.add_argument('--save_um_distances', action='store_true', default=False, help='If specified, will store ultrametric distances between predictions and ground truth on test set at each evaluation point in the sequence')
 
 def run(args):
 	step = 1

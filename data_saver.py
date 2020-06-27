@@ -92,7 +92,9 @@ def save_results(rs, save_root):
     with open(save_path + "/labels_heatmap_orig.pickle", 'wb') as outfile:
         pickle.dump(rs.lbls_htmp_orig, outfile)
 
-    np.save(save_path + "/evaluation_original", rs.eval_orig)
+    if rs.save_um_distances:
+        np.save(save_path + "/evaluation_original", rs.eval_orig)
+
     np.save(save_path+'/var_original_classes_prediction', rs.classes_pred_orig)
     np.save(save_path+'/var_original_accuracy', rs.acc_orig)
 
@@ -109,7 +111,8 @@ def save_results(rs, save_root):
             with open(save_path + "/labels_heatmap_shfl.pickle", 'wb') as outfile:
                 pickle.dump(rs.lbls_htmp_shfl[block_size_shuffle], outfile)
 
-            np.save(save_path + "/evaluation_shuffled", rs.eval_shfl[block_size_shuffle])
+            if rs.save_um_distances:
+                np.save(save_path + "/evaluation_shuffled", rs.eval_shfl[block_size_shuffle])
             np.save(save_path+'/var_shuffle_classes_prediction', rs.classes_pred_shfl[block_size_shuffle])
             np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl[block_size_shuffle])
 
