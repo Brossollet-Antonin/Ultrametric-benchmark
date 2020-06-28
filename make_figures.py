@@ -103,7 +103,7 @@ class FigureSet:
 		self.name = fs_name
 		self.seq_length = seq_length
 		self.n_tests = n_tests
-		self.artificial_seq_len = artificial_seq_len
+		self.artificial_seq_len = args.artificial_seq_len
 		self.accuracy_to_compare = accuracy_to_compare
 		self.accuracy_plot_style = accuracy_plot_style
 
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 	if args.dataset == 'artificial':
 		blocks = artificial_blocks
 		if args.result_battery=="ultra_vs_rb2":
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
 			fs_name = "ultra_vs_rb2_d{depth_:d}_{bf_:d}bits".format(
 				depth_ = args.tree_depth,
 				bf_ = bit_flips_per_lvl
@@ -260,7 +260,7 @@ if __name__ == '__main__':
 			)
 
 		elif args.result_battery=="ultra_vs_rb2_mixed":
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
 			fs_name = "ultra_vs_rb2_d{depth_:d}_{bf_:d}bits_mixed".format(
 				depth_ = args.tree_depth,
 				bf_ = bit_flips_per_lvl
@@ -293,7 +293,7 @@ if __name__ == '__main__':
 			)
 
 		elif args.result_battery=="ultra_vs_rb2_unmixed":
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
 			fs_name = "ultra_vs_rb2_d{depth_:d}_{bf_:d}bits_unmixed".format(
 				depth_ = args.tree_depth,
 				bf_ = bit_flips_per_lvl
@@ -335,17 +335,17 @@ if __name__ == '__main__':
 
 			n_bf_ratios = len(bf_ratio_tested)
 			for bf_id, bf_ratio in enumerate(bf_ratio_tested):
-				bit_flips_per_lvl = int(bf_ratio*artificial_seq_len)
+				bit_flips_per_lvl = int(bf_ratio*args.artificial_seq_len)
 				rs_names["artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = bf_id/(n_bf_ratios+0.33)
 				rs_names["artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = (bf_id+0.33)/(n_bf_ratios+0.33)
 				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = 0
 				
 			accuracy_to_compare.append((
-				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = int(bf_ratio*artificial_seq_len)) for bf_ratio in bf_ratio_tested
+				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = int(bf_ratio*args.artificial_seq_len)) for bf_ratio in bf_ratio_tested
 			))
 
 			accuracy_to_compare.append((
-				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = int(bf_ratio*artificial_seq_len)) for bf_ratio in bf_ratio_tested
+				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = int(bf_ratio*args.artificial_seq_len)) for bf_ratio in bf_ratio_tested
 			))
 
 			rs_for_lbl_plots = ()
@@ -360,7 +360,7 @@ if __name__ == '__main__':
 
 			n_bf_ratios = len(bf_ratio_tested)
 			for bf_id, bf_ratio in enumerate(bf_ratio_tested):
-				bit_flips_per_lvl = int(bf_ratio*artificial_seq_len)
+				bit_flips_per_lvl = int(bf_ratio*args.artificial_seq_len)
 				rs_names["artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = bf_id/(n_bf_ratios+0.33)
 				rs_names["artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = (bf_id+0.33)/(n_bf_ratios+0.33)
 				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)] = 0
@@ -379,7 +379,7 @@ if __name__ == '__main__':
 			rs_names = {}
 			accuracy_to_compare = []
 			accuracy_plot_style = "comp"
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
 			fs_name = "influence_of_tree_depth_mixed_{bf_:d}bits".format(
 				bf_ = bit_flips_per_lvl
 			)
@@ -402,7 +402,7 @@ if __name__ == '__main__':
 			rs_names = {}
 			accuracy_to_compare = []
 			accuracy_plot_style = "comp"
-			bit_flips_per_lvl = int(args.bf_ratio*artificial_seq_len)
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
 			fs_name = "influence_of_tree_depth_unmixed_{bf_:d}bits".format(
 				bf_ = bit_flips_per_lvl
 			)
@@ -490,7 +490,7 @@ if __name__ == '__main__':
 	)
 
 	print("Making FigureSet object...")
-	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=args.seq_length, n_tests=args.n_tests, artificial_seq_len=args.artificial_seq_len)
+	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=args.seq_length, n_tests=args.n_tests, artificial_seq_len=args.args.artificial_seq_len)
 	print("Done")
 
 	if args.make_lbl_history < 2:
