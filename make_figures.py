@@ -90,7 +90,7 @@ parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluati
 parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
 parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "d10_T_tryout"], help="Battery of results to generate graphs for")
-parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unif')
+parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unit')
 
 parser.add_argument('--make_lbl_history', type=int, default=0, help="Whether to output label history heatmaps and curve-like figures (takes a little time)")
 parser.add_argument('--first_iters_focus', type=int, default=50000)
