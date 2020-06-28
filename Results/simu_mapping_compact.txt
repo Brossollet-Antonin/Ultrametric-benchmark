@@ -453,14 +453,36 @@
                 "ultrametric": {
                     "key": "T",
                     0.225:{
-                        "folder": "ultrametric_length1000000_batches10",
+                        "folder": "ultrametric_length1000000_batches10_optimsgd",
                         "lr": 0.01,
                         "seq_var_ratio": 8,
                         "seq_length": 1000000,
                         "T": 0.225,
                         "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
                     }
-                }
+                },
+                "random_blocks2": {
+                    "key": "block_size", 
+                    1000:{
+                        "folder": "random_blocks2_length1000000_batches10_optimsgd_splitlength1000",
+                        "lr": 0.01, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)                        
+                    }  
+                },
+                "uniform": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimsgd",
+                        "lr": 0.01, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.0,
+                    }   
+                }             
             }
         }
     },
