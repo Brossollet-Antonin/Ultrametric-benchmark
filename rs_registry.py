@@ -67,7 +67,7 @@ params = {
 		'seq_length': 900000,
 		'n_tests': 300,
 		'artificial_seq_len': 200,
-		'bf_ratios': (0.1)
+		'bf_ratios': (0.1,)
 	},
 	'artificial_d7': {
 		'tree_depth': 7,
