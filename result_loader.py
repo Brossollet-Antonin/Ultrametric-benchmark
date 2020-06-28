@@ -241,12 +241,6 @@ class ResultSet:
 		if load_atc:
 			self.atc_orig = []
 			self.atc_shfl = []
-
-		if self.seq_type in ("random_blocks2", "ladder_blocks2") and 'sleb' not in getpass.getuser(): # Patch temporaire,
-				# A terme, il faut qu'on trouve pourquoi la structure de nos folders diffère
-			block_folders = os.listdir(folderpath)
-			block_folder = [blocks for blocks in block_folders if re.search(rf'{block_size}\b', blocks)][0]
-			folderpath = os.path.join(folderpath, block_folder)
 		
 		simuset_list = [simuset for simuset in os.listdir(folderpath) if os.path.isdir(os.path.join(folderpath, simuset))]
 		for simuset in simuset_list:
