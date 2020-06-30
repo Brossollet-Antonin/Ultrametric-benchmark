@@ -45,7 +45,7 @@ params = {
 		'seq_length': 300000,
 		'n_tests': 300,
 		'artificial_seq_len': 200,
-		'bf_ratios': (0.1)
+		'bf_ratios': (0.1,)
 	},
 	'artificial_d5': {
 		'tree_depth': 5,
@@ -67,7 +67,7 @@ params = {
 		'seq_length': 900000,
 		'n_tests': 300,
 		'artificial_seq_len': 200,
-		'bf_ratios': (0.1)
+		'bf_ratios': (0.1,)
 	},
 	'artificial_d7': {
 		'tree_depth': 7,
@@ -98,7 +98,9 @@ name_to_descr = {
 	'Rb': 'Random blocks',
 	'Unif': 'Uniform',
 	'd3': 'depth 3',
+	'd4': 'depth 4',
 	'd5': 'depth 5',
+	'd6': 'depth 6',
 	'd7': 'depth 7',
 	'd10': 'depth 10',
 	'Mixed': 'mixed tree leaves',

@@ -17,8 +17,6 @@ args = parser.parse_args()
 for simuset in os.listdir(args.simuset_root_dir):
     if not os.path.isdir(os.path.join(args.simuset_root_dir, simuset)):
         continue
-    if "uniform" in simuset:
-        continue
 
     print("Checking parameters consistency for simuset {:s}".format(simuset))
     simuset_path = os.path.join(args.simuset_root_dir, simuset)
