@@ -1,5 +1,153 @@
 {
     "1toM": {
+        "artificial_8": {
+            "FCL20": {
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "ultrametric_ratio20_noclshfl": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "ultrametric_ratio26": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26",
+                        "lr": 0.05,
+                        "seq_var_ratio": 26,
+                        "seq_length": 300000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "ultrametric_ratio26_noclshfl": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 26,
+                        "seq_length": 300000,
+                        "T": 0.225,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "random_blocks2_ratio20_noclshfl": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "random_blocks2_ratio26": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000",
+                        "lr": 0.05,
+                        "seq_var_ratio": 26,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "random_blocks2_ratio26_noclshfl": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000_noclassreshuffle",
+                        "lr": 0.05,
+                        "seq_var_ratio": 26,
+                        "seq_length": 300000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.0
+                    }
+                },
+                "uniform_ratio26": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.0
+                    }
+                }
+            }
+        },
+        "artificial_16": {
+            "FCL10": {
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    150:{
+                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength150",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "block_size": 150,
+                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200)
+                    }
+                },
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
+                        "lr": 0.05, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 300000,
+                        "T": 0.0
+                    }
+                }
+            }
+        },
         "artificial_32": {
             "FCL20": {
                 "ultrametric_ratio8": {
@@ -228,6 +376,42 @@
                 }
             }
         },
+        "artificial_64": {
+            "FCL40": {
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length900000_batches10_seqlen200_ratio20",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 900000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 125, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    2500:{
+                        "folder": "random_blocks2_length900000_batches10_seqlen200_ratio20_splitlength2500",
+                        "lr": 0.05,
+                        "seq_var_ratio": 20,
+                        "seq_length": 900000,
+                        "block_size": 2500,
+                        "shuffle_sizes": (1, 125, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000)
+                    }
+                },
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length900000_batches10_seqlen200_ratio20",
+                        "lr": 0.05, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 900000,
+                        "T": 0.0
+                    }
+                }
+            }
+        },
         "artificial_128": {
             "FCL50": {
                 "ultrametric_ratio8": {
@@ -448,6 +632,21 @@
                 }
             }
         },
+        "artificial_1024": {
+            "FCL100": {
+                "ultrametric_ratio8": {
+                    "key": "T",
+                    0.85:{
+                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
+                        "lr": 0.05,
+                        "seq_var_ratio": 8,
+                        "seq_length": 300000,
+                        "T": 0.85,
+                        "shuffle_sizes": (1)
+                    }
+                }
+            }
+        },
         "MNIST_8": {
             "FCL256": {
                 "ultrametric": {
@@ -455,10 +654,28 @@
                     0.225:{
                         "folder": "ultrametric_length1000000_batches10",
                         "lr": 0.01,
-                        "seq_var_ratio": 8,
                         "seq_length": 1000000,
                         "T": 0.225,
                         "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
+                    }
+                },
+                "random_blocks2": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length1000000_batches10_splitlength1000",
+                        "lr": 0.01,
+                        "seq_length": 1000000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
+                    }
+                },
+                "uniform": {
+                    "key": "none",
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10",
+                        "lr": 0.05,
+                        "seq_length": 1000000,
+                        "T": 0.0
                     }
                 }
             }
