@@ -101,7 +101,7 @@ def save_results(rs, save_root):
     np.save(save_path+'/classes_templates', rs.classes_templates)
 
     if rs.enable_shuffling:
-        for block_size_shuffle in rs.eval_shfl.keys():
+        for block_size_shuffle in rs.train_labels_shfl.keys():
             save_path = save_root + save_folder + '/shuffle_%d/'%(block_size_shuffle)
             os.makedirs(save_path)
 

@@ -711,7 +711,9 @@ def make_perfplot_comparison(
 	"""
 	xtick_scale = n_tests//n_ticks
 	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	seq_length = max(rs.seq_length, rs_altr.seq_length, rs_unif.seq_length)
+
+	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
 
 	n_plots = 1 + 2*int(rs_altr is not None)
 	fig = plt.figure(figsize=(18*n_plots,12))
@@ -919,6 +921,7 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	"""
 	nspl = len(acc_orig)
 	seql = len(lbl_seq)
+	res = seql/nspl
 	t_explr = None
 
 	obs_lbl_set = set()
@@ -936,7 +939,13 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 		pdb.set_trace()
 
 	#cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(spl_nobs_seq)
-	cf = np.array(acc_unif)-np.array(acc_orig)
+	accarr_unif = np.array(acc_unif)
+	accarr_orig = np.array(acc_orig)
+	auc_unif = 0.5*res*(accarr_unif + np.roll(accarr_unif, 1))
+	auc_unif[0] = 0
+	auc_orig = 0.5*res*(accarr_orig + np.roll(accarr_orig, 1))
+	auc_orig[0] = 0
+	cf = auc_unif - auc_orig
 
 	if plot:
 		fig = plt.figure(1, figsize=(18,12))
@@ -976,11 +985,11 @@ def get_cf_history(rs, blocks, n_tests=300,
 			n_labels
 		)
 		if _t_explr is not None:
-			cf_aligned = _cf
-			#cf_aligned = np.concatenate([
-			#	np.array(_cf[_t_explr:]),
-			#	np.zeros(_t_explr)
-			#])
+			#cf_aligned = _cf
+			cf_aligned = np.concatenate([
+				np.array(_cf[_t_explr:]),
+				np.zeros(_t_explr)
+			])
 			cf.append(cf_aligned)
 			t_explr.append(_t_explr)
 
