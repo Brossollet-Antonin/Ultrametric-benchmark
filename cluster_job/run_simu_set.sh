@@ -114,7 +114,7 @@ do
       do
         for (( value = 1; value <= $n_reps; value++ ))
         do
-          sbatch individual_simu.sh -t ${time:-"40:00:00"} -c ${nbr_cpu:-2} --mail-user ${mail:-""} --mem-per-cpu ${mem_per_cpu:-"4gb"} \
+          sbatch individual_simu.sh --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem-per-cpu=${mem_per_cpu:-"4gb"} \
           ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" \
           ${path}
           sleep 1
