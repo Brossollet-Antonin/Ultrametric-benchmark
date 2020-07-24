@@ -1,7 +1,6 @@
-function [ output_args ] = compute_autocorr( dataset_name, nnarchi, um_battery, rb2_battery )
+function [ output_args ] = compute_autocorr( dataset_name, nnarchi, um_battery, rb2_battery, maxh )
 %COMPUTE_AUTOCORR Summary of this function goes here
 %   Detailed explanation goes here
-maxh=10000;
 
 project_root='~/ultrametric_benchmark/Ultrametric-benchmark';
 data_root=fullfile(project_root,'Results/1toM',dataset_name,nnarchi);
@@ -31,6 +30,7 @@ block_sizes = tmp_blsz;
 % Reading block sizes, tree size, etc
 tree_levels=um_params.TreeDepth;
 branching=um_params.TreeBranching;
+seq_length=um_params.SequenceLength;
 tree_l=branching^tree_levels;
 
 % Initializing objects
@@ -60,7 +60,7 @@ for um_simuset_id = 1:length(um_simusets)
         matfilename = matfiles(matfile_id).name;
         new_seq = load(fullfile(um_root, um_simuset, 'matlab', matfilename));
         new_seq = new_seq.sequence;
-        new_seq = new_seq(1,1:300000);
+        new_seq = new_seq(1,1:seq_length);
         for block_sz_id = 1:length(block_sizes)
             block_sz = int2str(block_sizes(block_sz_id));
             if(contains(matfilename, strcat('_shfl_',block_sz,'.mat')))
@@ -90,7 +90,7 @@ for rb2_simuset_id = 1:length(rb2_simusets)
         matfilename = matfiles(matfile_id).name;
         new_seq = load(fullfile(rb2_root, rb2_simuset, 'matlab', matfilename));
         new_seq = new_seq.sequence;
-        new_seq = new_seq(1,1:300000);
+        new_seq = new_seq(1,1:seq_length);
         for block_sz_id = 1:length(block_sizes)
             block_sz = int2str(block_sizes(block_sz_id));
             if(contains(matfilename, strcat('_shfl_',block_sz,'.mat')))
@@ -107,7 +107,7 @@ end
 
 % compute P_0 for ultrametric sequences
 
-hlocs_stat_um=zeros(length(block_sizes)+1,maxh-1);
+hlocs_stat_um=zeros(length(block_sizes)+1,maxh);
 
 disp('Ultrametric - Computing P0 for original sequences...')
 for seq_id = 1:size(sequences.ultra.orig,1)
@@ -126,12 +126,14 @@ for seq_id = 1:size(sequences.ultra.orig,1)
         end
 
         if(nd>1)
-            edges=1:maxh;
+            edges=1:maxh+1;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
-            hlocs_stat_um(1,:)=hlocs_stat_um(1,:)+hlocs./tree_l;
+            hlocs_stat_um(1,:)=hlocs_stat_um(1,:)+hlocs./(tree_l*size(sequences.ultra.orig,1));
         end
     end
 end
+% Normalizing with number of possible label matches
+hlocs_stat_um(1,:) = hlocs_stat_um(1,:) ./ linspace(seq_length-1,seq_length-maxh,maxh);
 
 for block_sz_id = 1:length(block_sizes)
     block_sz = int2str(block_sizes(block_sz_id));
@@ -153,18 +155,20 @@ for block_sz_id = 1:length(block_sizes)
             end
 
             if(nd>1)
-            edges=1:maxh;
+            edges=1:maxh+1;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
             hlocs_stat_um(1+block_sz_id,:)=hlocs_stat_um(1+block_sz_id,:)+hlocs./tree_l;
             end
         end
     end
+    % Normalizing with number of possible label matches
+    hlocs_stat_um(1+block_sz_id,:) = hlocs_stat_um(1+block_sz_id,:) ./ linspace(seq_length-1,seq_length-maxh,maxh);
 end
 
 
 % compute P_0 for random_blocks sequences
 
-hlocs_stat_rb=zeros(length(block_sizes)+1,maxh-1);
+hlocs_stat_rb=zeros(length(block_sizes)+1,maxh);
 
 disp('Random blocks - Computing P0 for original sequences...')
 for seq_id = 1:size(sequences.rb.orig,1)
@@ -183,12 +187,14 @@ for seq_id = 1:size(sequences.rb.orig,1)
         end
 
         if(nd>1)
-            edges=1:maxh;
+            edges=1:maxh+1;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
             hlocs_stat_rb(1,:)=hlocs_stat_rb(1,:)+hlocs./tree_l;
         end
     end
 end
+% Normalizing with number of possible label matches
+hlocs_stat_rb(1,:) = hlocs_stat_rb(1,:) ./ linspace(seq_length-1,seq_length-maxh,maxh);
 
 for block_sz_id = 1:length(block_sizes)
     block_sz = int2str(block_sizes(block_sz_id));
@@ -210,12 +216,14 @@ for block_sz_id = 1:length(block_sizes)
             end
 
             if(nd>1)
-            edges=1:maxh;
+            edges=1:maxh+1;
             hlocs= histcounts(locsd(1:(nd-1)),edges,'Normalization','probability'); % compute the histogram of the lags
             hlocs_stat_rb(1+block_sz_id,:)=hlocs_stat_rb(1+block_sz_id,:)+hlocs./tree_l;
             end
         end
     end
+    % Normalizing with number of possible label matches
+    hlocs_stat_rb(1+block_sz_id,:) = hlocs_stat_rb(1+block_sz_id,:) ./ linspace(seq_length-1,seq_length-maxh,maxh);
 end
 
 % Saving mat files

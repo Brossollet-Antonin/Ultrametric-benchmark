@@ -85,7 +85,6 @@ parser.add_argument('--bf_ratio', type=float, help="Bit-flipping ratio per level
 parser.add_argument('--tree_depth', type=int, default=5)
 parser.add_argument('--optimizer', type=str, default="sgd")
 
-parser.add_argument('--seq_length', type=int, default=300000, help="Length of the sequence used for training the model")
 parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluations of classification performance on test set")
 parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
@@ -99,13 +98,13 @@ parser.add_argument('--cfprof_x_origpos', type=int, default=2e5)
 
 
 class FigureSet:
-	def __init__(self, fs_name, rs_names, accuracy_to_compare, accuracy_plot_style, rs_for_lbl_plots, seq_length=300000, n_tests=300, artificial_seq_len=200):
+	def __init__(self, fs_name, rs_names, accuracy_to_compare, accuracy_plot_style, rs_for_lbl_plots, n_tests=300, artificial_seq_len=200, cf_correctionfactor=None):
 		self.name = fs_name
-		self.seq_length = seq_length
 		self.n_tests = n_tests
 		self.artificial_seq_len = args.artificial_seq_len
 		self.accuracy_to_compare = accuracy_to_compare
 		self.accuracy_plot_style = accuracy_plot_style
+		self.cf_correctionfactor = cf_correctionfactor
 
 		self.load_result_sets(rs_names, rs_for_lbl_plots)
 
@@ -167,13 +166,18 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 	}
 
 	print("Computing CF histories")
-	for rs_name, rs in fs.rs.items():
+	for rs_id, (rs_name, rs) in enumerate(fs.rs.items()):
 		print("    {:s}".format(rs_name))
 		if ("Unif" in rs_name):
 			continue
 		_cf_stats = {}
 
-		avg_cf, avg_cf_std, init_cf, init_cf_std = ld.get_cf_history(rs, blocks[rs.params["Tree Depth"]], save_formats=save_formats, figset_name=fs_name)
+		if fs.cf_correctionfactor is not None:
+			cf_correctionfactor = fs.cf_correctionfactor[rs_id]
+		else:
+			cf_correctionfactor = None
+
+		avg_cf, avg_cf_std, init_cf, init_cf_std = ld.get_cf_history(rs, blocks[rs.params["Tree Depth"]], save_formats=save_formats, figset_name=fs_name, cf_correctionfactor=cf_correctionfactor)
 		_cf_stats['rs'] = rs
 		_cf_stats['rs_name'] = rs.name
 		_cf_stats['avg_cf'] = avg_cf
@@ -182,6 +186,19 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 		_cf_stats['init_cf_std'] = init_cf_std
 
 		fs.cf_stats['stat_list'].append(_cf_stats)
+
+	fs.cf_stats['stat_list'][0]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][1]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][0]['avg_cf'].items() if fs.cf_stats['stat_list'][1]['avg_cf'][k]>0}
+	fs.cf_stats['stat_list'][0]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][1]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][0]['avg_cf_std'].items() if fs.cf_stats['stat_list'][1]['avg_cf'][k]>0}
+
+	fs.cf_stats['stat_list'][2]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][3]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][2]['avg_cf'].items() if fs.cf_stats['stat_list'][3]['avg_cf'][k]>0}
+	fs.cf_stats['stat_list'][2]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][3]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][2]['avg_cf_std'].items() if fs.cf_stats['stat_list'][3]['avg_cf'][k]>0}
+
+	fs.cf_stats['stat_list'][4]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][5]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][4]['avg_cf'].items() if fs.cf_stats['stat_list'][5]['avg_cf'][k]>0}
+	fs.cf_stats['stat_list'][4]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][5]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][4]['avg_cf_std'].items() if fs.cf_stats['stat_list'][5]['avg_cf'][k]>0}
+
+	del fs.cf_stats['stat_list'][5]
+	del fs.cf_stats['stat_list'][3]
+	del fs.cf_stats['stat_list'][1]
 
 
 	# Making CD profile plots
@@ -395,10 +412,57 @@ if __name__ == '__main__':
 					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
 					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
 				))
+				cf_correctionfactor = (1, 1, 1, 1, 1, 1, 1.25, 1, 1)
 
 			rs_for_lbl_plots = ()
 
 		elif args.result_battery=="influence_of_tree_depth_unmixed":
+			rs_names = {}
+			accuracy_to_compare = []
+			accuracy_plot_style = "comp"
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
+			fs_name = "influence_of_tree_depth_unmixed_{bf_:d}bits".format(
+				bf_ = bit_flips_per_lvl
+			)
+
+			n_tree_depths = 3
+			for depth_id, depth in enumerate((4,5,6)):
+				rs_names["artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = depth_id/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = (depth_id+0.33)/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = 0
+				
+				accuracy_to_compare.append((
+					"artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
+				))
+
+			rs_for_lbl_plots = ()
+
+		elif args.result_battery=="influence_of_tree_depth_mixed_fixedExtremaTimeConstants":
+			rs_names = {}
+			accuracy_to_compare = []
+			accuracy_plot_style = "comp"
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
+			fs_name = "influence_of_tree_depth_mixed_{bf_:d}bits".format(
+				bf_ = bit_flips_per_lvl
+			)
+
+			n_tree_depths = 3
+			for depth_id, depth in enumerate((4,5,6)):
+				rs_names["artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = depth_id/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = (depth_id+0.33)/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = 0
+				
+				accuracy_to_compare.append((
+					"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
+				))
+
+			rs_for_lbl_plots = ()
+
+		elif args.result_battery=="influence_of_tree_depth_unmixed_fixedExtremaTimeConstants":
 			rs_names = {}
 			accuracy_to_compare = []
 			accuracy_plot_style = "comp"
@@ -490,7 +554,7 @@ if __name__ == '__main__':
 	)
 
 	print("Making FigureSet object...")
-	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, seq_length=args.seq_length, n_tests=args.n_tests, artificial_seq_len=args.args.artificial_seq_len)
+	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, n_tests=args.n_tests, artificial_seq_len=args.artificial_seq_len, cf_correctionfactor=cf_correctionfactor)
 	print("Done")
 
 	if args.make_lbl_history < 2:

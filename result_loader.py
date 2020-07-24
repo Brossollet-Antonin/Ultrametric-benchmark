@@ -161,7 +161,7 @@ class ResultSet:
 		self.uniform = "uniform" in self.seq_type
 
 
-	def load_analytics(self, load_shuffle=True, load_atc=False, load_htmp=False, hue=None):
+	def load_analytics(self, load_shuffle=True, load_evals=False, load_atc=False, load_htmp=False, hue=None):
 		"""
 		Loads the data from sim_map_dict for self hyperparameters
 
@@ -254,7 +254,8 @@ class ResultSet:
 
 			self.classes_templates.append(np.load(os.path.join(simuset_path, 'classes_templates.npy'), allow_pickle=True))
 
-			self.eval_orig.append(np.load(os.path.join(simuset_path, 'evaluation_original.npy'), allow_pickle=True))
+			if load_evals:
+				self.eval_orig.append(np.load(os.path.join(simuset_path, 'evaluation_original.npy'), allow_pickle=True))
 			self.var_acc_orig.append(np.load(os.path.join(simuset_path, 'var_original_accuracy.npy'), allow_pickle=True))
 			self.var_pred_orig.append(np.load(os.path.join(simuset_path, 'var_original_classes_prediction.npy'), allow_pickle=True))
 
@@ -281,7 +282,8 @@ class ResultSet:
 						with open(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'labels_heatmap_shfl.pickle'), 'rb') as file:
 							self.lbl_htmp_shfl[shuffle_sz].append(pickle.load(file))
 
-					self.eval_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'evaluation_shuffled.npy'), allow_pickle=True))
+					if load_evals:
+						self.eval_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'evaluation_shuffled.npy'), allow_pickle=True))
 					self.var_acc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_accuracy.npy')))
 					self.var_pred_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_classes_prediction.npy'), allow_pickle=True))
 
@@ -959,7 +961,7 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 
 
 def get_cf_history(rs, blocks, n_tests=300,
-	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1, figset_name=default_figset_name):
+	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1, cf_correctionfactor=None, figset_name=default_figset_name):
 
 	avg_cf = {}
 	avg_cf_std = {}
@@ -994,7 +996,7 @@ def get_cf_history(rs, blocks, n_tests=300,
 			t_explr.append(_t_explr)
 
 	if len(cf) > 0:
-		cf_mean = np.mean(
+		cf_mean = np.mean( # this provides a history curve (CF as a function of time from the first time of full exploration), computed as the mean of the simulations where full exploration occured
 			np.stack(cf, axis=1),
 			axis=1
 		)
@@ -1002,6 +1004,9 @@ def get_cf_history(rs, blocks, n_tests=300,
 			np.stack(cf, axis=1),
 			axis=1
 		)
+		if cf_correctionfactor is not None:
+			cf_mean *= cf_correctionfactor
+			cf_std *= cf_correctionfactor
 		cf_ax.plot(
 			cf_mean,
 			color = hsv_to_rgb(rs.hsv_orig),
@@ -1052,6 +1057,10 @@ def get_cf_history(rs, blocks, n_tests=300,
 				np.stack(cf, axis=1),
 				axis=1
 			)
+
+			if cf_correctionfactor is not None:
+				cf_mean *= cf_correctionfactor
+				cf_std *= cf_correctionfactor
 
 			if block_sz in blocks['cfhist_plots']:
 				cf_ax.plot(

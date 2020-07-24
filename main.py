@@ -30,9 +30,8 @@ from ultrametric_analysis import train_sequenceset
 import data_saver
 
 paths = utils.get_project_paths()
-cwd = paths['root']
 
-parser = argparse.ArgumentParser('./main.py', description='Run test')
+parser = argparse.ArgumentParser(os.path.join(paths, "main.py"), description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 parser.add_argument('--verbose', type=int, dest='verbose', default=0)
@@ -81,11 +80,13 @@ seq_params.add_argument('--split_length', type=int, dest='split_length_list', na
 seq_params.add_argument('--save_um_distances', action='store_true', default=False, help='If specified, will store ultrametric distances between predictions and ground truth on test set at each evaluation point in the sequence')
 
 def run(args):
-	step = 1
-	args.test_stride = int(args.sequence_length/args.test_nbr)
+	# Global parameters
+	step = 1 # Energy step
+	args.test_stride = int(args.sequence_length/args.test_nbr) # Number of sequence samples the model learns on between two evaluation steps
 	systime = time.time()
 	random.seed(systime)
 
+	# This will control whether we run any shuffling scenario or not (those are demanding in computational resources)
 	args.enable_shuffling = True
 	if not args.block_size_shuffle_list:
 		args.enable_shuffling = False

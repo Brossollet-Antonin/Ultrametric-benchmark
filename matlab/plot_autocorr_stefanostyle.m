@@ -5,7 +5,7 @@ function [ output_args ] = plot_autocorr_stefanostyle( atc_um_filename, atc_rb2_
 
 % Loading mat files
 hlocs_stat_ultra = load(atc_um_filename);
-hlocs_stat_ultra = hlocs_stat_ultra.hlocs_stat_ultra;
+hlocs_stat_ultra = hlocs_stat_ultra.hlocs_stat_um;
 hlocs_stat_rb = load(atc_rb2_filename);
 hlocs_stat_rb = hlocs_stat_rb.hlocs_stat_rb;
 
