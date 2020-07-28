@@ -49,6 +49,24 @@ def mem_SGD(net, mini_batch, lr, momentum, device, optimizer=None):
     return loss.item()
 
 
+class ClassGraph:
+    """
+    A general structure that will a graph between labels so as to allow generation of a learning sequence by random walk on this graph
+    """
+    def __init__(self, n_classes, transition_matrix):
+        self.n_classes = n_classes
+        self.transition_matrix = transition_matrix
+
+class UltrametricTree (ClassGraph):
+    """
+    A particular case of ClassGraph where the graph is a tree, where an ultrametric topology is well-defined.
+    """
+
+    def __init__(self):
+        super.__init__()
+        
+
+
 class Trainer:
     """
     Defined by tuple (dataset, neural_network, sequence_type).

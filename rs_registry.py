@@ -42,7 +42,7 @@ params = {
 		'nnarchi': 'FCL10',
 		'T': 0.4,
 		'shuffle_size': 150,
-		'seq_length': 300000,
+		'seq_length': 30000,
 		'n_tests': 300,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.1,)

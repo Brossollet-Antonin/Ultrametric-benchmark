@@ -243,6 +243,7 @@ def run(args):
 		"device_type": 'GPU' if args.cuda else 'CPU',
 		"NN architecture": args.nnarchi,
 		"Split total length": args.split_length_list[0],
+		"Timescales": trainer.rates_vector,
 		"Original command": str(sys.argv) # We store the original command for this set of simulations
 	}
 	rs.T = trainer.T
