@@ -31,7 +31,7 @@ import data_saver
 
 paths = utils.get_project_paths()
 
-parser = argparse.ArgumentParser(os.path.join(paths, "main.py"), description='Run test')
+parser = argparse.ArgumentParser(os.path.join(paths['root'], "main.py"), description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 parser.add_argument('--verbose', type=int, dest='verbose', default=0)
