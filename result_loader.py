@@ -512,7 +512,7 @@ class ResultSet:
 ### Functions to output accuracy=f(iteration) plots ###
 #######################################################
 
-def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3, draw_timescales=False, draw_explorations=True):
+def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3, draw_timescales=False, draw_explorations=False):
 	"""
 	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
 
@@ -535,10 +535,12 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 
 	### OPTIONNAL TIMESCALES ###
 	if draw_timescales:
-		single_timescales = list(set(rs.params["Timescales"]))
+		single_timescales = sorted(list(set(rs.params["Timescales"])))
 		for (timescale_id, timescale) in enumerate(single_timescales):
-			ax.vlines(x=timescale, ymin=0, ymax=100, linewidth=3, color=(0.012,0.61,0.98), alpha=0.4)
-			ax.text(x=timescale, y=0, s="{:.2E}".format(timescale), fontsize=12)
+			if timescale > rs.seq_length:
+				break
+			ax.vlines(x=timescale, ymin=0, ymax=100, linewidth=3, color=(0.012,0.61,0.98), alpha=0.4, ls='--')
+			ax.text(x=timescale+0.0125*rs.seq_length, y=50, s="{:.2E}".format(timescale), color=(0.012,0.61,0.98), fontsize=16, rotation=90, verticalalignment='center')
 
 	### OPTIONNAL FULL EXPLORATION TIMES ###
 	if draw_explorations:
@@ -634,7 +636,7 @@ def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_wind
 def make_perfplot_unit(
 	rs, blocks, rs_unif=None,
 	n_tests=300, plot_window=None, blocks_to_plot='small',
-	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, figset_name=default_figset_name
+	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
 	Creates accuracy plots from a single ResultSet object, comparing the result set vs baseline uniform, with shuffling block sizes in argument "blocks"
@@ -673,7 +675,7 @@ def make_perfplot_unit(
 	if rs_unif is not None:
 		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
 
-	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -708,7 +710,7 @@ def make_perfplot_unit(
 def make_perfplot_comparison(
 	rs, blocks, rs_altr=None, blocks_altr=None, rs_unif=None,
 	n_tests=300, plot_window=None, blocks_to_plot='small',
-	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, figset_name=default_figset_name
+	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
 	Creates accuracy plots from three ResultSet objects:
@@ -765,7 +767,7 @@ def make_perfplot_comparison(
 	if rs_unif is not None:
 		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
 
-	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -782,7 +784,7 @@ def make_perfplot_comparison(
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, uniform=True)
 
-		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 		format_perf_plot(ax=acc_ax_altr, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 			xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -796,7 +798,7 @@ def make_perfplot_comparison(
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, uniform=True)
 
-		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
 
 		format_perf_plot(ax=acc_ax_all, title="Comparative accuracy as a function of time for different scenarios", legend_title=rs.descr,
@@ -834,7 +836,7 @@ def make_perfplot_comparison(
 def make_perfplot_matrix(
 	rs_list, blocks, rs_unif=None,
 	n_tests=300, plot_window=None, blocks_to_plot='small',
-	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, figset_name=default_figset_name
+	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
 	Creates a matrix of accuracy plots for a list of ResultSets, with:
@@ -878,7 +880,7 @@ def make_perfplot_matrix(
 		if rs_unif is not None:
 			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, uniform=True)
 
-		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter)
+		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 		axes[rs_id, rs_id].set_facecolor((0.87, 0.87, 0.87))
 		axes[rs_id, rs_id].legend()
@@ -893,7 +895,7 @@ def make_perfplot_matrix(
 
 		rs1 = rs_list[rs1_id]
 		rs2 = rs_list[rs2_id]
-		make_perfplot(rs1, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+		make_perfplot(rs1, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 		make_perfplot(rs2, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
 
 		axes[rs1_id, rs2_id].legend()
@@ -1229,7 +1231,7 @@ def get_cf_history(rs, blocks, n_tests=300,
 	return avg_cf, avg_cf_std, avg_ald_cf, avg_ald_cf_std
 
 
-def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, cfprof_ymax=None, normalize=False, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales= False, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1253,6 +1255,11 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 
 		if normalize and cf[0]>0:
 			cf = {k: v/cf[0] for k,v in cf.items()}
+
+		if plot_timescales:
+			timescales = rs.params["Timescales"]
+			for ts in timescales:
+				ax_mean_cfs.vlines(x=ts, ymin=0, ymax=1.1*x_origpos, linestyles='--', linewidth=2, color=[0.42,0.74,0.95])
 
 		ax_mean_cfs.plot(
 			xtick_pos,
