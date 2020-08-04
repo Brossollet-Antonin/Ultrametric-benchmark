@@ -29,7 +29,7 @@ do
 
     ## Model params
     nnarchi)              nnarchi=${VALUE} ;;
-    hidden_size)          hidden_size=${VALUE} ;;
+    hidden_sizes)          hidden_size=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
     nonlin)               nonlin=${VALUE} ;;
@@ -51,7 +51,7 @@ if [ -z ${path+x} ]; then
   echo "Aborting: path to main.py was not provided"
   exit 1
 fi
-if [ -z ${hidden_size+x} ]; then
+if [ -z ${hidden_sizes+x} ]; then
   echo "Aborting: hidden size parameter for NN was not provided"
   exit 1
 fi
@@ -131,7 +131,7 @@ do
         for (( value = 1; value <= $n_reps; value++ ))
         do
           sbatch individual_simu.sh --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem-per-cpu=${mem_per_cpu:-"4gb"} \
-          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} ${hidden_size} ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}"
+          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}"
           sleep 1
         done
       done
