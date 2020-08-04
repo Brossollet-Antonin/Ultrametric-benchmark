@@ -88,7 +88,7 @@ parser.add_argument('--optimizer', type=str, default="sgd")
 parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluations of classification performance on test set")
 parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
-parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "d10_T_tryout"], help="Battery of results to generate graphs for")
+parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "optim_tryout"], help="Battery of results to generate graphs for")
 parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unit')
 parser.add_argument('--draw_timescales', action='store_true', help='enable to draw ultrametric tree timescales on top of classificaiton accuracy plots')
 parser.add_argument('--draw_explorations', action='store_true', help='enable to draw ultrametric tree timescales on top of classificaiton accuracy plots')
@@ -566,6 +566,59 @@ if __name__ == '__main__':
 					"MNIST_UltraMixed",
 					"MNIST_RbMixed"
 				)
+
+		elif args.result_battery=="optim_tryout":
+			fs_name = "MNIST_sgd_vs_adam_10M"
+			rs_names = {
+				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(
+					depth_ = args.tree_depth,
+					bf_ = bit_flips_per_lvl
+				): 0.6,
+				"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(
+					depth_ = args.tree_depth,
+					bf_ = bit_flips_per_lvl
+				): 0.72,
+				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(
+					depth_ = args.tree_depth,
+					bf_ = bit_flips_per_lvl
+				): 0.3,
+				"artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(
+					depth_ = args.tree_depth,
+					bf_ = bit_flips_per_lvl
+				): 0.42,
+				"artificial_d{depth_:d}Unif{bf_:d}bits".format(
+					depth_ = args.tree_depth,
+					bf_ = bit_flips_per_lvl
+				): 0
+			}
+			accuracy_to_compare = [
+				(
+					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
+				),
+				(
+					"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
+				),
+				(
+					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
+				),
+				(
+					"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}RbUnmixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
+				)
+			]
+			accuracy_plot_style = "comp"
+			rs_for_lbl_plots = (
+				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl),
+				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = args.tree_depth, bf_ = bit_flips_per_lvl)
+			)
+			cf_correctionfactor = None
 
 	fs_name = "{dataset:s}/{fs_base:s}".format(
 		dataset=args.dataset,

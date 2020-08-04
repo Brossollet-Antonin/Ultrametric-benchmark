@@ -302,8 +302,10 @@ class ResultSet:
 
 
 	def set_hsv(self, hue=0.5, uniform=False):
-		l_shfl = len(self.shuffle_sizes) if not uniform else 1
 		self.hsv_orig = [0, 1, 0.9] if not uniform else [0, 0, 0.15]
+		if not self.shuffle_sizes:
+			return
+		l_shfl = len(self.shuffle_sizes) if not uniform else 1
 		sat_stride = 0.2/l_shfl
 		value_stride = 0.8/l_shfl
 		self.hsv_shfl_dict = {blck_sz: [hue, 1-sat_stride*shfl_id, 0.2+value_stride*shfl_id] for shfl_id, blck_sz in enumerate(self.shuffle_sizes)}

@@ -50,10 +50,11 @@ data_params.add_argument('--data_seq_size', type=int, dest='artif_seq_size', def
 
 # model/hyperparameters parameters
 model_params = parser.add_argument_group('Model Parameters')
-model_params.add_argument('--nnarchi', type=str, default='ResNet', choices=['FCL', 'CNN', 'ResNet'], help='Architure of the neural network used')
+model_params.add_argument('--nnarchi', type=str, default='FCL', choices=['FCL', 'CNN', 'ResNet'], help='Architure of the neural network used')
 model_params.add_argument('--resnettype', type=int, default=50, choices=[18, 34, 50, 101, 152], help='Type of ResNet network to use')
-model_params.add_argument('--hidden_sizes', type=int, default=20, help='A list of hidden sizes in case of a FCL network')
-model_params.add_argument('--lr', type=int, default=0.01, help='Learning rate')
+model_params.add_argument('--hidden_sizes', type=int, nargs='*', default=[20], help='Provides the number of filters per convolutional layer (and thus, the number of conv layers) in the case of a CNN, and the number of hidden units per hidden layer in the case of a FCL network')
+model_params.add_argument('--nonlin', type=str, default='none', choices=['none', 'relu'], help='Only in the case of a MLP, provides the type of nonlinearity (or the absence of it) between each layer')
+model_params.add_argument('--lr', type=float, default=0.01, help='Learning rate')
 model_params.add_argument('--batch_sz', type=int, default=10, help='Size of the training mini-batches')
 model_params.add_argument('--memory_sz', type=int, default=0, help='Size of the memory for replay training')
 model_params.add_argument('--loss_fn', type=str, default='cross_entropy', help='Loss function')
@@ -90,6 +91,8 @@ def run(args):
 	args.enable_shuffling = True
 	if not args.block_size_shuffle_list:
 		args.enable_shuffling = False
+	if args.block_size_shuffle_list==[0]:
+		args.enable_shuffling = False
 	if args.sequence_type == 'uniform':
 		args.enable_shuffling = False
 
@@ -123,18 +126,20 @@ def run(args):
 
 	save_root = os.path.join(
 		paths['simus'],
-		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:d}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
+		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
 			cl_strat = cl_strategy,
 			data_origin = args.data_origin,
 			n_classes = dataset.num_classes,
 			nnarchi = args.nnarchi,
-			hidlay_width = args.hidden_sizes,
+			hidlay_width = "x".join([str(el) for el in args.hidden_sizes]),
 			seq_type = args.sequence_type,
 			seq_length = args.sequence_length,
 			batch_size = args.batch_sz,
 			optimizer = args.optimizer
 		)
 	)
+	if args.nonlin == 'relu':
+		save_root = save_root[:-1] + "_nonlinRelu/"
 	if dataset.data_origin == 'artificial':
 		save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
 			patterns_size = args.artif_seq_size,
@@ -167,7 +172,7 @@ def run(args):
 	# neuralnet models are now subclasses of ContinualLearner and can all implement CL strategies such as EWC
 
 	if args.nnarchi == 'FCL':
-		model = neuralnet.Net_FCL(dataset, args.hidden_sizes)
+		model = neuralnet.Net_FCL(dataset, args.hidden_sizes, args.nonlin)
 	elif args.nnarchi == 'CNN':
 		model = neuralnet.Net_CNN(dataset)
 	else:
@@ -243,7 +248,7 @@ def run(args):
 		"device_type": 'GPU' if args.cuda else 'CPU',
 		"NN architecture": args.nnarchi,
 		"Split total length": args.split_length_list[0],
-		"Timescales": trainer.rates_vector,
+		"Timescales": trainer.rates_vector.tolist(),
 		"Original command": str(sys.argv) # We store the original command for this set of simulations
 	}
 	rs.T = trainer.T

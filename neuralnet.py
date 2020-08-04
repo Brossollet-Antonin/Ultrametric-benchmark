@@ -344,46 +344,51 @@ class Net_CNN(ContinualLearner):
         x = self.fc3(x)
         return x
 
+hidden_size = 10
+
 hidden_size = 100
 
 
-class Net_FCL(ContinualLearner):
-    def __init__(self, dataset, hidden_size):
-        super(Net_FCL, self).__init__()
-        self.dataset = dataset
-        self.input_size = self.dataset.data_sz
-        self.hidden_size = hidden_size
-
-        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
-        self.fc2 = nn.Linear(self.hidden_size, dataset.num_classes)
-
-    def forward(self, x):
-        x = x.view(-1, self.input_size)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return x
-
-
-# class Net_FCL(nn.Module):
-#     def __init__(self, dataset, hidden_sizes):
+# class Net_FCL(ContinualLearner):
+#     def __init__(self, dataset, hidden_size, nonlin):
 #         super(Net_FCL, self).__init__()
 #         self.dataset = dataset
 #         self.input_size = self.dataset.data_sz
-#         self.hidden_sizes = hidden_sizes
-#         self.fc = []
+#         self.hidden_size = hidden_size[0]
 
-#         self.fc.append(nn.Linear(self.input_size, hidden_sizes[0]))
-#         if len(hidden_sizes) > 1:
-#             for hid_id in range(len(hidden_sizes)-1):
-#                 self.fc.append(nn.Linear(hidden_sizes[hid_id], hidden_sizes[hid_id+1]))
-
-#         self.fc.append(nn.Linear(hidden_sizes[-1], dataset.num_classes))
+#         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+#         self.fc2 = nn.Linear(self.hidden_size, dataset.num_classes)
 
 #     def forward(self, x):
 #         x = x.view(-1, self.input_size)
-#         for hidden in self.fc:
-#             x = hidden(x)
+#         x = self.fc1(x)
+#         x = self.fc2(x)
 #         return x
+
+class Net_FCL(ContinualLearner):
+    def __init__(self, dataset, hidden_sizes, nonlin):
+        super(Net_FCL, self).__init__()
+        self.dataset = dataset
+        self.input_size = self.dataset.data_sz
+        self.hs = hidden_sizes
+        self.nonlin = nonlin
+        self.fc = nn.ModuleList()
+
+        self.fc.append(nn.Linear(self.input_size, self.hs[0]))
+        hl_id = 0
+        while hl_id < len(self.hs)-1: 
+            self.fc.append(nn.Linear(self.hs[hl_id], self.hs[hl_id+1]))
+            hl_id += 1
+        self.fc.append(nn.Linear(self.hs[hl_id], dataset.num_classes))
+
+    def forward(self, x):
+        x = x.view(-1, self.input_size)
+        for lay_id, lay in enumerate(self.fc):
+            x = lay(x)
+            if self.nonlin == 'relu':
+                x = F.relu(x)
+        return x
+
 
 
 

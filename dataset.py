@@ -159,12 +159,12 @@ class Dataset:
             self.n_axes, self.n_in_channels = 1, 1
         elif data_origin == 'MNIST':
             self.depth, self.branching = 3, 2
-            self.num_classes = 10
+            self.num_classes = 8
             self.n_axes, self.n_in_channels = 2, 1
             self.data_sz = (28**2)
         elif data_origin == 'CIFAR10':
             self.depth, self.branching = 3, 2
-            self.num_classes = 10
+            self.num_classes = 8
             self.n_axes, self.n_in_channels = 2, 3
             self.data_sz = (32**2)*3
         elif data_origin == 'CIFAR100':

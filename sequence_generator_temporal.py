@@ -45,7 +45,7 @@ def setting_rates(step, T, tree_depth, branching, rate_law='power', force_switch
         rates.insert(0,1-sum(rates))
     rates = np.array(rates)
     rates = rates*(1/sum(rates))
-    return rates
+    return rates.tolist()
     
 
 def next_value(sequence, rates, tree_depth, branching):
@@ -217,10 +217,11 @@ class Uniform_SequenceGenerator(SequenceGenerator):
             self.rates = [self.proba_transition]*(self.tree_branching**self.tree_depth - 2)
             self.rates.insert(0, 1-sum(self.rates))
             self.rates.insert(0,0)
+        self.rates = np.array(self.rates)
 
     def generate_labels(self, sequence_first, sequence_length):
         sequence = [sequence_first]
-        assert(sum(self.rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
+        assert(np.sum(self.rates)<=1), 'Transition probability too high for that many leafs, sum greater than 1. Choose a smaller probability or a smaller tree'
 
         print('Transition rates vector :', self.rates)
         for i in range(sequence_length):
