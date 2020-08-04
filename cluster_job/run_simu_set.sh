@@ -29,7 +29,7 @@ do
 
     ## Model params
     nnarchi)              nnarchi=${VALUE} ;;
-    hidden_sizes)          hidden_size=${VALUE} ;;
+    hidden_sizes)         hidden_sizes=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
     nonlin)               nonlin=${VALUE} ;;
