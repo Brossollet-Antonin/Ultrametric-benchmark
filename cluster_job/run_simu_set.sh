@@ -30,6 +30,8 @@ do
     ## Model params
     hidden_size)          hidden_size=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
+    lr)                   lr=${VALUE} ;;
+    nonlin)               nonlin=${VALUE} ;;
 
     ## Shuffle params
     block_sizes)          block_sizes=${VALUE} ;;
@@ -102,6 +104,14 @@ if [ -z ${block_sizes+x} ]; then
   echo "No block_sizes provided. Will not perform any shuffle"
   block_sizes="0";
 fi
+if [ -z ${lr+x} ]; then
+  echo "No learning rate provided. Will use LR=0.01 by default"
+  lr=0.01;
+fi
+if [ -z ${nonlin+x} ]; then
+  echo "Model will use no nonlinearity"
+  nonlin="none";
+fi
 
 # Run simulation set
 for temperature in $T_list
@@ -115,7 +125,7 @@ do
         for (( value = 1; value <= $n_reps; value++ ))
         do
           sbatch individual_simu.sh --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem-per-cpu=${mem_per_cpu:-"4gb"} \
-          ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" \
+          ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_tests} ${flip_rate} ${sl} ${nonlin} ${lr} "${block_sizes[*]}" \
           ${path}
           sleep 1
         done
