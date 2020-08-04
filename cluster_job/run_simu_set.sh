@@ -28,6 +28,7 @@ do
     nbr_tests)            nbr_tests=${VALUE};; # number of classification accuracy evaluations that will take place when learning on the sequence
 
     ## Model params
+    nnarchi)              nnarchi=${VALUE} ;;
     hidden_size)          hidden_size=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
@@ -62,6 +63,11 @@ if [ -z ${dataset+x} ]; then
   echo "Aborting: dataset was not specified"
   exit 1
 fi
+if [ -z ${nnarchi+x} ]; then
+  echo "Aborting: model architecture was not specified"
+  exit 1
+fi
+
 
 # Deal with loop arguments when not provided as kwarg
 if [ -z ${tree_depth+x} ]; then
@@ -125,8 +131,7 @@ do
         for (( value = 1; value <= $n_reps; value++ ))
         do
           sbatch individual_simu.sh --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem-per-cpu=${mem_per_cpu:-"4gb"} \
-          ${tree_depth} ${hidden_size} ${seq_length} ${split_length} ${temperature} ${seqtype} ${optimizer} ${dataset} ${nbr_tests} ${flip_rate} ${sl} ${nonlin} ${lr} "${block_sizes[*]}" \
-          ${path}
+          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} ${hidden_size} ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}"
           sleep 1
         done
       done
