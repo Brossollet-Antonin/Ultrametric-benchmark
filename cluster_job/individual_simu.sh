@@ -9,7 +9,7 @@
 module load anaconda
 
 #Command to execute Python program
-python3 ${5} --dataset ${6} --data_tree_depth ${7} -T ${8} --nnarch ${9} --hidden_sizes ${10} \
---optimizer ${11} --nonlin ${12} --lr ${13} --seqtype ${14} --seqlength ${15} --split_length ${16} \
---nbrtest ${17} --data_flips_rate ${18} --shuffle_classes ${19} --blocksz ${20} --verbose 1 \
+python3 ${6} --dataset ${7} --data_tree_depth ${8} -T ${9} --nnarch ${10} --hidden_sizes ${11} \
+--optimizer ${12} --nonlin ${13} --lr ${14} --seqtype ${15} --seqlength ${16} --split_length ${17} \
+--nbrtest ${18} --data_flips_rate ${19} --shuffle_classes ${20} --blocksz ${21} ${22} --verbose 1 \
   
