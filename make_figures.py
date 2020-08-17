@@ -570,14 +570,8 @@ if __name__ == '__main__':
 		elif args.result_battery=="optim_tryout":
 			fs_name = "MNIST_sgd_vs_adam_10M"
 			rs_names = {
-				"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(
-					depth_ = args.tree_depth,
-					bf_ = bit_flips_per_lvl
-				): 0.6,
-				"artificial_d{depth_:d}UltraUnmixed{bf_:d}bits".format(
-					depth_ = args.tree_depth,
-					bf_ = bit_flips_per_lvl
-				): 0.72,
+				"MNIST_testSGD": 0.6,
+				"MNIST_testAdam": 0.3,
 				"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(
 					depth_ = args.tree_depth,
 					bf_ = bit_flips_per_lvl
