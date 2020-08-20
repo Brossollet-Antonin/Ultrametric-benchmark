@@ -29,6 +29,10 @@ from trainer import Trainer
 from ultrametric_analysis import train_sequenceset
 import data_saver
 
+class ResultSet:
+    def __init__(self):
+        pass
+
 paths = utils.get_project_paths()
 
 parser = argparse.ArgumentParser(os.path.join(paths['root'], "main.py"), description='Run test')
@@ -228,8 +232,9 @@ def run(args):
 	if 0 in args.block_size_shuffle_list:
 		args.block_size_shuffle_list.remove(0)
 
-	rs = train_sequenceset(trainer, args, args.block_size_shuffle_list)
+	rs = ResultSet()
 	rs.parameters = {
+		"Save root": save_root,
 		"Temperature": args.T,
 		"Tree Depth": dataset.depth,
 		"Tree Branching": dataset.branching,
@@ -248,14 +253,12 @@ def run(args):
 		"device_type": 'GPU' if args.cuda else 'CPU',
 		"NN architecture": args.nnarchi,
 		"Split total length": args.split_length_list[0],
-		"Timescales": trainer.rates_vector.tolist(),
 		"Original command": str(sys.argv) # We store the original command for this set of simulations
 	}
 	rs.T = trainer.T
 	rs.memory_sz = args.memory_sz
 
-	data_saver.save_results(rs, save_root)
-
+	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root)
 
 
 if __name__ == '__main__':

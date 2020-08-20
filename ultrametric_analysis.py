@@ -5,6 +5,7 @@ Created on Fri Jun 28 13:48:43 2019
 @author: Antonin
 """
 
+import os
 import pdb
 from copy import deepcopy
 import random
@@ -17,18 +18,17 @@ import neuralnet
 import sequence_generator_temporal
 import time
 
-class ResultSet:
-    def __init__(self):
-        pass
+import data_saver
+from datetime import datetime
 
-def train_sequenceset(trainer, args, block_sizes):
+def train_sequenceset(trainer, args, block_sizes, rs, save_root):
 
-    rs = ResultSet()
     rs.sequence_type = args.sequence_type
     rs.enable_shuffling = args.enable_shuffling
     rs.save_um_distances = args.save_um_distances
 
     rs.classes_templates = trainer.dataset.patterns
+    save_folder = "T{0:.3f}_Memory{1:d}_{2:s}".format(rs.T, rs.memory_sz, datetime.now().strftime("%y%m%d_%H%M%S"))
 
     # Define a family of models, all based on the same architecture template
     trainer.assign_model(deepcopy(trainer.network_tmpl))
@@ -54,6 +54,7 @@ def train_sequenceset(trainer, args, block_sizes):
     #-----------------------------------#
     verbose('Data generation...', args.verbose)
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
+    rs.parameters["Timescales"]=trainer.rates_vector.tolist()
     rs.train_labels_orig = trainer.train_sequence
 
     verbose('...done\n', args.verbose, 2)
@@ -94,6 +95,12 @@ def train_sequenceset(trainer, args, block_sizes):
                 acc= original_accuracy_current[0][0]
             ), args.verbose
         )
+
+    rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
+    for k in rs.train_labels_orig:
+        rs.classes_count[k] += 1
+
+    data_saver.save_orig_results(rs, os.path.join(save_root,save_folder))
 
     if rs.enable_shuffling:
         verbose("--- Start shuffle training ---", args.verbose)
@@ -158,8 +165,6 @@ def train_sequenceset(trainer, args, block_sizes):
 
             rs.train_labels_shfl[block_size_shuffle] = shuffled_sequence
 
-    rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
-    for k in rs.train_labels_orig:
-        rs.classes_count[k] += 1
+            data_saver.save_shuffle_results(rs, os.path.join(save_root,save_folder), block_size_shuffle)
 
     return rs
