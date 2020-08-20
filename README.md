@@ -2,8 +2,9 @@
 Here we introduce a new task-agnostic benchmark for continual learning that uses an ultrametric space to generate training data with a much richer and more realistic temporal profile. We argue that the multi-scale temporal structure of the learning sequence can have a dramatic influence on catastrophic forgetting, and propose a methodology to measure the influence of each timescale on known metrics for catastrophic interference.
 
 ## Concepts & implementation
-![Conceptual model for continual learning selected in our framework](./resources/online_summary/UM_ConceptualModel)
-![Our current implementation of the conceptual framework](./resources/online_summary/UM_Implementation) 
+![Conceptual model for continual learning selected in our framework](./resources/UM_ConceptualModel.png)
+![Our current implementation of the conceptual framework](./resources/UM_Implementation.png) 
+
 
 ## Getting started
 The main.py file is used to run a set of simulations. Each simulation consist of:
