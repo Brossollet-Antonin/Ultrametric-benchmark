@@ -40,7 +40,7 @@ do
     ## Slurm job params
     time)                 time=${VALUE};; # requiered time to run simulation
     nbr_cpu)              nbr_cpu=${VALUE};; # number of cpu to request on cluster
-    mem_per_cpu)          mem_per_cpu=${VALUE};; # memory per cpu
+    mem)                  mem=${VALUE};; # total memory allocated to requested node
     mail)                 mail=${VALUE};; # email adress to receive notifications
     gpu)                  gpu=1;;  # to run simulations on GPU (can help avoid coredump error) 
     *)   
@@ -131,7 +131,7 @@ do
       do
         for (( value = 1; value <= $n_reps; value++ ))
         do
-          sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem-per-cpu=${mem_per_cpu:-"4gb"} ${gpu:+--gres=gpu} \
+          sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
           individual_simu.sh \
           ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" ${gpu:+--gpu}
           sleep 1
