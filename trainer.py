@@ -353,7 +353,6 @@ class Trainer:
 
             self.train_sequence = train_sequence
 
-
         elif self.training_type=="random_blocks2_2freq":
             n_classes = self.dataset.branching**(self.dataset.depth-1)
 
