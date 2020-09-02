@@ -139,6 +139,11 @@ def save_orig_results(rs, save_path):
 
     """
 
+    if os.path.exists(save_path):
+        save_path = "_".join([save_path, str(hash(tuple(rs.train_labels_orig)))])
+    if os.path.exists(save_path):
+        print("Well that's bad luck, matching hash. No original result was saved, exiting.")
+        return
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
@@ -165,7 +170,7 @@ def save_orig_results(rs, save_path):
     print('Saved results for original sequence to {0:s}'.format(save_path))
 
 
-def save_shuffle_results(rs, save_path, shfl_sz):
+def save_shuffle_results(rs, save_path, shfl_sz, delete=False):
     """
     Saves only the results for the original sequence
     To be called right after training on the original sequence 
@@ -185,6 +190,11 @@ def save_shuffle_results(rs, save_path, shfl_sz):
 
     """
     
+    if os.path.exists(save_path):
+        save_path = "_".join([save_path, str(hash(tuple(rs.train_labels_orig)))])
+    if os.path.exists(save_path):
+        print("Well that's bad luck, matching hash. No shuffled result was saved, exiting.")
+        return
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
@@ -205,6 +215,14 @@ def save_shuffle_results(rs, save_path, shfl_sz):
             np.save(save_path+'/var_shuffle_accuracy', rs.acc_shfl[shfl_sz])
 
             print('Saved all results for shuffle size {0:d} to {1:s}'.format(shfl_sz, save_path))
+
+            if delete:
+                rs.train_labels_shfl.pop('shfl_sz', None)
+                rs.lbls_htmp_shfl.pop('shfl_sz', None)
+                rs.classes_pred_shfl.pop('shfl_sz', None)
+                rs.acc_shfl.pop('shfl_sz', None)
+                if rs.save_um_distances:
+                    rs.eval_shfl.pop('shfl_sz', None)
 
         else:
             print('Could not find shuffle size {0:d} in the result set dicts... No result was saved for this shuffle size'.format(shfl_sz))
