@@ -55,7 +55,7 @@ def train_sequenceset(trainer, args, block_sizes, rs, save_root):
     verbose('Data generation...', args.verbose)
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
     if hasattr(trainer, 'rates_vector'):
-        rs.parameters["Timescales"]=trainer.rates_vector.tolist():
+        rs.parameters["Timescales"]=trainer.rates_vector.tolist()
     else:
         rs.parameters["Timescales"] = []
     rs.train_labels_orig = trainer.train_sequence
