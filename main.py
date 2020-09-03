@@ -62,7 +62,7 @@ parser = argparse.ArgumentParser(os.path.join(paths['root'], "main.py"), descrip
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 parser.add_argument('--verbose', type=int, dest='verbose', default=0)
-parser.add_argument('--use_orig', type=str, dest="orig_path", help="If you want the simulations to pick up from a generated original sequence, provide the path to the corresponding subfolder, starting from ./Results/ (Ex:'1toM/MNIST_8/CNN256/ultrametric_length4000000_nosplit/T0.225_200903_164112'). Only the shuffle will be executed.")
+parser.add_argument('--use_orig', type=str, dest="orig_path", default="", help="If you want the simulations to pick up from a generated original sequence, provide the path to the corresponding subfolder, starting from ./Results/ (Ex:'1toM/MNIST_8/CNN256/ultrametric_length4000000_nosplit/T0.225_200903_164112'). Only the shuffle will be executed.")
 
 # dataset and ultrametric tree parameters
 data_params = parser.add_argument_group('Dataset Parameters')
@@ -152,7 +152,7 @@ def run(args):
 
 	cl_strategy = 'EWC' if args.ewc else '1toM'
 
-	if hasattr(args, use_orig):
+	if args.use_orig != "":
 		verbose("Attempting to run simulations from checkpoint", args.verbose, 0)
 		orig_checkpoint = OrigCP(args.orig_path)
 		save_root = orig_checkpoint.root
@@ -288,7 +288,7 @@ def run(args):
 	rs.T = trainer.T
 	rs.memory_sz = args.memory_sz
 
-	if hasattr(args, use_orig):
+	if args.use_orig != ""
 		# Let's check that the parameters match
 		for param in [k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
 			assert orig_checkpoint.parameters[k] == rs.parameters[k], "Orig checkpoint option - MISMATCH of parameter {}".format(param)
