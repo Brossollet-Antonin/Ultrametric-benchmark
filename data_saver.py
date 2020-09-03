@@ -140,12 +140,9 @@ def save_orig_results(rs, save_path):
     """
 
     if os.path.exists(save_path):
-        save_path = "_".join([save_path, str(hash(tuple(rs.train_labels_orig)))])
-    if os.path.exists(save_path):
-        print("Well that's bad luck, matching hash. No original result was saved, exiting.")
-        return
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
+        raise NameError("Subfolder path already exists. Cannot overwrite existing results for original sequence")
+
+    os.makedirs(save_path)
 
     with open(save_path + "/train_labels_orig.pickle", 'wb') as outfile:
         pickle.dump(rs.train_labels_orig, outfile)
@@ -190,12 +187,8 @@ def save_shuffle_results(rs, save_path, shfl_sz, delete=False):
 
     """
     
-    if os.path.exists(save_path):
-        save_path = "_".join([save_path, str(hash(tuple(rs.train_labels_orig)))])
-    if os.path.exists(save_path):
-        print("Well that's bad luck, matching hash. No shuffled result was saved, exiting.")
-        return
     if not os.path.exists(save_path):
+        print("Attempting to save shuffle simulation results in folder {} that does not exist. Admin should check this behavior".format(save_path))
         os.makedirs(save_path)
 
     if rs.enable_shuffling:

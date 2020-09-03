@@ -107,6 +107,8 @@ class Trainer:
         self.lr = lr
         self.momentum = momentum
 
+        self.rates_vector = np.array([])
+
         if optimizer is None:
             optimizer = 'sgd'
         self.optimizer_type = optimizer
