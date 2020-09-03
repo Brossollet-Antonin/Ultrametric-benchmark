@@ -152,7 +152,7 @@ def run(args):
 
 	cl_strategy = 'EWC' if args.ewc else '1toM'
 
-	if args.use_orig != "":
+	if args.orig_path != "":
 		verbose("Attempting to run simulations from checkpoint", args.verbose, 0)
 		orig_checkpoint = OrigCP(args.orig_path)
 		save_root = orig_checkpoint.root
@@ -288,9 +288,9 @@ def run(args):
 	rs.T = trainer.T
 	rs.memory_sz = args.memory_sz
 
-	if args.use_orig != ""
+	if args.use_orig != "":
 		# Let's check that the parameters match
-		for param in [k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
+		for param in [k for k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
 			assert orig_checkpoint.parameters[k] == rs.parameters[k], "Orig checkpoint option - MISMATCH of parameter {}".format(param)
 
 	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root, orig_checkpoint)
