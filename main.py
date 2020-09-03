@@ -33,12 +33,36 @@ class ResultSet:
     def __init__(self):
         pass
 
+class OrigCP:
+	def __init__(self, orig_path):
+
+		# Assert that the checkpoint path actually exist and refers to a directory
+		assert os.path.isdir(os.path.join(paths['simus'], orig_path)), "Provided orig_path is not a valid directory, yields: {}".format(os.path.join(paths['simus'], orig_path))
+		orig_folders = orig_path.split("/")
+		self.root = os.path.join(
+			paths['simus'],
+			"/".join(orig_folders[-1:])
+		)
+		self.subfolder = orig_folders[-1]
+
+		# Load the original sequence
+		import pickle
+		with open(os.path.join(self.root, self.subfolder, 'train_labels_orig.pickle'), 'rb') as file:
+			self.train_sequence = pickle.load(file)
+
+		# Load the parameters file
+		import json
+		with open(os.path.join(self.root, self.subfolder, 'parameters.json'), 'r') as param_file:
+			self.parameters = json.load(param_file)
+
+
 paths = utils.get_project_paths()
 
 parser = argparse.ArgumentParser(os.path.join(paths['root'], "main.py"), description='Run test')
 parser.add_argument('--gpu', action='store_true', dest='cuda', help="Use GPU")
 parser.add_argument('--savefolder', type=str, default='./', help="Folder to save the data")
 parser.add_argument('--verbose', type=int, dest='verbose', default=0)
+parser.add_argument('--use_orig', type=str, dest="orig_path", help="If you want the simulations to pick up from a generated original sequence, provide the path to the corresponding subfolder, starting from ./Results/ (Ex:'1toM/MNIST_8/CNN256/ultrametric_length4000000_nosplit/T0.225_200903_164112'). Only the shuffle will be executed.")
 
 # dataset and ultrametric tree parameters
 data_params = parser.add_argument_group('Dataset Parameters')
@@ -92,13 +116,13 @@ def run(args):
 	random.seed(systime)
 
 	# This will control whether we run any shuffling scenario or not (those are demanding in computational resources)
-	args.enable_shuffling = True
-	if not args.block_size_shuffle_list:
+	if ((not args.block_size_shuffle_list) or args.block_size_shuffle_list==[0] or args.sequence_type == 'uniform'):
 		args.enable_shuffling = False
-	if args.block_size_shuffle_list==[0]:
-		args.enable_shuffling = False
-	if args.sequence_type == 'uniform':
-		args.enable_shuffling = False
+	else:
+		args.enable_shuffling = True
+	# 0 is passed as a dummy block size by our slurm batch script, it should be removed
+	if 0 in args.block_size_shuffle_list:
+		args.block_size_shuffle_list.remove(0)
 
 	device = torch.device('cuda') if args.cuda else torch.device('cpu')
 
@@ -128,36 +152,46 @@ def run(args):
 
 	cl_strategy = 'EWC' if args.ewc else '1toM'
 
-	save_root = os.path.join(
-		paths['simus'],
-		"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
-			cl_strat = cl_strategy,
-			data_origin = args.data_origin,
-			n_classes = dataset.num_classes,
-			nnarchi = args.nnarchi,
-			hidlay_width = "x".join([str(el) for el in args.hidden_sizes]),
-			seq_type = args.sequence_type,
-			seq_length = args.sequence_length,
-			batch_size = args.batch_sz,
-			optimizer = args.optimizer
-		)
-	)
-	if args.nonlin == 'relu':
-		save_root = save_root[:-1] + "_nonlinRelu/"
-	if dataset.data_origin == 'artificial':
-		save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
-			patterns_size = args.artif_seq_size,
-			bitflips = int(dataset.data_sz*dataset.ratio_value)
-		)
-	if 'blocks' in args.sequence_type:
-		args.T = float(0)
-		if args.sequence_type == 'random_blocks2_2freq':
-			save_root = save_root[:-1]+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
-		else:
-			save_root = save_root[:-1]+"_splitlength"+str(args.split_length_list[0])+"/"
+	if hasattr(args, use_orig):
+		verbose("Attempting to run simulations from checkpoint", args.verbose, 0)
+		orig_checkpoint = OrigCP(args.orig_path)
+		save_root = orig_checkpoint.root
+		if 'blocks' in args.sequence_type:
+			args.T = float(0)
+		verbose("Save root set to {s}".format(orig_checkpoint.root), 2)
 
-	if (args.artif_shuffle_classes==0):
-		save_root = save_root[:-1]+"_noclassreshuffle/"
+	else:
+		verbose("Running simulations from scratch (default, no checkpoint used)", args.verbose, 0)
+		save_root = os.path.join(
+			paths['simus'],
+			"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
+				cl_strat = cl_strategy,
+				data_origin = args.data_origin,
+				n_classes = dataset.num_classes,
+				nnarchi = args.nnarchi,
+				hidlay_width = "x".join([str(el) for el in args.hidden_sizes]),
+				seq_type = args.sequence_type,
+				seq_length = args.sequence_length,
+				batch_size = args.batch_sz,
+				optimizer = args.optimizer
+			)
+		)
+		if args.nonlin == 'relu':
+			save_root = save_root[:-1] + "_nonlinRelu/"
+		if dataset.data_origin == 'artificial':
+			save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
+				patterns_size = args.artif_seq_size,
+				bitflips = int(dataset.data_sz*dataset.ratio_value)
+			)
+		if 'blocks' in args.sequence_type:
+			args.T = float(0)
+			if args.sequence_type == 'random_blocks2_2freq':
+				save_root = save_root[:-1]+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
+			else:
+				save_root = save_root[:-1]+"_splitlength"+str(args.split_length_list[0])+"/"
+
+		if (args.artif_shuffle_classes==0):
+			save_root = save_root[:-1]+"_noclassreshuffle/"
 
 	verbose("Output directory for this simulation set: {:s}".format(save_root), args.verbose, 0)
 
@@ -228,10 +262,6 @@ def run(args):
 
 	verbose('...done', args.verbose, 0)
 
-	# 0 is passed as a dummy block size by our slurm batch script, it should be removed
-	if 0 in args.block_size_shuffle_list:
-		args.block_size_shuffle_list.remove(0)
-
 	rs = ResultSet()
 	rs.parameters = {
 		"Save root": save_root,
@@ -258,7 +288,12 @@ def run(args):
 	rs.T = trainer.T
 	rs.memory_sz = args.memory_sz
 
-	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root)
+	if hasattr(args, use_orig):
+		# Let's check that the parameters match
+		for param in [k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
+			assert orig_checkpoint.parameters[k] == rs.parameters[k], "Orig checkpoint option - MISMATCH of parameter {}".format(param)
+
+	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root, orig_checkpoint)
 
 
 if __name__ == '__main__':

@@ -21,14 +21,13 @@ import time
 import data_saver
 from datetime import datetime
 
-def train_sequenceset(trainer, args, block_sizes, rs, save_root):
+def train_sequenceset(trainer, args, block_sizes, rs, save_root, orig_cp=None):
 
     rs.sequence_type = args.sequence_type
     rs.enable_shuffling = args.enable_shuffling
     rs.save_um_distances = args.save_um_distances
 
     rs.classes_templates = trainer.dataset.patterns
-    save_folder = "T{0:.3f}_Memory{1:d}_{2:s}".format(rs.T, rs.memory_sz, datetime.now().strftime("%y%m%d_%H%M%S"))
 
     # Define a family of models, all based on the same architecture template
     trainer.assign_model(deepcopy(trainer.network_tmpl))
@@ -54,56 +53,65 @@ def train_sequenceset(trainer, args, block_sizes, rs, save_root):
     #-----------------------------------#
     verbose('Data generation...', args.verbose)
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
-    if hasattr(trainer, 'rates_vector'):
+
+    if orig_cp:
+        save_folder = os.path.join(orig_cp.root, orig_cp.subfolder)
+        trainer.train_sequence = orig_cp.train_sequence
+
         rs.parameters["Timescales"]=trainer.rates_vector.tolist()
+        rs.train_labels_orig = trainer.train_sequence
+        verbose('Original sequence checkpoint provided. Skipping simulation for original sequence.', args.verbose, 0)
+        
     else:
-        rs.parameters["Timescales"] = []
-    rs.train_labels_orig = trainer.train_sequence
+        save_folder = "T{0:.3f}_Memory{1:d}_{2:s}_{3:s}".format(rs.T, rs.memory_sz, datetime.now().strftime("%y%m%d"), str(hash(tuple(rs.train_labels_orig))))
 
-    verbose('...done\n', args.verbose, 2)
-
-    for test_id in range(args.test_nbr):
-        training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)     #Part of the sequence on which the training will be done
-        verbose('Training network on original sequence...', args.verbose, 2)
-
-        trainer.train(
-            mem_sz = trainer.memory_size,
-            training_range = training_range,
-            verbose_lvl = args.verbose
-            )
-
-        verbose('...done\nComputing performance for original sequence...', args.verbose, 2)
-
-        eval_orig = trainer.evaluate_hierarchical()
-        if args.save_um_distances:
-            rs.eval_orig.append(eval_orig)
-        rs.lbls_htmp_orig[test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
+        rs.parameters["Timescales"]=trainer.rates_vector.tolist()
+        rs.train_labels_orig = trainer.train_sequence
 
         verbose('...done\n', args.verbose, 2)
 
-        original_accuracy_current = eval_orig[0][0]      # Recover the standard accuracy
-        original_accuracy_current = np.array([[original_accuracy_current, (test_id+1)*args.test_stride]])
-        rs.acc_orig = np.append(rs.acc_orig, original_accuracy_current, axis=0)
+        for test_id in range(args.test_nbr):
+            training_range = (test_id*args.test_stride, (test_id+1)*args.test_stride)     #Part of the sequence on which the training will be done
+            verbose('Training network on original sequence...', args.verbose, 2)
 
-        classes_correct = np.zeros(len(trainer.dataset.test_data))
-        for k in range(nbr_test_samples):
-            classes_correct[int(eval_orig[1][k][0])] +=1
-        classes_correct = np.array([[classes_correct, (test_id+1)*args.test_stride]])
-        rs.classes_pred_orig = np.append(rs.classes_pred_orig, classes_correct, axis=0)
+            trainer.train(
+                mem_sz = trainer.memory_size,
+                training_range = training_range,
+                verbose_lvl = args.verbose
+                )
 
-        verbose(
-            'Accuracy on original sequence at pos {seq_pos:d} ({n_test_spls:d} test images): {acc:.2f}%'.format(
-                seq_pos = training_range[1],
-                n_test_spls = nbr_test_samples,
-                acc= original_accuracy_current[0][0]
-            ), args.verbose
-        )
+            verbose('...done\nComputing performance for original sequence...', args.verbose, 2)
 
-    rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
-    for k in rs.train_labels_orig:
-        rs.classes_count[k] += 1
+            eval_orig = trainer.evaluate_hierarchical()
+            if args.save_um_distances:
+                rs.eval_orig.append(eval_orig)
+            rs.lbls_htmp_orig[test_id,:] = get_lbl_distr(trainer.train_sequence, training_range[0], training_range[1], trainer.n_classes)
 
-    data_saver.save_orig_results(rs, os.path.join(save_root,save_folder))
+            verbose('...done\n', args.verbose, 2)
+
+            original_accuracy_current = eval_orig[0][0]      # Recover the standard accuracy
+            original_accuracy_current = np.array([[original_accuracy_current, (test_id+1)*args.test_stride]])
+            rs.acc_orig = np.append(rs.acc_orig, original_accuracy_current, axis=0)
+
+            classes_correct = np.zeros(len(trainer.dataset.test_data))
+            for k in range(nbr_test_samples):
+                classes_correct[int(eval_orig[1][k][0])] +=1
+            classes_correct = np.array([[classes_correct, (test_id+1)*args.test_stride]])
+            rs.classes_pred_orig = np.append(rs.classes_pred_orig, classes_correct, axis=0)
+
+            verbose(
+                'Accuracy on original sequence at pos {seq_pos:d} ({n_test_spls:d} test images): {acc:.2f}%'.format(
+                    seq_pos = training_range[1],
+                    n_test_spls = nbr_test_samples,
+                    acc= original_accuracy_current[0][0]
+                ), args.verbose
+            )
+
+        rs.classes_count = [0 for k in range(len(trainer.dataset.train_data))]
+        for k in rs.train_labels_orig:
+            rs.classes_count[k] += 1
+
+        data_saver.save_orig_results(rs, os.path.join(save_root,save_folder))
 
     if rs.enable_shuffling:
         verbose("--- Start shuffle training ---", args.verbose)
