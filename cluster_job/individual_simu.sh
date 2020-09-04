@@ -22,9 +22,9 @@ echo "Number of tests: ${13}"
 echo "Data flips rate: ${14}"
 echo "Shuffle classes:: ${15}"
 echo "Block sizes: ${16}"
-echo "Resume simulations: ${17}"
+echo "Resume simulations: ${17:-'None provided'}"
 
 #Command to execute Python program
 python3 ${1} --dataset ${2} --data_tree_depth ${3} -T ${4} --nnarch ${5} --hidden_sizes ${6} \
 --optimizer ${7} --nonlin ${8} --lr ${9} --seqtype ${10} --seqlength ${11} --split_length ${12} \
---nbrtest ${13} --data_flips_rate ${14} --shuffle_classes ${15} --blocksz ${16} --use_orig ${17} --verbose 1 \
+--nbrtest ${13} --data_flips_rate ${14} --shuffle_classes ${15} --blocksz ${16} --use_orig ${17:-""} --verbose 1 \
