@@ -55,7 +55,7 @@ def train_sequenceset(trainer, args, block_sizes, rs, save_root, orig_cp=None):
     trainer.make_train_sequence()  #Stock rates (if not a random process) and data for training
 
     if orig_cp is not None:
-        save_folder = os.path.join(orig_cp.root, orig_cp.subfolder)
+        save_folder = orig_cp.subfolder
         trainer.train_sequence = orig_cp.train_sequence
 
         rs.parameters["Timescales"]=trainer.rates_vector.tolist()
