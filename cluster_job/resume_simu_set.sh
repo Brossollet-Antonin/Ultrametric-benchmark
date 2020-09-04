@@ -120,7 +120,7 @@ if [ -z ${nonlin+x} ]; then
   nonlin="none";
 fi
 
-for subfolder in resume_subfolders
+for subfolder in ${resume_subfolders}
 do
   # Resume simulation set using subfolder
   sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
