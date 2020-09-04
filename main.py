@@ -41,7 +41,7 @@ class OrigCP:
 		orig_folders = orig_path.split("/")
 		self.root = os.path.join(
 			paths['simus'],
-			"/".join(orig_folders[-1:])
+			"/".join(orig_folders[:-1])
 		)
 		self.subfolder = orig_folders[-1]
 
@@ -158,14 +158,14 @@ def run(args):
 		save_root = orig_checkpoint.root
 		if 'blocks' in args.sequence_type:
 			args.T = float(0)
-		verbose("Save root set to {s}".format(orig_checkpoint.root), 2)
+		verbose("Save root set to {:s}".format(orig_checkpoint.root), 0)
 
 	else:
 		orig_checkpoint = None
 		verbose("Running simulations from scratch (default, no checkpoint used)", args.verbose, 0)
 		save_root = os.path.join(
 			paths['simus'],
-			"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}/".format(
+			"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}".format(
 				cl_strat = cl_strategy,
 				data_origin = args.data_origin,
 				n_classes = dataset.num_classes,
@@ -178,21 +178,21 @@ def run(args):
 			)
 		)
 		if args.nonlin == 'relu':
-			save_root = save_root[:-1] + "_nonlinRelu/"
+			save_root += "_nonlinRelu"
 		if dataset.data_origin == 'artificial':
-			save_root = save_root[:-1] + "_seqlen{patterns_size:d}_ratio{bitflips:d}/" .format(
+			save_root += "_seqlen{patterns_size:d}_ratio{bitflips:d}" .format(
 				patterns_size = args.artif_seq_size,
 				bitflips = int(dataset.data_sz*dataset.ratio_value)
 			)
 		if 'blocks' in args.sequence_type:
 			args.T = float(0)
 			if args.sequence_type == 'random_blocks2_2freq':
-				save_root = save_root[:-1]+"_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])+"/"
+				save_root += "_splitlengths"+str(args.split_length_list[0])+"_"+str(args.split_length_list[1])
 			else:
-				save_root = save_root[:-1]+"_splitlength"+str(args.split_length_list[0])+"/"
+				save_root += "_splitlength"+str(args.split_length_list[0])
 
 		if (args.artif_shuffle_classes==0):
-			save_root = save_root[:-1]+"_noclassreshuffle/"
+			save_root += "_noclassreshuffle"
 
 	verbose("Output directory for this simulation set: {:s}".format(save_root), args.verbose, 0)
 
@@ -291,8 +291,10 @@ def run(args):
 
 	if args.orig_path != "":
 		# Let's check that the parameters match
-		for param in [k for k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
-			assert orig_checkpoint.parameters[k] == rs.parameters[k], "Orig checkpoint option - MISMATCH of parameter {}".format(param)
+		for param in [k for k in orig_checkpoint.parameters.keys() if k not in ("Random Seed", "device_type", "Original command", "Timescales")]:
+			if orig_checkpoint.parameters[param] != rs.parameters[param]:
+				pdb.set_trace()
+			assert orig_checkpoint.parameters[param] == rs.parameters[param], "Orig checkpoint option - MISMATCH of parameter {:s}".format(param)
 
 	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root, orig_checkpoint)
 
