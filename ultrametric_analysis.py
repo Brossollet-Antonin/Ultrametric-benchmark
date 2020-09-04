@@ -65,7 +65,7 @@ def train_sequenceset(trainer, args, block_sizes, rs, save_root, orig_cp=None):
     else:
         rs.parameters["Timescales"]=trainer.rates_vector.tolist()
         rs.train_labels_orig = trainer.train_sequence
-        save_folder = "T{0:.3f}_Memory{1:d}_{2:s}_{3:s}".format(rs.T, rs.memory_sz, datetime.now().strftime("%y%m%d"), str(hash(tuple(rs.train_labels_orig))))
+        save_folder = "T{0:.3f}_Memory{1:d}_{2:s}_{3:s}".format(rs.T, rs.memory_sz, datetime.now().strftime("%y%m%d"), str(abs(hash(tuple(rs.train_labels_orig)))))
 
         verbose('...done\n', args.verbose, 2)
 
