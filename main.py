@@ -288,7 +288,7 @@ def run(args):
 	rs.T = trainer.T
 	rs.memory_sz = args.memory_sz
 
-	if args.use_orig != "":
+	if args.orig_path != "":
 		# Let's check that the parameters match
 		for param in [k for k in orig_parameters.keys() if k not in ("Random Seed", "device_type", "Original command")]:
 			assert orig_checkpoint.parameters[k] == rs.parameters[k], "Orig checkpoint option - MISMATCH of parameter {}".format(param)
