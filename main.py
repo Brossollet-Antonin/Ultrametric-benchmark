@@ -292,8 +292,6 @@ def run(args):
 	if args.orig_path != "":
 		# Let's check that the parameters match
 		for param in [k for k in orig_checkpoint.parameters.keys() if k not in ("Random Seed", "device_type", "Original command", "Timescales")]:
-			if orig_checkpoint.parameters[param] != rs.parameters[param]:
-				pdb.set_trace()
 			assert orig_checkpoint.parameters[param] == rs.parameters[param], "Orig checkpoint option - MISMATCH of parameter {:s}".format(param)
 
 	train_sequenceset(trainer, args, args.block_size_shuffle_list, rs, save_root, orig_checkpoint)
