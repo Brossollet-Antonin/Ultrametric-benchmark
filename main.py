@@ -161,6 +161,7 @@ def run(args):
 		verbose("Save root set to {s}".format(orig_checkpoint.root), 2)
 
 	else:
+		orig_checkpoint = None
 		verbose("Running simulations from scratch (default, no checkpoint used)", args.verbose, 0)
 		save_root = os.path.join(
 			paths['simus'],
