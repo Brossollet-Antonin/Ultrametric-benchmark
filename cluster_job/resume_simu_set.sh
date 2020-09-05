@@ -22,7 +22,7 @@ do
     shuffle_labels)       shuffle_labels=${VALUE} ;; # for artificial dataset, whether or not to shuffle leaves of the tree once patterns are generated
 
     ## Exemplar params
-    seqtype)              seq_type=${VALUE} ;;
+    seqtype)              seqtype=${VALUE} ;;
     seq_length)           seq_length=${VALUE} ;;
     split_length)         split_length=${VALUE} ;; # used in the random_blocks2 scenario
     nbr_tests)            nbr_tests=${VALUE};; # number of classification accuracy evaluations that will take place when learning on the sequence
