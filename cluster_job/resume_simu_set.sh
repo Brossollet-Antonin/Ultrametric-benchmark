@@ -77,7 +77,7 @@ fi
 
 # Deal with loop arguments when not provided as kwarg
 if [ -z ${verbose+x} ]; then
-  echo "No tree_depth provided. Using default: 3"
+  echo "No verbose provided. Using default: 1"
   verbose=1;
 fi
 if [ -z ${tree_depth+x} ]; then
