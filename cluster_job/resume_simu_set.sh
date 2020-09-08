@@ -11,6 +11,7 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     ## General params
+    jobname)              jobname=${VALUE};; # name of job (useful for following jobs in Habanero Slurm queue)
     path)                 path=${VALUE} ;; # path of main.py
     resume_subfolders)    resume_subfolders=${VALUE} ;; # path the subfolders from which we will resume simulations
     verbose)              verbose=${VALUE};; # 0 for no simu verbose, 1 for synthetic verbose, 2 for extensive
@@ -76,6 +77,10 @@ fi
 
 
 # Deal with loop arguments when not provided as kwarg
+if [ -z ${jobname+x} ]; then
+  echo "No job name provided. Using default: CL_benchmark"
+  jobname="CL_benchmark";
+fi
 if [ -z ${verbose+x} ]; then
   echo "No verbose provided. Using default: 1"
   verbose=1;
@@ -128,7 +133,7 @@ fi
 for subfolder in ${resume_subfolders}
 do
   # Resume simulation set using subfolder
-  sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
+  sbatch -J ${jobname} --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
   individual_simu.sh \
   ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${shuffle_labels} "${block_sizes[*]}" ${subfolder} ${verbose}
   sleep 1
