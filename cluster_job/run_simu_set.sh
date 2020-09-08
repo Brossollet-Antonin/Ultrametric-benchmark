@@ -11,7 +11,8 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     ## General params
-    path)                 path=${VALUE};; # path of main.py 
+    path)                 path=${VALUE};; # path of main.py
+    verbose)              verbose=${VALUE};; # 0 for no simu verbose, 1 for synthetic verbose, 2 for extensive
 
     ## Data + tree params
     dataset)              dataset=${VALUE};;
@@ -71,6 +72,10 @@ fi
 
 
 # Deal with loop arguments when not provided as kwarg
+if [ -z ${verbose+x} ]; then
+  echo "No tree_depth provided. Using default: 3"
+  verbose=1;
+fi
 if [ -z ${tree_depth+x} ]; then
   echo "No tree_depth provided. Using default: 3"
   tree_depth=3;
@@ -133,7 +138,7 @@ do
         do
           sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
           individual_simu.sh \
-          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}"
+          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" "" ${verbose}
           sleep 1
         done
       done

@@ -11,12 +11,13 @@ do
   VALUE=$(echo $ARGUMENT | cut -f2 -d=)   
   case "$KEY" in
     ## General params
-    path)                 path=${VALUE};; # path of main.py
-    resume_subfolders)    resume_subfolders=${VALUE};; # path the subfolders from which we will resume simulations
+    path)                 path=${VALUE} ;; # path of main.py
+    resume_subfolders)    resume_subfolders=${VALUE} ;; # path the subfolders from which we will resume simulations
+    verbose)              verbose=${VALUE};; # 0 for no simu verbose, 1 for synthetic verbose, 2 for extensive
 
     ## Data + tree params
-    dataset)              dataset=${VALUE};;
-    tree_depth)           tree_depth=${VALUE};;
+    dataset)              dataset=${VALUE} ;;
+    tree_depth)           tree_depth=${VALUE} ;;
     temperature)          temperature=${VALUE} ;; # list of temperatures that will be used in the ultrametric scenario
     flip_rate)            flip_rate=${VALUE} ;; # when learning on artificial dataset, ratio of binary bits flipped at each tree node to generate binary patterns at the leaves
     shuffle_labels)       shuffle_labels=${VALUE} ;; # for artificial dataset, whether or not to shuffle leaves of the tree once patterns are generated
@@ -75,6 +76,10 @@ fi
 
 
 # Deal with loop arguments when not provided as kwarg
+if [ -z ${verbose+x} ]; then
+  echo "No tree_depth provided. Using default: 3"
+  verbose=1;
+fi
 if [ -z ${tree_depth+x} ]; then
   echo "No tree_depth provided. Using default: 3"
   tree_depth=3;
@@ -125,7 +130,7 @@ do
   # Resume simulation set using subfolder
   sbatch --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
   individual_simu.sh \
-  ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${shuffle_labels} "${block_sizes[*]}" ${subfolder}
+  ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${shuffle_labels} "${block_sizes[*]}" ${subfolder} ${verbose}
   sleep 1
 done
 
