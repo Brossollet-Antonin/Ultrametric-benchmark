@@ -387,6 +387,12 @@ class Net_FCL(ContinualLearner):
             x = lay(x)
             if self.nonlin == 'relu':
                 x = F.relu(x)
+            if self.nonlin == 'leakyrelu':
+                x = F.leaky_relu(x, negative_slope=0.03)
+            if self.nonlin == 'tanh':
+                x = F.tanh(x)
+            if self.nonlin == 'celu':
+                x = F.celu(x)
         return x
 
 
