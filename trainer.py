@@ -208,7 +208,8 @@ class Trainer:
             train_tensorlabels = torch.cat((train_tensorlabels, next_couple[1]))
 
         train_range = (first_train_id, last_train_id)
-        train_batch = (train_data, train_tensorlabels)
+        train_batch = (train_data, train_tensorlabels) # At this point labels are NOT OH-encoded
+        
         return train_range, train_batch
 
 
