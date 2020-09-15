@@ -26,7 +26,6 @@ do
     shuffle_labels)       shuffle_labels=${VALUE} ;; # for artificial dataset, whether or not to shuffle leaves of the tree once patterns are generated
 
     ## Exemplar params
-    seqtype)              seqtype=${VALUE} ;;
     seq_length)           seq_length=${VALUE} ;;
     split_length)         split_length=${VALUE} ;; # used in the random_blocks2 scenario
     nbr_tests)            nbr_tests=${VALUE};; # number of classification accuracy evaluations that will take place when learning on the sequence
@@ -37,9 +36,6 @@ do
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
     nonlin)               nonlin=${VALUE} ;;
-
-    ## Shuffle params
-    block_sizes)          block_sizes=${VALUE} ;;
     
     ## Slurm job params
     time)                 time=${VALUE};; # requiered time to run simulation
@@ -118,10 +114,6 @@ if [ -z ${temperature+x} ]; then
   echo "No temperature provided. Using default: 0.4"
   temperature="0.4";
 fi
-if [ -z ${seqtype+x} ]; then
-  echo "No sequence type provided. Using default: ultrametric"
-  seqtype="ultrametric";
-fi
 if [ -z ${flip_rate+x} ]; then
   echo "No flipping ratio provided. If artificial dataset, using default: 0.1"
   flip_rate="0.1";
@@ -129,10 +121,6 @@ fi
 if [ -z ${shuffle_labels+x} ]; then
   echo "No shuffle_labels provided. If artificial dataset: will shuffle labels"
   shuffle_labels="1";
-fi
-if [ -z ${block_sizes+x} ]; then
-  echo "No block_sizes provided. Will not perform any shuffle"
-  block_sizes="0";
 fi
 if [ -z ${lr+x} ]; then
   echo "No learning rate provided. Will use LR=0.01 by default"
