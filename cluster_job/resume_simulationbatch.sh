@@ -15,14 +15,14 @@ do
     block_sizes)          block_sizes=${VALUE};; # a space separated list of bloc sizes. Ex: "1 25 75 150 300"
     rb2_root)             rb2_root=${VALUE};; # path to the root of the random_blocks simulations you wish to resume from. Ex: "/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/Results/1toM/artificial_64/FCL40/random_blocks2_length4000000_batches10_optimsgd_seqlen200_ratio20_splitlength2500"
     ultra_root)           ultra_root=${VALUE};; # path to the root of the ultrametric simulations you wish to resume from. Ex: "/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/Results/1toM/artificial_64/FCL40/ultrametric_length4000000_batches10_optimsgd_seqlen200_ratio20"
-    path)                 path=${VALUE} ;; # path of main.py
+    path)                 path=${VALUE};; # path of main.py
     verbose)              verbose=${VALUE};; # 0 for no simu verbose, 1 for synthetic verbose, 2 for extensive
 
     ## Data + tree params
-    dataset)              dataset=${VALUE} ;;
-    tree_depth)           tree_depth=${VALUE} ;;
-    temperature)          temperature=${VALUE} ;; # list of temperatures that will be used in the ultrametric scenario
-    flip_rate)            flip_rate=${VALUE} ;; # when learning on artificial dataset, ratio of binary bits flipped at each tree node to generate binary patterns at the leaves
+    dataset)              dataset=${VALUE};;
+    tree_depth)           tree_depth=${VALUE};;
+    temperature)          temperature=${VALUE};; # list of temperatures that will be used in the ultrametric scenario
+    flip_rate)            flip_rate=${VALUE};; # when learning on artificial dataset, ratio of binary bits flipped at each tree node to generate binary patterns at the leaves
     shuffle_labels)       shuffle_labels=${VALUE} ;; # for artificial dataset, whether or not to shuffle leaves of the tree once patterns are generated
 
     ## Exemplar params
@@ -61,10 +61,6 @@ if [ -z ${ultra_root+x} ]; then
 fi
 if [ -z ${path+x} ]; then
   echo "Aborting: path to main.py was not provided"
-  exit 1
-fi
-if [ -z ${resume_subfolders+x} ]; then
-  echo "Aborting: path to main.py were not provided"
   exit 1
 fi
 if [ -z ${hidden_sizes+x} ]; then

@@ -55,7 +55,7 @@ if [ -z ${path+x} ]; then
   exit 1
 fi
 if [ -z ${resume_subfolders+x} ]; then
-  echo "Aborting: path to main.py were not provided"
+  echo "Aborting: no original subfolder was provided to resume simulations from"
   exit 1
 fi
 if [ -z ${hidden_sizes+x} ]; then
