@@ -42,8 +42,8 @@ params = {
 		'nnarchi': 'FCL10',
 		'T': 0.4,
 		'shuffle_size': 150,
-		'seq_length': 30000,
-		'n_tests': 300,
+		'seq_length': 60000,
+		'n_tests': 240,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.1,)
 	},
@@ -53,8 +53,8 @@ params = {
 		'nnarchi': 'FCL20',
 		'T': 0.4,
 		'shuffle_size': 1000,
-		'seq_length': 300000,
-		'n_tests': 300,
+		'seq_length': 600000,
+		'n_tests': 600,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.04, 0.07, 0.1, 0.13)
 	},

@@ -45,7 +45,8 @@ for simuset in os.listdir(args.simuset_root_dir):
         "device_type",
         "NN architecture",
         "Split total length",
-        "Original command"
+        "Original command",
+        "Timescales"
     ]
 
     for simu_subdir in simus_path:

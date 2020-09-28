@@ -127,15 +127,14 @@ if [ -z ${nonlin+x} ]; then
   nonlin="none";
 fi
 
+ultra_subfolders=$(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
+rb2_subfolders=$(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
 
-for bs in ${block_sizes}
+for sim_id in "${!ultra_subfolders[@]}"
 do
-	for resume_subdir in $(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
+	for bs in ${block_sizes}
 	do
-		bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${resume_subdir} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
-	done
-	for resume_subdir in $(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
-	do
-		bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${resume_subdir} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+		bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+    bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
 	done
 done
