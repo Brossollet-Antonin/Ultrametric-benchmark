@@ -128,10 +128,10 @@ if [ -z ${ultra_root+x} ]; then
 fi
 
 if [[ ${ultra_root} -ne "" ]] ; then
-  ultra_subfolders=$(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
+  readarray ultra_subfolders < <(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
 fi
 if [[ ${rb2_root} -ne "" ]] ; then
-  rb2_subfolders=$(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
+  readarray rb2_subfolders < <(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
 fi
 
 for sim_id in "${!ultra_subfolders[@]}"
@@ -139,7 +139,7 @@ do
 	for bs in ${block_sizes}
 	do
     if [[ ${rb2_root} -ne "" ]] ; then
-		  bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+      bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
     fi
     if [[ ${ultra_root} -ne "" ]] ; then
       bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
