@@ -51,14 +51,6 @@ if [ -z ${block_sizes+x} ]; then
   echo "Aborting: block_sizes was not provided"
   exit 1
 fi
-if [ -z ${rb2_root+x} ]; then
-  echo "Aborting: rb2_root was not provided"
-  exit 1
-fi
-if [ -z ${ultra_root+x} ]; then
-  echo "Aborting: ultra_root was not provided"
-  exit 1
-fi
 if [ -z ${path+x} ]; then
   echo "Aborting: path to main.py was not provided"
   exit 1
@@ -126,15 +118,31 @@ if [ -z ${nonlin+x} ]; then
   echo "Model will use no nonlinearity"
   nonlin="none";
 fi
+if [ -z ${rb2_root+x} ]; then
+  echo "Argument rb2_root was not provided. Will not resume simulations for random blocks simulations."
+  rb2_root="";
+fi
+if [ -z ${ultra_root+x} ]; then
+  echo "Argument ultra_root was not provided. Will not resume simulations for ultrametric simulations."
+  ultra_root="";
+fi
 
-ultra_subfolders=$(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
-rb2_subfolders=$(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
+if [[ ${ultra_root} -ne "" ]] ; then
+  ultra_subfolders=$(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
+fi
+if [[ ${rb2_root} -ne "" ]] ; then
+  rb2_subfolders=$(find ${rb2_root} -maxdepth 1 -mindepth 1 -type d)
+fi
 
 for sim_id in "${!ultra_subfolders[@]}"
 do
 	for bs in ${block_sizes}
 	do
-		bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
-    bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+    if [[ ${rb2_root} -ne "" ]] ; then
+		  bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+    fi
+    if [[ ${ultra_root} -ne "" ]] ; then
+      bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+    fi
 	done
 done
