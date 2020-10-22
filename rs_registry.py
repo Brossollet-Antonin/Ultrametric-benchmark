@@ -39,32 +39,41 @@ params = {
 	'artificial_d4': {
 		'tree_depth': 4,
 		'dataset': 'artificial_16',
-		'nnarchi': 'FCL10',
+		#'nnarchi': 'FCL10_celu',
+		'nnarchi': 'FCL10_linear',
 		'T': 0.4,
 		'shuffle_size': 150,
-		'seq_length': 60000,
-		'n_tests': 240,
+		#'seq_length': 60000,
+		'seq_length': 300000,
+		#'n_tests': 240,
+		'n_tests': 300,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.1,)
 	},
 	'artificial_d5': {
 		'tree_depth': 5,
 		'dataset': 'artificial_32',
-		'nnarchi': 'FCL20',
+		#'nnarchi': 'FCL20_celu',
+		'nnarchi': 'FCL20_linear',
 		'T': 0.4,
 		'shuffle_size': 1000,
-		'seq_length': 600000,
-		'n_tests': 600,
+		#'seq_length': 600000,
+		'seq_length': 300000,
+		#'n_tests': 600,
+		'n_tests': 300,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.04, 0.07, 0.1, 0.13)
 	},
 	'artificial_d6': {
 		'tree_depth': 6,
 		'dataset': 'artificial_64',
-		'nnarchi': 'FCL40',
+		#'nnarchi': 'FCL40_celu',
+		'nnarchi': 'FCL40_linear',
 		'T': 0.4,
 		'shuffle_size': 2500,
+		#'seq_length': 4000000,
 		'seq_length': 900000,
+		#'n_tests': 800,
 		'n_tests': 300,
 		'artificial_seq_len': 200,
 		'bf_ratios': (0.1,)
@@ -117,7 +126,7 @@ name_to_path = {
 RS_DIR = {}
 
 ## Instanciating ResultSet objects for artificial datasets
-for depth in ('d3', 'd4', 'd5', 'd6', 'd7', 'd10'):
+for depth in ('d4', 'd5', 'd6'):
 	paramset = params["artificial_{:s}".format(depth)]
 	for bf_ratio in paramset['bf_ratios']:
 		bit_flips_per_lvl = int(bf_ratio*paramset["artificial_seq_len"])
@@ -129,11 +138,15 @@ for depth in ('d3', 'd4', 'd5', 'd6', 'd7', 'd10'):
 					leaves_mix_ = leaves_mix,
 					bit_flips_per_lvl_ = bit_flips_per_lvl
 				)
-				rs_descr = "Artificial - {seq_type_descr_:s} {depth_descr_:s} ({leaves_mix_descr_:s}, {bit_flips_per_lvl_:d}bits/lvl)".format(
+				#rs_descr = "Artificial - {seq_type_descr_:s} {depth_descr_:s} ({leaves_mix_descr_:s}, {bit_flips_per_lvl_:d}bits/lvl)".format(
+				#	seq_type_descr_ = name_to_descr[seq_type],
+				#	depth_descr_ = name_to_descr[depth],
+				#	leaves_mix_descr_ = name_to_descr[leaves_mix],
+				#	bit_flips_per_lvl_ = bit_flips_per_lvl	
+				#)
+				rs_descr = "Artificial - {seq_type_descr_:s} {depth_descr_:s}".format(
 					seq_type_descr_ = name_to_descr[seq_type],
-					depth_descr_ = name_to_descr[depth],
-					leaves_mix_descr_ = name_to_descr[leaves_mix],
-					bit_flips_per_lvl_ = bit_flips_per_lvl	
+					depth_descr_ = name_to_descr[depth]
 				)
 				rs_path = "{seq_type_path_:s}_ratio{bit_flips_per_lvl_:d}{leaves_mix_path_:s}".format(
 					seq_type_path_ = name_to_path[seq_type],

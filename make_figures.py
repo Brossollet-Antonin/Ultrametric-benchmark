@@ -25,23 +25,44 @@ artificial_blocks = {
 		'synth': (1, 200, 1000, 4000, 8000, 20000),
 		'cfhist_plots': (1, 500, 1000, 2000, 20000, 80000)
 	},
-	4: {
-		'all': (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
-		'small': (1, 25, 75, 150),
-		'large': (150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
-		'synth': (1, 25, 150, 1200, 9600, 38400),
-		'cfhist_plots': (1, 25, 150, 1200, 9600, 38400)
+	# 4: { # NONLINEAR CASE
+	# 	'all': (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
+	# 	'small': (1, 25, 75, 150),
+	# 	'large': (150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
+	# 	'synth': (1, 25, 150, 1200, 9600, 38400),
+	# 	'cfhist_plots': (1, 25, 150, 1200, 9600, 38400)
+	# },
+	4: { # LINEAR CASE
+	 	'all': (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 10800, 19200, 39600, 79200),
+	 	'small': (1, 25, 75, 150),
+	 	'large': (150, 300, 600, 1200, 2400, 4800, 10800, 19200, 39600, 79200),
+	 	'synth': (1, 25, 150, 1200, 10800, 39600),
+	 	'cfhist_plots': (1, 25, 150, 1200, 10800, 39600)
 	},
-	5: {
-		'all': (1, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000),
-		'small': (1, 200, 500, 1000),
-		'large': (1000, 2000, 8000, 16000, 32000, 64000, 128000, 256000),
-		'synth': (1, 200, 1000, 4000, 16000, 64000),
-		'cfhist_plots': (1, 200, 1000, 4000, 16000, 64000)
+	# 5: { # NONLINEAR CASE
+	# 	'all': (1, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000),
+	# 	'small': (1, 200, 500, 1000),
+	# 	'large': (1000, 2000, 8000, 16000, 32000, 64000, 128000, 256000),
+	# 	'synth': (1, 200, 1000, 4000, 16000, 64000),
+	# 	'cfhist_plots': (1, 200, 1000, 4000, 16000, 64000)
+	# },
+	5: { # LINEAR CASE
+		'all': (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000),
+		'small': (1, 100, 200, 500, 1000),
+		'large': (1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000),
+		'synth': (1, 200, 1000, 4000, 20000, 80000),
+		'cfhist_plots': (1, 200, 1000, 4000, 20000, 80000)
 	},
-	6: {
+	# 6: { # NONLINEAR CASE
+	# 	'all': (1, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000),
+	# 	'small': (1, 500, 1000, 2500),
+	# 	'large': (2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000),
+	# 	'synth': (1, 1000, 2500, 40000, 160000, 640000),
+	# 	'cfhist_plots': (1, 1000, 2500, 40000, 160000, 640000)
+	# },
+	6: { # LINEAR CASE
 		'all': (1, 125, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000),
-		'small': (1, 125, 250, 500, 1000, 2500),
+		'small': (1, 500, 1000, 2500),
 		'large': (2500, 5000, 10000, 20000, 40000, 80000),
 		'synth': (1, 250, 2500, 5000, 20000, 80000),
 		'cfhist_plots': (1, 250, 2500, 5000, 20000, 80000)
@@ -85,7 +106,6 @@ parser.add_argument('--bf_ratio', type=float, help="Bit-flipping ratio per level
 parser.add_argument('--tree_depth', type=int, default=5)
 parser.add_argument('--optimizer', type=str, default="sgd")
 
-parser.add_argument('--n_tests', type=int, default=300, help="Number of evaluations of classification performance on test set")
 parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
 parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "optim_tryout"], help="Battery of results to generate graphs for")
@@ -96,20 +116,24 @@ parser.add_argument('--draw_explorations', action='store_true', help='enable to 
 parser.add_argument('--make_lbl_history', type=int, default=0, help="Whether to output label history heatmaps and curve-like figures (takes a little time)")
 parser.add_argument('--first_iters_focus', type=int, default=50000)
 
-parser.add_argument('--cfprof_method', type=str, default="mean", choices=["mean", "mean_aligned"], help="Method used for measuring catastrophic forgetting")
+parser.add_argument('--cfprof_method', type=str, default="raw", choices=["raw", "aligned"], help="Method used for measuring catastrophic forgetting")
 parser.add_argument('--cfprof_x_origpos', type=int, default=2e5)
 parser.add_argument('--cfprof_ymax', type=float, default=None)
+parser.add_argument('--cf_confidence', type=float, default=0.05)
 
 
 
 class FigureSet:
-	def __init__(self, fs_name, rs_names, accuracy_to_compare, accuracy_plot_style, rs_for_lbl_plots, n_tests=300, artificial_seq_len=200, cf_correctionfactor=None, draw_timescales=False, draw_explorations=False):
+	def __init__(self, fs_name, rs_names, accuracy_to_compare, accuracy_plot_style, rs_for_lbl_plots, artificial_seq_len=200, cf_correctionfactor=None, cfprof_method="mean", draw_timescales=False, draw_explorations=False):
+		"""
+		Correction factor: variable that allows to compensate catastrophic forgetting when we don't have the entire learning curve, for instance when learning is too slow so that our samp le stops before 100% accuracy
+		"""
 		self.name = fs_name
-		self.n_tests = n_tests
-		self.artificial_seq_len = args.artificial_seq_len
+		self.artificial_seq_len = artificial_seq_len
 		self.accuracy_to_compare = accuracy_to_compare
 		self.accuracy_plot_style = accuracy_plot_style
 		self.cf_correctionfactor = cf_correctionfactor
+		self.cfprof_method = cfprof_method
 		self.draw_timescales = draw_timescales
 		self.draw_explorations = draw_explorations
 
@@ -125,7 +149,7 @@ class FigureSet:
 			self.rs_for_lbl_plots.append(self.rs[rs_name])
 
 
-def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['synth'], acc_mode='unit', cfprof_method='mean', cfprof_x_origpos=1.3e5, cfprof_var_scale=1, cfprof_ylog=False, cfprof_ymax=None, wipe_mem=True):
+def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['synth'], acc_mode='unit', cfprof_x_origpos=1.3e5, cf_conf=0.05, cfprof_ymax=None, wipe_mem=True):
 
 	## Producing accuracy plots
 	print("Making accuracy figures...")
@@ -138,7 +162,6 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_comparison(
 					rs=fs.rs[main_set], blocks=blocks[depth_mainset], blocks_altr=blocks[depth_altrset], rs_altr=fs.rs[altr_set], rs_unif=fs.rs[unif_set],
-					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name, draw_timescales=fs.draw_timescales, draw_explorations=fs.draw_explorations
 				)
 
@@ -151,7 +174,6 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_unit(
 					rs=fs.rs[main_set], blocks=blocks[depth_mainset], rs_unif=fs.rs[unif_set],
-					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name, draw_timescales=fs.draw_timescales, draw_explorations=fs.draw_explorations
 				)
 
@@ -162,15 +184,11 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 			for blockset_to_plot in blocksets_to_plot:
 				ld.make_perfplot_matrix(
 					rs_list=rs_list, blocks=blocks[depth], rs_unif=None,
-					n_tests=fs.n_tests,
 					blocks_to_plot = blockset_to_plot, save_formats=save_formats, figset_name=fs_name, draw_timescales=fs.draw_timescales, draw_explorations=fs.draw_explorations
 				)
 
 	# Making CF history plots
-	fs.cf_stats = {
-		'name': fs.name,
-		'stat_list': []
-	}
+	fs.cf_stats = {}
 
 	print("Computing CF histories")
 	for rs_id, (rs_name, rs) in enumerate(fs.rs.items()):
@@ -184,38 +202,44 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 		else:
 			cf_correctionfactor = None
 
-		avg_cf, avg_cf_std, avg_aligned_cf, avg_aligned_cf_std = ld.get_cf_history(rs, blocks[rs.params["Tree Depth"]], save_formats=save_formats, figset_name=fs_name, cf_correctionfactor=cf_correctionfactor)
+		tot_cf, tot_cf_ci, avg_cf, avg_cf_ci, tot_aligned_cf, tot_aligned_cf_ci, avg_aligned_cf, avg_aligned_cf_ci = ld.get_cf_history(rs, blocks[rs.params["Tree Depth"]], confidence=cf_conf, save_formats=save_formats, figset_name=fs_name, cf_correctionfactor=cf_correctionfactor)
 		_cf_stats['rs'] = rs
-		_cf_stats['rs_name'] = rs.name
-		_cf_stats['avg_cf'] = avg_cf
-		_cf_stats['avg_cf_std'] = avg_cf_std
-		_cf_stats['avg_aligned_cf'] = avg_aligned_cf
-		_cf_stats['avg_aligned_cf_std'] = avg_aligned_cf_std
+		
+		if fs.cfprof_method == "aligned":
+			_cf_stats['tot_cf'] = {k: max(0,v) for k,v in tot_aligned_cf.items()}
+			_cf_stats['tot_cf_ci'] = tot_aligned_cf_ci
+			_cf_stats['avg_cf'] = {k: max(0,v) for k,v in avg_aligned_cf.items()}
+			_cf_stats['avg_cf_ci'] = avg_aligned_cf_ci
+		else:
+			_cf_stats['tot_cf'] = {k: max(0,v) for k,v in tot_cf.items()}
+			_cf_stats['tot_cf_ci'] = tot_cf_ci
+			_cf_stats['avg_cf'] = {k: max(0,v) for k,v in avg_cf.items()}
+			_cf_stats['avg_cf_ci'] = avg_cf_ci
 
-		fs.cf_stats['stat_list'].append(_cf_stats)
+		fs.cf_stats[rs.name] = _cf_stats
 
 	if "tree_depth" in fs.name:
+		bf = int(args.bf_ratio*args.artificial_seq_len)
+
 		#### NORMALIZES THE CF PROFILES OF THE ULTRAMETRIC SEQUENCES TO THOSE THE CORRESPONDING RANDOM BLOCKS SCENARIOS ####
-		fs.cf_stats['stat_list'][0]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][1]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][0]['avg_cf'].items() if fs.cf_stats['stat_list'][1]['avg_cf'][k]>0}
-		fs.cf_stats['stat_list'][0]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][1]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][0]['avg_cf_std'].items() if fs.cf_stats['stat_list'][1]['avg_cf'][k]>0}
+		for depth in [4,5,6]:
+			rs_um_name = "artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
+			rs_rb_name = "artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
+			fs.cf_stats[rs_um_name]['tot_cf'] = {k: v/fs.cf_stats[rs_rb_name]['tot_cf'][k] for k,v in fs.cf_stats[rs_um_name]['tot_cf'].items() if fs.cf_stats[rs_rb_name]['tot_cf'][k]>0}
+			fs.cf_stats[rs_um_name]['avg_cf'] = {k: v/fs.cf_stats[rs_rb_name]['avg_cf'][k] for k,v in fs.cf_stats[rs_um_name]['avg_cf'].items() if fs.cf_stats[rs_rb_name]['avg_cf'][k]>0}
+			fs.cf_stats[rs_um_name]['tot_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['tot_cf'][k] for k,v in fs.cf_stats[rs_um_name]['tot_cf_ci'].items() if fs.cf_stats[rs_rb_name]['tot_cf'][k]>0}
+			fs.cf_stats[rs_um_name]['avg_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['avg_cf'][k] for k,v in fs.cf_stats[rs_um_name]['avg_cf_ci'].items() if fs.cf_stats[rs_rb_name]['avg_cf'][k]>0}
+			del fs.cf_stats[rs_rb_name]
 
-		fs.cf_stats['stat_list'][2]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][3]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][2]['avg_cf'].items() if fs.cf_stats['stat_list'][3]['avg_cf'][k]>0}
-		fs.cf_stats['stat_list'][2]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][3]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][2]['avg_cf_std'].items() if fs.cf_stats['stat_list'][3]['avg_cf'][k]>0}
-
-		fs.cf_stats['stat_list'][4]['avg_cf'] = {k: v/fs.cf_stats['stat_list'][5]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][4]['avg_cf'].items() if fs.cf_stats['stat_list'][5]['avg_cf'][k]>0}
-		fs.cf_stats['stat_list'][4]['avg_cf_std'] = {k: v/fs.cf_stats['stat_list'][5]['avg_cf'][k] for k,v in fs.cf_stats['stat_list'][4]['avg_cf_std'].items() if fs.cf_stats['stat_list'][5]['avg_cf'][k]>0}	
-
-		del fs.cf_stats['stat_list'][5]
-		del fs.cf_stats['stat_list'][3]
-		del fs.cf_stats['stat_list'][1]
 		####################################################################################################################
 
+	#pdb.set_trace()
 
 	# Making CD profile plots
 	print("Making CF profiles...")
-	#ld.plot_cf_profile(fs.cf_stats, method=cfprof_method, x_origpos=cfprof_x_origpos, var_scale=cfprof_var_scale, xlog=False, ylog=cfprof_ylog, cfprof_ymax=cfprof_ymax, save_formats=save_formats, figset_name=fs_name)
-	ld.plot_cf_profile(fs.cf_stats, method=cfprof_method, x_origpos=cfprof_x_origpos, var_scale=cfprof_var_scale, xlog=True, ylog=cfprof_ylog, cfprof_ymax=cfprof_ymax, save_formats=save_formats, plot_timescales=True, figset_name=fs_name)
-	ld.plot_cf_profile(fs.cf_stats, method=cfprof_method, x_origpos=cfprof_x_origpos, var_scale=cfprof_var_scale, xlog=True, ylog=cfprof_ylog, cfprof_ymax=cfprof_ymax, normalize=True, save_formats=save_formats, plot_timescales=True, figset_name=fs_name)
+	#ld.plot_cf_profile(fs.cf_stats, method=cfprof_method, x_origpos=cfprof_x_origpos, xlog=False, ylog=cfprof_ylog, cfprof_ymax=cfprof_ymax, save_formats=save_formats, figset_name=fs_name)
+	ld.plot_cf_profile(fs.cf_stats, alignment_method=fs.cfprof_method, metric="mean", x_origpos=cfprof_x_origpos, xlog=True, ylog=False, cfprof_ymax=cfprof_ymax, save_formats=save_formats, plot_timescales=True, figset_name=fs_name)
+	ld.plot_cf_profile(fs.cf_stats, alignment_method=fs.cfprof_method, metric="total", x_origpos=cfprof_x_origpos, xlog=True, ylog=False, cfprof_ymax=cfprof_ymax, save_formats=save_formats, plot_timescales=True, figset_name=fs_name)
 
 	# Release memory
 	if wipe_mem:
@@ -427,7 +451,7 @@ if __name__ == '__main__':
 					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
 					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
 				))
-				cf_correctionfactor = (1, 1, 1, 1, 1, 1, 1.25, 1, 1)
+				cf_correctionfactor = (1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 			rs_for_lbl_plots = ()
 
@@ -620,12 +644,12 @@ if __name__ == '__main__':
 	)
 
 	print("Making FigureSet object...")
-	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, n_tests=args.n_tests, artificial_seq_len=args.artificial_seq_len, cf_correctionfactor=cf_correctionfactor, draw_timescales=args.draw_timescales, draw_explorations=args.draw_explorations)
+	fs = FigureSet(fs_name=fs_name, rs_names=rs_names, accuracy_to_compare=accuracy_to_compare, accuracy_plot_style=accuracy_plot_style, rs_for_lbl_plots=rs_for_lbl_plots, artificial_seq_len=args.artificial_seq_len, cf_correctionfactor=cf_correctionfactor, cfprof_method=args.cfprof_method, draw_timescales=args.draw_timescales, draw_explorations=args.draw_explorations)
 	print("Done")
 
 	if args.make_lbl_history < 2:
 		print("Making CF-related figures...")
-		make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], acc_mode=args.acc_mode, cfprof_method=args.cfprof_method, cfprof_x_origpos=args.cfprof_x_origpos, cfprof_var_scale=1, cfprof_ylog=False, cfprof_ymax=args.cfprof_ymax)
+		make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], acc_mode=args.acc_mode, cfprof_x_origpos=args.cfprof_x_origpos, cf_conf=args.cf_confidence, cfprof_ymax=args.cfprof_ymax)
 		print("Done")
 
 	if args.make_lbl_history:

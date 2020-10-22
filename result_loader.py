@@ -20,6 +20,7 @@ import utils
 from copy import deepcopy
 import random
 from scipy.spatial.distance import cdist
+import scipy.stats
 import time
 import matplotlib
 
@@ -211,6 +212,10 @@ class ResultSet:
 		with open(os.path.join(folderpath, 'parameters.json'), 'r') as param_file:
 			self.params = json.load(param_file)
 
+		self.n_tests = self.params["Number of tests"]
+		self.res_temp = self.seq_length // self.n_tests
+		self.n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
+
 		if ("uniform" in self.seq_type) or ("ultrametric" in self.seq_type):
 			T = self.sim_battery_params["T"]
 		else:
@@ -242,6 +247,8 @@ class ResultSet:
 			self.atc_orig = []
 			self.atc_shfl = []
 		
+		self.n_seqs = {}
+
 		simuset_list = [simuset for simuset in os.listdir(folderpath) if os.path.isdir(os.path.join(folderpath, simuset))]
 		for simuset in simuset_list:
 			simuset_path = os.path.join(folderpath, simuset)
@@ -287,6 +294,10 @@ class ResultSet:
 					self.var_acc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_accuracy.npy')))
 					self.var_pred_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_classes_prediction.npy'), allow_pickle=True))
 
+			self.n_seqs[0] = len(self.train_labels_orig)
+			for block_sz, train_labels in self.train_labels_shfl.items():
+				self.n_seqs[block_sz] = len(train_labels)
+
 
 			if load_atc:
 				self.atc_orig.append(np.load(simuset_path+'autocorr_original.npy'))
@@ -316,8 +327,6 @@ class ResultSet:
 		Returns a list of the iteration IDs (one per sequence) of the first iteration at which all labels have been seen in the sequence at least once.
 		If not all labels are explored, nothing is added to the list
 		"""
-		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
-
 		t_explrs = []
 
 		for seq_id, seq in enumerate(self.train_labels_orig):
@@ -326,14 +335,12 @@ class ResultSet:
 			nobs_seq = []
 			for itr_id, lbl in enumerate(seq):
 				obs_lbl_set.add(lbl)
-				if t_explr is None and len(obs_lbl_set) == n_classes:
+				if t_explr is None and len(obs_lbl_set) == self.n_classes:
 					t_explr = itr_id
 					t_explrs += [t_explr]
 					break
 		
 		return t_explrs
-
-
 
 	def lbl_history(self, shuffled_blocksz=None, strides=None):
 		"""
@@ -346,7 +353,6 @@ class ResultSet:
 		strides: list
 			If not None, must be a list of int/float with the position of vertical bars to be plotted on top of the figure
 		"""
-		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
 		t_explr = None
 
 		lbls_fig, lbls_ax = plt.subplots(figsize=(18,10))
@@ -358,7 +364,6 @@ class ResultSet:
 			occur_id = random.randint(0, len(self.train_labels_shfl[shuffled_blocksz])-1)
 			seq = self.train_labels_shfl[shuffled_blocksz][occur_id]
 
-		n_labels = len(set(seq))
 		lbls_ax.plot(seq)
 
 		obs_lbl_set = set()
@@ -366,13 +371,13 @@ class ResultSet:
 		for itr_id, lbl in enumerate(seq):
 			obs_lbl_set.add(lbl)
 			nobs_seq.append(len(obs_lbl_set))
-			if t_explr is None and len(obs_lbl_set) == n_labels:
+			if t_explr is None and len(obs_lbl_set) == self.n_classes:
 				t_explr = itr_id
 
 		lbls_ax.plot(nobs_seq)
 		if strides is not None:
 			for stride in strides:
-				lbls_ax.axvline(x=stride, ymin=0, ymax=n_labels)
+				lbls_ax.axvline(x=stride, ymin=0, ymax=self.n_classes)
 
 		ttl = 'History of labels in the original training sequence'
 		if t_explr:
@@ -403,28 +408,24 @@ class ResultSet:
 		"""
 		from scipy.ndimage import gaussian_filter1d
 
-		n_tests = self.params["Number of tests"]
-		n_classes = self.params["Tree Branching"]**self.params["Tree Depth"]
-		distrib = np.zeros(shape=(self.seq_length, n_classes))
+		distrib = np.zeros(shape=(self.seq_length, self.n_classes))
 
 		fig, (heatmap_ax, distr_ax) = plt.subplots(nrows=2, ncols=1, figsize=(18,20))
 
 		if shuffled_blocksz is None:
+			n_seqs = self.n_seqs[0]
 			if multi_simus:
 				seq_set = self.train_labels_orig
 			else:
-				n_simus = len(self.train_labels_orig)
-				simu_id = random.randint(0,n_simus-1)
+				simu_id = random.randint(0,n_seqs-1)
 				seq_set = [self.train_labels_orig[simu_id]]
 		else:
+			n_seqs = self.n_seqs[shuffled_blocksz]
 			if multi_simus:
 				seq_set = self.train_labels_shfl[shuffled_blocksz]
 			else:
-				n_simus = len(self.train_labels_orig)
-				simu_id = random.randint(0,n_simus-1)
+				simu_id = random.randint(0,n_seqs-1)
 				seq_set = [self.train_labels_shfl[shuffled_blocksz][simu_id]]
-
-		n_seqs = len(seq_set)
 
 		for seq in seq_set:
 			if len(seq) > self.seq_length:
@@ -445,12 +446,12 @@ class ResultSet:
 		else:
 			filter_sz = filter_perc*self.seq_length/100
 		filt_distrib = np.copy(distrib)
-		for cl_id in range(n_classes):
+		for cl_id in range(self.n_classes):
 			filt_distrib[:, cl_id] = gaussian_filter1d(distrib[:, cl_id], filter_sz)
 
 		# Plot heatmap of different labels
-		xtick_scale = n_tests//xaxis_n_ticks
-		xtick_pos = int(self.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+		xtick_scale = self.n_tests//xaxis_n_ticks
+		xtick_pos = int(self.seq_length/((self.n_tests//xtick_scale)))*np.arange((self.n_tests//xtick_scale)+1)
 
 		if max_iter is not None:
 			sns.heatmap(
@@ -471,8 +472,8 @@ class ResultSet:
 		heatmap_ax.set_ylabel('Class label')
 
 		# Plot all distributions on one plot
-		for cl_id in range(n_classes):
-			hsv = [0.8*cl_id/n_classes, 1, 0.7]
+		for cl_id in range(self.n_classes):
+			hsv = [0.8*cl_id/self.n_classes, 1, 0.7]
 			if max_iter is not None:
 				distr_ax.plot(
 					filt_distrib[0:max_iter, cl_id],
@@ -637,7 +638,7 @@ def format_perf_plot(ax, title, legend_title, xtick_pos, xtick_labels, plot_wind
 
 def make_perfplot_unit(
 	rs, blocks, rs_unif=None,
-	n_tests=300, plot_window=None, blocks_to_plot='small',
+	plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
@@ -666,9 +667,9 @@ def make_perfplot_unit(
 	save_formats: list(str)
 		if not None, plots will be saved in the provided formats
 	"""
-	xtick_scale = n_tests//n_ticks
-	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_scale = rs.n_tests//n_ticks
+	xtick_pos = xtick_scale*np.arange((rs.n_tests//xtick_scale)+1)
+	xtick_labels = int(rs.seq_length/((rs.n_tests//xtick_scale)))*np.arange((rs.n_tests//xtick_scale)+1)
 
 	fig = plt.figure(figsize=(18,12))
 	acc_ax = fig.add_subplot(1, 1, 1)
@@ -711,7 +712,7 @@ def make_perfplot_unit(
 
 def make_perfplot_comparison(
 	rs, blocks, rs_altr=None, blocks_altr=None, rs_unif=None,
-	n_tests=300, plot_window=None, blocks_to_plot='small',
+	plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
@@ -752,11 +753,11 @@ def make_perfplot_comparison(
 	save_formats: list(str)
 		if not None, plots will be saved in the provided formats
 	"""
-	xtick_scale = n_tests//n_ticks
-	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
+	xtick_scale = rs.n_tests//n_ticks
+	xtick_pos = xtick_scale*np.arange((rs.n_tests//xtick_scale)+1)
 	seq_length = max(rs.seq_length, rs_altr.seq_length, rs_unif.seq_length)
 
-	xtick_labels = int(seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_labels = int(seq_length/((rs.n_tests//xtick_scale)))*np.arange((rs.n_tests//xtick_scale)+1)
 
 	n_plots = 1 + 2*int(rs_altr is not None)
 	fig = plt.figure(figsize=(18*n_plots,12))
@@ -837,7 +838,7 @@ def make_perfplot_comparison(
 
 def make_perfplot_matrix(
 	rs_list, blocks, rs_unif=None,
-	n_tests=300, plot_window=None, blocks_to_plot='small',
+	plot_window=None, blocks_to_plot='small',
 	plt_confinter=False, n_ticks=10, save_formats=None, draw_timescales=False, draw_explorations=False, figset_name=default_figset_name
 	):
 	"""
@@ -936,9 +937,9 @@ def make_perfplot_matrix(
 ### Catastrophic Forgetting Score graphs functions ###
 ######################################################
 
-def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
+def get_cf(lbl_seq, acc_orig, acc_shfl1, n_labels, plot=False):
 	"""
-	Computes the RPLF score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
+	Computes the PLTS score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
 
 	Parameters
 	----------
@@ -946,7 +947,7 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 		sequence of labels for this simulation. This is used to determine the timeframe of exploration of the different classes.
 	acc_orig : list(float)
 		list of accuracy scores (%) for the original sequence
-	acc_unif : list(float)
+	acc_shfl1 : list(float)
 		list of accuracy scores (%) for the sequence shuffled with a block size of 1, meaning that on learning, the algorithm is only limited by the incomplete exploration of classes as well as the imbalance in the sequence up to this point.
 		The imbalance is the same as in the original sequence at any point in time. 
 	plot: bool
@@ -955,42 +956,54 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 	Returns
 	-------
 	cf: list
-		list of the RPLF scores from the time of first full exploration of the classes.
+		list of the PLTS scores from the time of first full exploration of the classes.
 		Therefore the scores are aligned from the first iteration that all classes were explored, onward.
 		If at least one class is missing from the sequence, then None
-	t_explr: int
-		The first iteration at which all classes were explored.
+	n_tests_before_fullexplr: int
+		The number of classification accuracy tests that occured before all classes were seen at least once in the sequence.
 		If at least one class is missing from the sequence, then None
 	"""
-	nspl = len(acc_orig)
-	seql = len(lbl_seq)
-	#res = seql/nspl
-	t_explr = None
+	n_tests = len(acc_orig)
+	seq_length = len(lbl_seq)
+	res = seq_length//n_tests
+	n_tests_before_fullexplr = None
+	n_tests_to_convergence = None
 
 	obs_lbl_set = set()
 	nobs_seq = []
 	for itr_id, lbl in enumerate(lbl_seq):
 		obs_lbl_set.add(lbl)
 		nobs_seq.append(len(obs_lbl_set))
-		if t_explr is None and len(obs_lbl_set) == n_labels:
-			t_explr = itr_id//(seql//nspl)
+		if len(obs_lbl_set) == n_labels:
+			n_tests_before_fullexplr = itr_id//res
+			break # TO REMOVE FOR DEFINITION (2) OF CF
 
-	spl_nobs_seq = [nobs_seq[k*(seql//nspl)] for k in range(nspl)]
-	try:
-		assert(len(spl_nobs_seq) == len(acc_orig) == len(acc_unif))
-	except:
-		pdb.set_trace()
+	## TO ENABLE FOR DEFINITION (2) OF CF
+	#spl_nobs_seq = [nobs_seq[k*res] for k in range(n_tests)]
+	#try:
+	#	assert(len(spl_nobs_seq) == len(acc_orig) == len(acc_shfl1))
+	#except:
+	#	pdb.set_trace()
 
-	#cf = (np.array(acc_unif)-np.array(acc_orig))/np.array(spl_nobs_seq)
-	accarr_unif = np.array(acc_unif)
+	for test_id in range(n_tests):
+		if (acc_orig[test_id] > 99.5) and (acc_shfl1[test_id] > 99.5):
+			n_tests_to_convergence = test_id
+			break
+
+	accarr_shfl1 = np.array(acc_shfl1)
 	accarr_orig = np.array(acc_orig)
-	#auc_unif = 0.5*res*(accarr_unif + np.roll(accarr_unif, 1))
-	auc_unif = 0.5*(accarr_unif + np.roll(accarr_unif, 1))
-	auc_unif[0] = 0
+	#auc_shfl1 = 0.5*res*(accarr_shfl1 + np.roll(accarr_shfl1, 1))
+	auc_shfl1 = 0.5*(accarr_shfl1 + np.roll(accarr_shfl1, 1)) #AUC computed on the previous slice
+	auc_shfl1[0] = 0
 	#auc_orig = 0.5*res*(accarr_orig + np.roll(accarr_orig, 1))
 	auc_orig = 0.5*(accarr_orig + np.roll(accarr_orig, 1))
 	auc_orig[0] = 0
-	cf = auc_unif - auc_orig
+
+	## CORRESPONDING DEFINITION OF CF (1): ABSOLUTE LOSS IS CLASSIFICATION SCORE AT ANY POINT IN TIME
+	cf = auc_shfl1 - auc_orig
+
+	## CORRESPONDING DEFINITION OF CF (2): %LOSS IS ACHIEVABLE CLASSIFICATION SCORE AT ANY POINT IN TIME 
+	#cf = (np.array(acc_shfl1)-np.array(acc_orig))/np.array(spl_nobs_seq)
 
 	if plot:
 		fig = plt.figure(1, figsize=(18,12))
@@ -1000,25 +1013,32 @@ def get_cf(lbl_seq, acc_orig, acc_unif, n_labels, plot=False):
 			label='Forgetting score as a fct of #iteration'
 		)
 
-	return np.concatenate((cf[2:], np.array([0, 0])), axis=0), t_explr
+	return np.concatenate((cf[2:], np.array([0, 0])), axis=0), n_tests_before_fullexplr, n_tests_to_convergence
 
 
-def get_cf_history(rs, blocks, n_tests=300,
-	xtick_scale=25, plt_confinter=False, save_formats=None, var_scale=1, cf_correctionfactor=None, figset_name=default_figset_name):
+def get_cf_history(rs, blocks,
+	xtick_scale=25, plt_confinter=False, save_formats=None, confidence=0.05, cf_correctionfactor=None, figset_name=default_figset_name):
 
+	tot_cf = {}
+	tot_cf_std = {}
+	tot_cf_ci = {}
 	avg_cf = {}
 	avg_cf_std = {}
+	avg_cf_ci = {}
+
+	tot_ald_cf = {}
+	tot_ald_cf_std = {}
+	tot_ald_cf_ci = {}
 	avg_ald_cf = {}
 	avg_ald_cf_std = {}
+	avg_ald_cf_ci = {}
 
-	xtick_pos = xtick_scale*np.arange((n_tests//xtick_scale)+1)
-	xtick_labels = int(rs.seq_length/((n_tests//xtick_scale)))*np.arange((n_tests//xtick_scale)+1)
+	xtick_pos = xtick_scale*np.arange((rs.n_tests//xtick_scale)+1)
+	xtick_labels = int(rs.seq_length/((rs.n_tests//xtick_scale)))*np.arange((rs.n_tests//xtick_scale)+1)
 
 	fig_cfscore = plt.figure(figsize=(18,28))
 	cf_ax = plt.subplot(2,1,1)
 	cf_ald_ax = plt.subplot(2,1,2)
-
-	n_labels = rs.params["Tree Branching"]**rs.params["Tree Depth"]
 
 	t_explr_list = []
 	cf_orig_list = []
@@ -1028,19 +1048,19 @@ def get_cf_history(rs, blocks, n_tests=300,
 
 	for seq_id, seq in enumerate(rs.train_labels_orig):
 
-		orig_cf, t_explr = get_cf( # Returns a SET of AUC integral history, at the same resolution as the accuracy curve	
+		orig_cf, n_tests_to_fullexplr, n_tests_to_convergence = get_cf( # Returns a SET of AUC integral history, at the same resolution as the accuracy curve	
 			seq,
 			rs.var_acc_orig[seq_id][:,0],
 			rs.var_acc_shfl[1][seq_id][:,0],
-			n_labels
+			rs.n_classes
 		)
 
-		if t_explr is not None:
-			t_explr_list.append(t_explr)
+		if n_tests_to_fullexplr is not None:
+			t_explr_list.append(n_tests_to_fullexplr)
 
 			cf_aligned = np.concatenate([
-				np.array(orig_cf[t_explr:]),
-				np.zeros(t_explr)
+				np.array(orig_cf[n_tests_to_fullexplr:]),
+				np.zeros(n_tests_to_fullexplr)
 			])
 			cf_orig_list.append(orig_cf)
 			cf_orig_aligned_list.append(cf_aligned)
@@ -1048,16 +1068,16 @@ def get_cf_history(rs, blocks, n_tests=300,
 			shfl_cf = {}				
 			for block_sz in blocks['all']:
 				assert block_sz in rs.block_sizes
-				shfl_cf[block_sz], _ = get_cf(
+				shfl_cf[block_sz], _, _ = get_cf(
 					seq,
 					rs.var_acc_shfl[block_sz][seq_id][:,0],
 					rs.var_acc_shfl[1][seq_id][:,0],
-					n_labels
+					rs.n_classes
 				)
 
 				cf_aligned = np.concatenate([
-					np.array(shfl_cf[block_sz][t_explr:]),
-					np.zeros(t_explr)
+					np.array(shfl_cf[block_sz][n_tests_to_fullexplr:]),
+					np.zeros(n_tests_to_fullexplr)
 				])
 				cf_shfl_lists[block_sz].append(shfl_cf[block_sz])
 				cf_shfl_aligned_lists[block_sz].append(cf_aligned)
@@ -1074,8 +1094,13 @@ def get_cf_history(rs, blocks, n_tests=300,
 		cf_mean *= cf_correctionfactor
 		cf_std *= cf_correctionfactor
 
-	avg_cf[0] = np.mean(cf_mean)
-	avg_cf_std[0] = np.mean(cf_std)
+	tot_cf[0] = rs.seq_length*np.mean(cf_mean) # This is where we turn an area between curves history into a TOTAL area between curves
+	tot_cf_std[0] = rs.seq_length*np.mean(cf_std)
+	tot_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*tot_cf_std[0]
+
+	avg_cf[0] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_mean) # This is where we turn an area between curves history into an AVERAGE area between curves, computed FROM START OF SEQUENCE TO CONVERGENCE POINT
+	avg_cf_std[0] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_std)
+	avg_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*avg_cf_std[0]
 
 	cf_ax.plot(
 		cf_mean,
@@ -1087,8 +1112,8 @@ def get_cf_history(rs, blocks, n_tests=300,
 	if plt_confinter:
 		cf_ax.fill_between(
 			x = range(len(cf_mean)),
-			y1 = cf_mean - var_scale*cf_std,
-			y2 = cf_mean + var_scale*cf_std,
+			y1 = cf_mean - scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*cf_std,
+			y2 = cf_mean + scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*cf_std,
 			color = hsv_to_rgb(rs.hsv_orig),
 			alpha = 0.4
 		)
@@ -1105,8 +1130,14 @@ def get_cf_history(rs, blocks, n_tests=300,
 		if cf_correctionfactor is not None:
 			cf_mean *= cf_correctionfactor
 			cf_std *= cf_correctionfactor
-		avg_cf[block_sz] = np.mean(cf_mean)
-		avg_cf_std[block_sz] = np.mean(cf_std)
+
+		tot_cf[block_sz] = rs.seq_length*np.mean(cf_mean) # This is where we turn an area between curves history into a TOTAL area between curves
+		tot_cf_std[block_sz] = rs.seq_length*np.mean(cf_std)
+		tot_cf_ci[block_sz] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*tot_cf_std[block_sz]
+
+		avg_cf[block_sz] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_mean)
+		avg_cf_std[block_sz] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_std)
+		avg_cf_ci[block_sz] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*avg_cf_std[block_sz]
 
 		if block_sz in blocks['cfhist_plots']:
 			cf_ax.plot(
@@ -1119,8 +1150,8 @@ def get_cf_history(rs, blocks, n_tests=300,
 			if plt_confinter:
 				cf_ax.fill_between(
 					x = range(len(cf_mean)),
-					y1 = cf_mean - var_scale*cf_std,
-					y2 = cf_mean + var_scale*cf_std,
+					y1 = cf_mean - scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*cf_std,
+					y2 = cf_mean + scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*cf_std,
 					color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
 					alpha = 0.4
 				)
@@ -1138,8 +1169,13 @@ def get_cf_history(rs, blocks, n_tests=300,
 			cf_aligned_mean *= cf_correctionfactor
 			cf_aligned_std *= cf_correctionfactor
 
-		avg_ald_cf[0] = np.mean(cf_aligned_mean)
-		avg_ald_cf_std[0] = np.mean(cf_aligned_std)
+		tot_ald_cf[0] = rs.seq_length*np.mean(cf_aligned_mean)
+		tot_ald_cf_std[0] = rs.seq_length*np.mean(cf_aligned_std)
+		tot_ald_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*tot_ald_cf_std[0]
+
+		avg_ald_cf[0] = (rs.seq_length/((n_tests_to_convergence-n_tests_to_fullexplr)*rs.res_temp))*np.mean(cf_aligned_mean)
+		avg_ald_cf_std[0] = (rs.seq_length/((n_tests_to_convergence-n_tests_to_fullexplr)*rs.res_temp))*np.mean(cf_aligned_std)
+		avg_ald_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*avg_ald_cf_std[0]
 
 		cf_ald_ax.plot(
 			cf_aligned_mean,
@@ -1151,8 +1187,8 @@ def get_cf_history(rs, blocks, n_tests=300,
 		if plt_confinter:
 			cf_ald_ax.fill_between(
 				x = range(len(cf_aligned_mean)),
-				y1 = cf_aligned_mean - var_scale*cf_aligned_std,
-				y2 = cf_aligned_mean + var_scale*cf_aligned_std,
+				y1 = cf_aligned_mean - scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*cf_aligned_std,
+				y2 = cf_aligned_mean + scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*cf_aligned_std,
 				color = hsv_to_rgb(rs.hsv_orig),
 				alpha = 0.4
 			)
@@ -1170,8 +1206,13 @@ def get_cf_history(rs, blocks, n_tests=300,
 				cf_aligned_mean *= cf_correctionfactor
 				cf_aligned_std *= cf_correctionfactor
 
-			avg_ald_cf[block_sz] = np.mean(cf_aligned_mean)
-			avg_ald_cf_std[block_sz] = np.mean(cf_aligned_std)
+			tot_ald_cf[block_sz] = rs.seq_length*np.mean(cf_aligned_mean)
+			tot_ald_cf_std[block_sz] = rs.seq_length*np.mean(cf_aligned_std)
+			tot_ald_cf_ci[block_sz] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*tot_ald_cf_std[block_sz]
+
+			avg_ald_cf[block_sz] = (rs.seq_length/((n_tests_to_convergence-n_tests_to_fullexplr)*rs.res_temp))*np.mean(cf_aligned_mean)
+			avg_ald_cf_std[block_sz] = (rs.seq_length/((n_tests_to_convergence-n_tests_to_fullexplr)*rs.res_temp))*np.mean(cf_aligned_std)
+			avg_ald_cf_ci[block_sz] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*avg_ald_cf_std[block_sz]
 
 			if block_sz in blocks['cfhist_plots']:
 				cf_ald_ax.plot(
@@ -1184,8 +1225,8 @@ def get_cf_history(rs, blocks, n_tests=300,
 				if plt_confinter:
 					cf_ald_ax.fill_between(
 						x = range(len(cf_aligned_mean)),
-						y1 = cf_aligned_mean - var_scale*cf_aligned_std,
-						y2 = cf_aligned_mean + var_scale*cf_aligned_std,
+						y1 = cf_aligned_mean - scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*cf_aligned_std,
+						y2 = cf_aligned_mean + scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[block_sz])*cf_aligned_std,
 						color = hsv_to_rgb(rs.hsv_shfl_dict[block_sz]),
 						alpha = 0.4
 					)
@@ -1230,10 +1271,10 @@ def get_cf_history(rs, blocks, n_tests=300,
 			fig_cfscore.savefig(out_filepath, format=fmt, bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
-	return avg_cf, avg_cf_std, avg_ald_cf, avg_ald_cf_std
+	return tot_cf, tot_cf_ci, avg_cf, avg_cf_ci, tot_ald_cf, tot_ald_cf_ci, avg_ald_cf, avg_ald_cf_ci
 
 
-def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, var_scale=1, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales= False, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=None, x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales= False, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1243,15 +1284,15 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 	min_y = None
 	max_y = None
 
-	for cf_set in cf_stats['stat_list']:
+	for rs_name, cf_set in cf_stats.items():
 		rs = cf_set['rs']
 
-		if method=='mean':
+		if metric == "mean":
 			cf = cf_set['avg_cf']
-			cf_std = cf_set['avg_cf_std']
-		else:
-			cf = cf_set['avg_aligned_cf']
-			cf_std = cf_set['avg_aligned_cf_std']
+			cf_ci = cf_set['avg_cf_ci']
+		elif metric == "total":
+			cf = cf_set['tot_cf']
+			cf_ci = cf_set['tot_cf_ci']
 
 		xtick_pos = [k for k in sorted(cf.keys()) if k>0]
 
@@ -1285,15 +1326,15 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 		)
 		ax_mean_cfs.fill_between(
 			x = xtick_pos,
-			y1 = [cf[k] - var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
-			y2 = [cf[k] + var_scale*cf_std[k] for k in sorted(cf.keys()) if k>0],
+			y1 = [cf[k] - cf_ci[k] for k in sorted(cf.keys()) if k>0],
+			y2 = [cf[k] + cf_ci[k] for k in sorted(cf.keys()) if k>0],
 			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
 			alpha = 0.08
 		)
 
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0] - var_scale*cf_std[0],
+			cf[0] - cf_ci[0],
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
@@ -1301,7 +1342,7 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 		)
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0] + var_scale*cf_std[0],
+			cf[0] + cf_ci[0],
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
@@ -1309,7 +1350,7 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 		)
 		ax_mean_cfs.plot(
 			[x_origpos, x_origpos],
-			[cf[0] - var_scale*cf_std[0], cf[0] + var_scale*cf_std[0]],
+			[cf[0] - cf_ci[0], cf[0] + cf_ci[0]],
 			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
 			alpha = 0.08
 		)
@@ -1348,7 +1389,10 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 	lgd = ax_mean_cfs.legend(fancybox=True, shadow=True, prop={'size': 24}, loc='upper left')
 
 	ax_mean_cfs.set_xlabel('Shuffle length', fontsize=24)
-	ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)', fontsize=24)
+	if metric == "mean":
+		ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)', fontsize=24)
+	elif metric == "total":
+		ax_mean_cfs.set_ylabel('Total per-label loss from CF (% * iter)', fontsize=24)
 
 	fig_mean_cfs.tight_layout(pad=10.0)
 
@@ -1379,8 +1423,9 @@ def plot_cf_profile(cf_stats, method='mean', x_origpos=3e5, vline_pos=1e5, xlog=
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/profile/{method:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
-					method = method,
+				"CFscore/profile/{alignment_method:s}_{metric:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
+					alignment_method = alignment_method,
+					metric = metric,
 					xscl = "log" if xlog is True else "lin",
 					yscl = "log" if ylog is True else "lin",
 					norm = "_norm" if normalize else "",
