@@ -14,6 +14,7 @@ import pdb
 import re
 import getpass
 import datetime
+import math
 
 import utils
 
@@ -1274,7 +1275,7 @@ def get_cf_history(rs, blocks,
 	return tot_cf, tot_cf_ci, avg_cf, avg_cf_ci, tot_ald_cf, tot_ald_cf_ci, avg_ald_cf, avg_ald_cf_ci
 
 
-def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=None, x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales= False, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=None, x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales=False, figset_name=default_figset_name):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1286,28 +1287,68 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 
 	for rs_name, cf_set in cf_stats.items():
 		rs = cf_set['rs']
+		_cf_data = cf_set['data']
+		_cf_models = cf_set['model_fit']
+		cf_model_fit = None
 
-		if metric == "mean":
-			cf = cf_set['avg_cf']
-			cf_ci = cf_set['avg_cf_ci']
-		elif metric == "total":
-			cf = cf_set['tot_cf']
-			cf_ci = cf_set['tot_cf_ci']
+		if alignment_method == "raw":
+			if metric == "mean":
+				cf_data = _cf_data['avg_raw_cf']
+				cf_ci = _cf_data['avg_raw_cf_ci']
+				if 'avg_raw_cf' in _cf_models.keys():
+					cf_model_fit = _cf_models['avg_raw_cf']
+			elif metric == "total":
+				cf_data = _cf_data['tot_raw_cf']
+				cf_ci = _cf_data['tot_raw_cf_ci']
+				if 'tot_raw_cf' in _cf_models.keys():
+					cf_model_fit = _cf_models['tot_raw_cf']
+		elif alignment_method == "aligned":
+			if metric == "mean":
+				cf_data = _cf_data['avg_ald_cf']
+				cf_ci = _cf_data['avg_ald_cf_ci']
+				if 'avg_ald_cf' in _cf_models.keys():
+					cf_model_fit = _cf_models['avg_ald_cf']
+			elif metric == "total":
+				cf_data = _cf_data['tot_ald_cf']
+				cf_ci = _cf_data['tot_ald_cf_ci']
+				if 'tot_ald_cf' in _cf_models.keys():
+					cf_model_fit = _cf_models['tot_ald_cf']
 
-		xtick_pos = [k for k in sorted(cf.keys()) if k>0]
+		xtick_pos = [k for k in sorted(cf_data.keys()) if k>0]
 
-		if normalize and cf[0]>0:
-			cf = {k: v/cf[0] for k,v in cf.items()}
+		if normalize and cf_data[0]>0:
+			cf_data = {k: v/cf_data[0] for k,v in cf_data.items()}
+			#if cf_model_fit is not None:
+			#	TO IMPLEMENT: MODEL FIT NORMALIZATION HANDLING
 
+		# Showing timescales in the background with vertical lines
 		if plot_timescales:
 			timescales = rs.params["Timescales"]
 			for ts in timescales:
 				ax_mean_cfs.vlines(x=ts, ymin=0, ymax=1.1*x_origpos, linestyles='--', linewidth=2, color=[0.42,0.74,0.95])
 
+		sorted_block_sizes = [block_sz for block_sz in sorted(cf_data.keys()) if block_sz>0]
+
+		# Plotting fitted models, if any have been computed
+		if cf_model_fit is not None:
+			res_mult = 1.25
+			x_range_mult = sorted_block_sizes[-1]/sorted_block_sizes[0]
+			x_range = [sorted_block_sizes[0]*(res_mult**k) for k in range(math.ceil(math.log10(x_range_mult)/math.log10(res_mult))+1)]
+			ax_mean_cfs.plot(
+				x_range,
+				[cf_model_fit['function'](x, *cf_model_fit['params']) for x in x_range],
+				ls = 'solid',
+				linewidth=3,
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
+				label = rs.descr
+			)
+
+		# Plotting data points
+
 		ax_mean_cfs.plot(
 			xtick_pos,
-			[cf[k] for k in sorted(cf.keys()) if k>0],
-			ls = 'solid',
+			[cf_data[k] for k in sorted_block_sizes],
+			ls = 'solid' if cf_model_fit is None else 'none',
 			linewidth=3,
 			marker = 'o',
 			markersize = 15,
@@ -1317,7 +1358,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 		ax_mean_cfs.plot(
 			xtick_pos,
-			[cf[k] for k in sorted(cf.keys()) if k>0],
+			[cf_data[k] for k in sorted_block_sizes],
 			ls = 'none',
 			marker = 'o',
 			markersize = 10,
@@ -1326,15 +1367,15 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 		ax_mean_cfs.fill_between(
 			x = xtick_pos,
-			y1 = [cf[k] - cf_ci[k] for k in sorted(cf.keys()) if k>0],
-			y2 = [cf[k] + cf_ci[k] for k in sorted(cf.keys()) if k>0],
+			y1 = [cf_data[k] - cf_ci[k] for k in sorted_block_sizes],
+			y2 = [cf_data[k] + cf_ci[k] for k in sorted_block_sizes],
 			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
 			alpha = 0.08
 		)
 
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0] - cf_ci[0],
+			cf_data[0] - cf_ci[0],
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
@@ -1342,7 +1383,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0] + cf_ci[0],
+			cf_data[0] + cf_ci[0],
 			marker = '_',
 			markersize = 10,
 			markeredgewidth = 4,
@@ -1350,14 +1391,14 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 		ax_mean_cfs.plot(
 			[x_origpos, x_origpos],
-			[cf[0] - cf_ci[0], cf[0] + cf_ci[0]],
+			[cf_data[0] - cf_ci[0], cf_data[0] + cf_ci[0]],
 			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
 			alpha = 0.08
 		)
 
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0],
+			cf_data[0],
 			marker = 'o',
 			markersize = 20,
 			markeredgewidth = 4,
@@ -1365,7 +1406,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 		ax_mean_cfs.plot(
 			x_origpos,
-			cf[0],
+			cf_data[0],
 			marker = 'o',
 			markersize = 12,
 			markeredgewidth = 4,
@@ -1373,12 +1414,12 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 
 		#plt.xticks(xtick_pos)
-		ax_mean_cfs.hlines(y=cf[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
+		ax_mean_cfs.hlines(y=cf_data[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
 
-		if min_y is None or (np.min(list(cf.values())) < min_y):
-			min_y = np.min(list(cf.values()))
-		if max_y is None or (np.max(list(cf.values())) > max_y):
-			max_y = np.max(list(cf.values()))
+		if min_y is None or (np.min(list(cf_data.values())) < min_y):
+			min_y = np.min(list(cf_data.values()))
+		if max_y is None or (np.max(list(cf_data.values())) > max_y):
+			max_y = np.max(list(cf_data.values()))
 
 	##############################
 	# Plot formatting for paper ##
@@ -1390,9 +1431,9 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 
 	ax_mean_cfs.set_xlabel('Shuffle length', fontsize=24)
 	if metric == "mean":
-		ax_mean_cfs.set_ylabel('Average per-label loss from CF (%)', fontsize=24)
+		ax_mean_cfs.set_ylabel('Average classification score loss from CF (%)', fontsize=24)
 	elif metric == "total":
-		ax_mean_cfs.set_ylabel('Total per-label loss from CF (% * iter)', fontsize=24)
+		ax_mean_cfs.set_ylabel('Total classification score loss from CF (% * iter)', fontsize=24)
 
 	fig_mean_cfs.tight_layout(pad=10.0)
 
@@ -1406,7 +1447,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 	#for tick in ax_mean_cfs.xaxis.get_major_ticks():
 	#	tick.label.set_rotation('vertical')
 
-	max_blocksz = max(list(cf.keys()))
+	max_blocksz = max(list(cf_data.keys()))
 	ax_mean_cfs.set_xlim(0, 1.1 * x_origpos)
 
 	if cfprof_ymax is None:
@@ -1423,7 +1464,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/profile/{alignment_method:s}_{metric:s}_x{xscl:s}_y{yscl:s}_{norm:s}{date:s}.{fmt:s}".format(
+				"CFscore/profile/{date:s}/{alignment_method:s}_{metric:s}/PLTS_profile_x{xscl:s}_y{yscl:s}_{norm:s}.{fmt:s}".format(
 					alignment_method = alignment_method,
 					metric = metric,
 					xscl = "log" if xlog is True else "lin",
@@ -1444,3 +1485,107 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 			fig_mean_cfs.savefig(out_filepath, format=fmt)
 
 	return fig_mean_cfs, ax_mean_cfs
+
+
+def fit_profile(cf_stat, version='sigmoid'):
+	from scipy.optimize import curve_fit
+
+	def sigmoid(x, L ,x0, k):
+	    y = L / (1 + np.exp(-k*(np.log10(x)-np.log10(x0))))
+	    return (y)
+
+	def sigmoid_with_cte(x, L ,x0, k, b):
+	    y = L / (1 + np.exp(-k*(np.log10(x)-np.log10(x0))))+b
+	    return (y)
+
+	cf_stat['model_fit'] = {}
+
+	for stat_type in ['avg_raw_cf', 'tot_raw_cf', 'avg_ald_cf', 'tot_ald_cf']:
+		x_data = [block_sz for block_sz in cf_stat['data'][stat_type].keys()]
+		y_data = [cf_stat['data'][stat_type][block_sz] for block_sz in cf_stat['data'][stat_type].keys()]
+		norm_y_data = [cf_stat['data'][stat_type][block_sz]/cf_stat['data'][stat_type][0] for block_sz in cf_stat['data'][stat_type].keys()]
+
+		if version=='sigmoid':
+			p0 = [max(y_data), np.median(x_data), 1] # this is an mandatory initial guess
+			norm_p0 = [1, np.median(x_data), 1]
+			model = sigmoid
+		else:
+			p0 = [max(y_data), np.median(x_data), 1, min(y_data)] # this is an mandatory initial guess
+			norm_p0 = [1, np.median(x_data), 1, min(y_data)]
+			model = sigmoid_with_cte
+
+		popt, pcov = curve_fit(model, x_data, y_data, p0, method='dogbox')
+		norm_popt, norm_pcov = curve_fit(model, x_data, norm_y_data, norm_p0, method='dogbox')
+
+		if version=='sigmoid':
+			max_steepness = (popt[0]*popt[2])/4
+			norm_max_steepness = (norm_popt[0]*norm_popt[2])/4
+		else:
+			max_steepness = (popt[0]*popt[2])/4
+			norm_max_steepness = (norm_popt[0]*norm_popt[2])/4
+
+		cf_stat['model_fit'][stat_type] = {}
+
+		cf_stat['model_fit'][stat_type]['params'] = popt
+		cf_stat['model_fit'][stat_type]['function'] = lambda x, *popt: model(x, *popt)
+		cf_stat['model_fit'][stat_type]['max_steepness'] = max_steepness
+
+		cf_stat['model_fit'][stat_type]['norm_params'] = norm_popt
+		cf_stat['model_fit'][stat_type]['norm_function'] = lambda x, *popt: model(x, *norm_popt)
+		cf_stat['model_fit'][stat_type]['norm_max_steepness'] = norm_max_steepness
+
+
+def report_steepness(cf_stats, depths, alignment_method="raw", bf=20, save_formats=None, figset_name=default_figset_name):
+
+	width = 0.15
+	x_ind = np.arange(len(depths)) - 2*width
+	plts_steepness = {}
+	for metric_id, metric in enumerate(["avg", "tot"]):
+		stat_name = "{0:s}_{1:s}_cf".format(metric, alignment_method)
+		stat_ci_name = "{0:s}_{1:s}_cf_ci".format(metric, alignment_method)
+		plts_steepness[stat_name] = {}
+		plts_steepness[stat_ci_name] = {}
+		for seq_type_id, seq_type in enumerate(["Ultra", "Rb"]):
+			plts_steepness[stat_name][seq_type] = []
+			for depth in depths:
+				rs_name = "artificial_d{depth_:d}{seq_type_:s}Mixed{bf_:d}bits".format(depth_ = depth, seq_type_ = seq_type, bf_ = bf)
+				rs = cf_stats[rs_name]["rs"]
+				plts_steepness[stat_name][seq_type].append(cf_stats[rs_name]['model_fit'][stat_name]['norm_max_steepness'])
+				plts_steepness[stat_ci_name][seq_type].append(cf_stats[rs_name]['data'][stat_ci_name])
+
+			plt.bar(
+				x_ind + 2*width*metric_id + width*seq_type_id,
+				plts_steepness[stat_name][seq_type],
+				width,
+				yerr = plts_steepness[stat_ci_name][seq_type],
+				label = "{seq_type_:s}_{stat_name_:s}".format(seq_type_=seq_type, stat_name_=stat_name),
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
+			)
+
+
+	plt.ylabel("Maximal steepness of normalized PL_{TS} curve")
+	plt.title("Comparing maximal steepness for ultrametric and random blocks PL_{TS} curves")
+	plt.legend(loc='best')
+
+	# Saving figure
+	if save_formats is not None:
+		for fmt in save_formats:
+			out_filepath = os.path.join(
+				paths['plots'],
+				figset_name,
+				"CFscore/steepness/{date:s}/PLTS_steepness_{alignment_method:s}.{fmt:s}".format(
+					alignment_method = alignment_method,
+					date = datetime.datetime.now().strftime("%Y%m%d"),
+					fmt = fmt
+				)
+			)
+
+			if not os.path.exists(os.path.dirname(out_filepath)):
+			    try:
+			        os.makedirs(os.path.dirname(out_filepath))
+			    except OSError as exc: # Guard against race condition
+			        if exc.errno != errno.EEXIST:
+			            raise
+
+			fig_mean_cfs.savefig(out_filepath, format=fmt)
+	
