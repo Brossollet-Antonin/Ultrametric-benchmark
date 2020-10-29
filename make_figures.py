@@ -26,9 +26,9 @@ artificial_blocks = {
 		'cfhist_plots': (1, 500, 1000, 2000, 20000, 80000)
 	},
 	4: { # NONLINEAR CASE
-		'all': (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
+		'all': (1, 25, 50, 75, 100, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 76800, 153600),
 		'small': (1, 25, 75, 150),
-		'large': (150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400),
+		'large': (150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 76800, 153600),
 		'synth': (1, 25, 150, 1200, 9600, 38400),
 		'cfhist_plots': (1, 25, 150, 1200, 9600, 38400)
 	},
@@ -40,7 +40,7 @@ artificial_blocks = {
 	# 	'cfhist_plots': (1, 25, 150, 1200, 10800, 39600)
 	# },
 	5: { # NONLINEAR CASE
-	 	'all': (1, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000),
+	 	'all': (1, 200, 400, 500, 600, 800, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000),
 	 	'small': (1, 200, 500, 1000),
 	 	'large': (1000, 2000, 8000, 16000, 32000, 64000, 128000, 256000),
 	 	'synth': (1, 200, 1000, 4000, 16000, 64000),
@@ -55,10 +55,10 @@ artificial_blocks = {
 	# },
 	6: { # NONLINEAR CASE
 	 	'all': (1, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000),
-	 	'small': (1, 500, 1000, 2500),
-	 	'large': (2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000),
-	 	'synth': (1, 1000, 2500, 40000, 160000, 640000),
-	 	'cfhist_plots': (1, 1000, 2500, 40000, 160000, 640000)
+	 	'small': (1, 500, 1000, 2500, 5000),
+	 	'large': (5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000),
+	 	'synth': (1, 1000, 5000, 40000, 160000, 640000),
+	 	'cfhist_plots': (1, 1000, 5000, 40000, 160000, 640000)
 	},
 	# 6: { # LINEAR CASE
 	#	'all': (1, 125, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000),
@@ -108,7 +108,7 @@ parser.add_argument('--optimizer', type=str, default="sgd")
 
 parser.add_argument('--artificial_seq_len', type=int, default=200, help="In the case of the artificial dataset, length of each patterns used for generating exemplars")
 
-parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "optim_tryout"], help="Battery of results to generate graphs for")
+parser.add_argument('--result_battery', type=str, choices=["ultra_vs_rb2", "ultra_vs_rb2_mixed", "ultra_vs_rb2_unmixed", "compare_bit_flipping_mixed", "compare_bit_flipping_unmixed", "influence_of_tree_depth_mixed", "influence_of_tree_depth_unmixed", "influence_of_tree_depth_test", "optim_tryout"], help="Battery of results to generate graphs for")
 parser.add_argument('--acc_mode', type=str, choices=['unit', 'compare'], default='unit')
 parser.add_argument('--draw_timescales', action='store_true', help='enable to draw ultrametric tree timescales on top of classificaiton accuracy plots')
 parser.add_argument('--draw_explorations', action='store_true', help='enable to draw ultrametric tree timescales on top of classificaiton accuracy plots')
@@ -121,8 +121,8 @@ parser.add_argument('--cfprof_x_origpos', type=int, default=2e5)
 parser.add_argument('--cfprof_ymax', type=float, default=None)
 parser.add_argument('--cf_confidence', type=float, default=0.05)
 parser.add_argument('--rb2_norm', action='store_true', default=False)
-parser.add_argument('--fit_um_profile', default='none', choices=["none", "sigmoid"])
-parser.add_argument('--fit_rb2_profile', default='none', choices=["none", "sigmoid", "cut_sigmoid", "cut_nonlinear_sigmoid"])
+parser.add_argument('--fit_um_profile', default='none', choices=["none", "sigmoid", "sigmoid_primitive"])
+parser.add_argument('--fit_rb2_profile', default='none', choices=["none", "sigmoid", "sigmoid_primitive", "cut_sigmoid", "cut_nonlinear_sigmoid"])
 
 
 class FigureSet:
@@ -226,27 +226,32 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 
 		fs.cf_stats[rs.name] = _cf_stats
 
-	if ("tree_depth" in fs.name and rb2_norm):
+	if "tree_depth" in fs.name:
 		bf = int(args.bf_ratio*args.artificial_seq_len)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], alignment_methd="raw", bf=bf, save_formats=save_formats)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], alignment_methd="ald", bf=bf, save_formats=save_formats)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", normalize=True, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", normalize=True, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
 
-		#### NORMALIZES THE CF PROFILES OF THE ULTRAMETRIC SEQUENCES TO THOSE THE CORRESPONDING RANDOM BLOCKS SCENARIOS ####
-		for depth in [4,5,6]:
-			rs_um_name = "artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
-			rs_rb_name = "artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
-			
-			fs.cf_stats[rs_um_name]['data']['tot_raw_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_raw_cf'].items() if fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['avg_raw_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_raw_cf'].items() if fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['tot_raw_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_raw_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['avg_raw_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_raw_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k]>0}
+		if rb2_norm:
+			#### NORMALIZES THE CF PROFILES OF THE ULTRAMETRIC SEQUENCES TO THOSE THE CORRESPONDING RANDOM BLOCKS SCENARIOS ####
+			for depth in [4,5,6]:
+				rs_um_name = "artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
+				rs_rb_name = "artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bf)
+				
+				fs.cf_stats[rs_um_name]['data']['tot_raw_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_raw_cf'].items() if fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['avg_raw_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_raw_cf'].items() if fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['tot_raw_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_raw_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['tot_raw_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['avg_raw_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_raw_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['avg_raw_cf'][k]>0}
 
-			fs.cf_stats[rs_um_name]['data']['tot_ald_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_ald_cf'].items() if fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['avg_ald_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_ald_cf'].items() if fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['tot_ald_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_ald_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k]>0}
-			fs.cf_stats[rs_um_name]['data']['avg_ald_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_ald_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k]>0}
-			
-			del fs.cf_stats[rs_rb_name]
+				fs.cf_stats[rs_um_name]['data']['tot_ald_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_ald_cf'].items() if fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['avg_ald_cf'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_ald_cf'].items() if fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['tot_ald_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['tot_ald_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['tot_ald_cf'][k]>0}
+				fs.cf_stats[rs_um_name]['data']['avg_ald_cf_ci'] = {k: v/fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k] for k,v in fs.cf_stats[rs_um_name]['data']['avg_ald_cf_ci'].items() if fs.cf_stats[rs_rb_name]['data']['avg_ald_cf'][k]>0}
+				
+				del fs.cf_stats[rs_rb_name]
+				if 'model_fit' in fs.cf_stats[rs_um_name].keys():
+					fs.cf_stats[rs_um_name]['model_fit'] = {}
 
 		pdb.set_trace()
 		####################################################################################################################
@@ -257,7 +262,6 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 	for alignment_method in ["raw", "aligned"]:
 		for metric in ["mean", "total"]:
 			ld.plot_cf_profile(fs.cf_stats, alignment_method=alignment_method, metric=metric, normalize=False, x_origpos=cfprof_x_origpos, xlog=True, ylog=False, cfprof_ymax=cfprof_ymax, plot_timescales=True, save_formats=save_formats, figset_name=fs_name)
-			ld.plot_cf_profile(fs.cf_stats, alignment_method=alignment_method, metric=metric, normalize=True, x_origpos=cfprof_x_origpos, xlog=True, ylog=False, cfprof_ymax=cfprof_ymax, plot_timescales=True, save_formats=save_formats, figset_name=fs_name)
 
 	# Release memory
 	if wipe_mem:
@@ -470,6 +474,30 @@ if __name__ == '__main__':
 					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
 				))
 				cf_correctionfactor = (1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+			rs_for_lbl_plots = ()
+
+		elif args.result_battery=="influence_of_tree_depth_test":
+			rs_names = {}
+			accuracy_to_compare = []
+			accuracy_plot_style = "comp"
+			bit_flips_per_lvl = int(args.bf_ratio*args.artificial_seq_len)
+			fs_name = "influence_of_tree_depth_mixed_{bf_:d}bits".format(
+				bf_ = bit_flips_per_lvl
+			)
+
+			n_tree_depths = 3
+			for depth_id, depth in enumerate((4,5)):
+				rs_names["artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = depth_id/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = (depth_id+0.33)/(n_tree_depths+0.33)
+				rs_names["artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)] = 0
+				
+				accuracy_to_compare.append((
+					"artificial_d{depth_:d}RbMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}UltraMixed{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl),
+					"artificial_d{depth_:d}Unif{bf_:d}bits".format(depth_ = depth, bf_ = bit_flips_per_lvl)
+				))
+				cf_correctionfactor = (1, 1, 1, 1, 1, 1)
 
 			rs_for_lbl_plots = ()
 
