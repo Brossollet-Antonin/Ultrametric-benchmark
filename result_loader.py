@@ -537,6 +537,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 
 	x_labels = rs.var_acc_orig[0][:,1]
 
+
 	### OPTIONNAL TIMESCALES ###
 	if draw_timescales:
 		single_timescales = sorted(list(set(rs.params["Timescales"])))
@@ -586,10 +587,10 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
 	ax.plot(
 			x_labels, var_acc_orig,
-			ls = 'solid',
+			ls = 'solid' if not uniform else '--',
 			linewidth = linewidth,
 			color = hsv_to_rgb(rs.hsv_orig),
-			label='No shuffle' if uniform is False else 'Uniform sequence'
+			label='No shuffle' if not uniform else 'Uniform sequence'
 		)
 
 	if plt_confinter:
@@ -677,9 +678,9 @@ def make_perfplot_unit(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
+		make_perfplot(rs_unif, max_iter=max_iter, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
 
-	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+	make_perfplot(rs, max_iter=max_iter, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -1541,14 +1542,14 @@ def fit_profile(cf_stat, version='sigmoid'):
 		norm_popt, norm_pcov = curve_fit(model, x_data, norm_y_data, norm_p0, method='lm')
 
 		if version=='sigmoid':
-			max_steepness = (popt[0]*popt[2])/4
-			norm_max_steepness = (norm_popt[0]*norm_popt[2])/4
+			max_steepness = 1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10)) for actual maximum steepness from PLTS profile fit
+			norm_max_steepness = 1/norm_popt[2] #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10)) #(norm_popt[0]*norm_popt[2])/4
 		elif version=='sigmoid_primitive':
 			max_steepness = popt[0]
 			norm_max_steepness = norm_popt[0]
 		else:
-			max_steepness = (popt[0]*popt[2])/4
-			norm_max_steepness = (norm_popt[0]*norm_popt[2])/4
+			max_steepness = 1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10))
+			norm_max_steepness = 1/norm_popt[2] #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10))
 
 		cf_stat['model_fit'][stat_type] = {}
 
@@ -1563,9 +1564,9 @@ def fit_profile(cf_stat, version='sigmoid'):
 		cf_stat['model_fit'][stat_type]['norm_max_steepness'] = norm_max_steepness
 
 
-def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, confidence=0.05, ylog=True, save_formats=None, figset_name=default_figset_name):
+def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, confidence=0.05, ylog=True, save_formats=None, figset_name=default_figset_name):
 
-	def get_top_steepness(barplots):
+	def get_top_barplot_value(barplots):
 		top_height = 0
 
 		for barplot in barplots:
@@ -1578,48 +1579,58 @@ def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, con
 	metric_sepr = 0.08
 	x_ind = np.arange(len(depths))
 	plts_steepness = {}
+	plts_maxval = {}
 	ticks = []
 	ticklabels = []
 
 	if normalize:
 		steepness_data = 'norm_max_steepness'
 		params_cov = 'norm_params_cov'
-		ylbl = r"Maximal steepness of sigmoid fitter to normalized $PL_{TS}$ data"
+		ylbl = r"Steepness of sigmoid fitter to normalized $PL_{TS}$ data"
 	else:
 		steepness_data = 'max_steepness'
 		params_cov = 'params_cov'
-		ylbl = r"Maximal steepness of sigmoid fitted to $PL_{TS}$ data"
+		ylbl = r"Steepness of sigmoid fitted to $PL_{TS}$ data"
 
 	steepness_bars = []
+	maxval_bars = []
 
 	hsv = {"Ultra": [0.6, 1, 0.9], "Rb": [0.3, 1, 0.9]}
 
-	fig_steepness = plt.figure(figsize=(7*len(depths),12))
-	ax = plt.subplot(1,1,1)
+	fig_report = plt.figure(figsize=(7*len(depths),24))
+	steepness_ax = plt.subplot(2,1,1)
+	maxval_ax = plt.subplot(2,1,2)
 
 	for alignment_method_id, alignment_method in enumerate(["raw", "ald"]):
 		stat_name = "{0:s}_{1:s}_cf".format(metric, alignment_method)
 		stat_ci_name = "{0:s}_{1:s}_cf_ci".format(metric, alignment_method)
 		plts_steepness[stat_name] = {}
 		plts_steepness[stat_ci_name] = {}
+		plts_maxval[stat_name] = {}
+		plts_maxval[stat_ci_name] = {}
 		for seq_type_id, seq_type in enumerate(["Ultra", "Rb"]):
 			plts_steepness[stat_name][seq_type] = []
 			plts_steepness[stat_ci_name][seq_type] = []
+			plts_maxval[stat_name][seq_type] = []
+			plts_maxval[stat_ci_name][seq_type] = []
 			for depth_id, depth in enumerate(depths):
 				rs_name = "artificial_d{depth_:d}{seq_type_:s}Mixed{bf_:d}bits".format(depth_ = depth, seq_type_ = seq_type, bf_ = bf)
 				rs = cf_stats[rs_name]["rs"]
 
 				plts_steepness[stat_name][seq_type].append(cf_stats[rs_name]['model_fit'][stat_name][steepness_data])
+				plts_maxval[stat_name][seq_type].append(cf_stats[rs_name]['data'][stat_name][0])
 
 				steepness_var = cf_stats[rs_name]['model_fit'][stat_name][params_cov][2]
 				steepness_ci = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*np.sqrt(steepness_var)
+
 				plts_steepness[stat_ci_name][seq_type].append(steepness_ci)
+				plts_maxval[stat_ci_name][seq_type].append(cf_stats[rs_name]['data'][stat_ci_name][0])
 
 				ticks.append(x_ind[depth_id] + 2*width*(alignment_method_id-1) + metric_sepr*(alignment_method_id-0.5) + width*seq_type_id )
 				ticklabels.append("{alignment_method_:s}\n{seq_type_:s}".format(alignment_method_=alignment_method, seq_type_=seq_type))
 
 			steepness_bars.append(
-				ax.bar(
+				steepness_ax.bar(
 					x_ind + 2*width*(alignment_method_id-1) + metric_sepr*(alignment_method_id-0.5) + width*seq_type_id,
 					plts_steepness[stat_name][seq_type],
 					width,
@@ -1629,14 +1640,30 @@ def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, con
 				)
 			)
 
-	top_steepness = get_top_steepness(steepness_bars)
+			maxval_bars.append(
+				maxval_ax.bar(
+					x_ind + 2*width*(alignment_method_id-1) + metric_sepr*(alignment_method_id-0.5) + width*seq_type_id,
+					plts_maxval[stat_name][seq_type],
+					width,
+					yerr = None, #yerr = plts_steepness[stat_ci_name][seq_type],
+					label = "{seq_type_:s}_{stat_name_:s}".format(seq_type_=seq_type, stat_name_=stat_name),
+					color = hsv_to_rgb(hsv[seq_type])
+				)
+			)
 
-	ax.set_xticks(ticks)
-	ax.tick_params(axis=u'x', which=u'both',length=0)
-	ax.set_xticklabels(ticklabels)
+	top_steepness = get_top_barplot_value(steepness_bars)
+	top_maxval = get_top_barplot_value(maxval_bars)
+
+	steepness_ax.set_xticks(ticks)
+	steepness_ax.tick_params(axis=u'x', which=u'both',length=0)
+	steepness_ax.set_xticklabels(ticklabels)
+
+	maxval_ax.set_xticks(ticks)
+	maxval_ax.tick_params(axis=u'x', which=u'both',length=0)
+	maxval_ax.set_xticklabels(ticklabels)
 
 	for depth_id, depth in enumerate(depths):
-		ax.annotate(
+		steepness_ax.annotate(
 			"Depth {depth_:d}".format(depth_=depth),
 			xy = (x_ind[depth_id] - 0.5*width, top_steepness),
 			xytext = (0, 7),
@@ -1645,10 +1672,21 @@ def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, con
 			ha='center', va='bottom'
 		)
 
-	if ylog:
-		ax.set_yscale("log")
+		maxval_ax.annotate(
+			"Depth {depth_:d}".format(depth_=depth),
+			xy = (x_ind[depth_id] - 0.5*width, top_maxval),
+			xytext = (0, 7),
+			textcoords="offset points",
+			fontsize = 28,
+			ha='center', va='bottom'
+		)
 
-	ax.set_ylabel(ylbl, fontsize=24)
+	if ylog:
+		steepness_ax.set_yscale("log")
+		maxval_ax.set_yscale("log")
+
+	steepness_ax.set_ylabel(ylbl, fontsize=24)
+	maxval_ax.set_ylabel(r"PL_{TS} of original sequence (%)", fontsize=24)
 
 	# Saving figure
 	if save_formats is not None:
@@ -1656,8 +1694,8 @@ def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, con
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/steepness/{date:s}/PLTS_steepness_{alignment_method:s}{norm_:s}.{fmt:s}".format(
-					alignment_method = alignment_method,
+				"CFscore/steepness/{date:s}/PLTS_steepness_{metric_:s}{norm_:s}.{fmt:s}".format(
+					metric_ = metric,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					norm_ = "_norm" if normalize else "",
 					fmt = fmt
@@ -1671,5 +1709,5 @@ def report_steepness(cf_stats, depths, metric="mean", bf=20, normalize=True, con
 			        if exc.errno != errno.EEXIST:
 			            raise
 
-			fig_steepness.savefig(out_filepath, format=fmt)
+			fig_report.savefig(out_filepath, format=fmt)
 	

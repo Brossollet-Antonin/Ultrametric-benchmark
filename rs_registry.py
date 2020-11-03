@@ -19,11 +19,11 @@ params = {
 	'MNIST': {
 		'tree_depth': 3,
 		'dataset': 'MNIST_8',
-		'nnarchi': 'FCL256',
+		'nnarchi': 'FCL256_celu',
 		'T': 0.225,
-		'shuffle_size': 1000,
-		'seq_length': 1000000,
-		'n_tests': 150
+		'shuffle_size': 360,
+		'seq_length': 4000000,
+		'n_tests': 500
 	},
 	'artificial_d3': {
 		'tree_depth': 3,
@@ -230,59 +230,6 @@ RS_DIR[unif_rs_name] = ld.ResultSet(
 	nn_config = params["MNIST"]["nnarchi"],
 	seq_type = unif_rs_path,
 	seq_length = paramset["seq_length"],
-	simset_id = 0.0
-)
-
-###### TESTING OPTIMIZATION METHOD ######
-## SGD on 10M-long sequence, 256hu
-RS_DIR["MNIST_testSGD_256hu"] = ld.ResultSet(
-	rs_name = "MNIST_testSGD_256hu",
-	rs_descr = "MNIST - Ultrametric, SGD with 256 hidden units",
-	sim_map_dict = sim_directory,
-	dataset_name = "MNIST_8",
-	nn_config = "FCL256",
-	seq_type = "ultrametric_testSGD_256hu",
-	seq_length = 10000000,
-	simset_id = 0.225
-)
-RS_DIR["MNIST_testAdam_256hu"] = ld.ResultSet(
-	rs_name = "MNIST_testAdam_256hu",
-	rs_descr = "MNIST - Ultrametric, Adam with 256 hidden units",
-	sim_map_dict = sim_directory,
-	dataset_name = "MNIST_8",
-	nn_config = "FCL256",
-	seq_type = "ultrametric_testAdam_256hu",
-	seq_length = 10000000,
-	simset_id = 0.225
-)
-RS_DIR["MNIST_testSGD_512hu"] = ld.ResultSet(
-	rs_name = "MNIST_testSGD_512hu",
-	rs_descr = "MNIST - Ultrametric, SGD with 512 hidden units",
-	sim_map_dict = sim_directory,
-	dataset_name = "MNIST_8",
-	nn_config = "FCL512",
-	seq_type = "ultrametric_testSGD_512hu",
-	seq_length = 10000000,
-	simset_id = 0.225
-)
-RS_DIR["MNIST_CNN_SGD"] = ld.ResultSet(
-	rs_name = "MNIST_CNN_SGD",
-	rs_descr = "MNIST - Ultrametric, CNN with SGD",
-	sim_map_dict = sim_directory,
-	dataset_name = "MNIST_8",
-	nn_config = "CNN",
-	seq_type = "ultrametric",
-	seq_length = 10000000,
-	simset_id = 0.225
-)
-RS_DIR["MNIST_testSGD_Unif"] = ld.ResultSet(
-	rs_name = "MNIST_testSGD_Unif",
-	rs_descr = "MNIST - Uniform, SGD with 512 hidden units",
-	sim_map_dict = sim_directory,
-	dataset_name = "MNIST_8",
-	nn_config = "FCL256",
-	seq_type = "uniform_testSGD",
-	seq_length = 10000000,
 	simset_id = 0.0
 )
 
