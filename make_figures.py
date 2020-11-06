@@ -85,11 +85,11 @@ artificial_blocks = {
 
 MNIST_blocks = {
 	3: {
-		'all': (1, 180, 360, 720),
+		'all': (1, 180, 360, 720, 1440, 2880, 5760, 11520, 23040, 46080, 92160, 184320, 368640, 737280, 1474560),
 		'small': (1, 180, 360),
-		'large': (720),
-		'synth': (1, 180, 360, 720),
-		'cfhist_plots': (1, 180, 360, 720)
+		'large': (720, 1440, 2880, 5760, 11520, 23040, 46080, 92160, 184320, 368640, 737280, 1474560),
+		'synth': (1, 360, 2880, 23040, 184320, 1474560),
+		'cfhist_plots': (1, 360, 2880, 23040, 184320, 1474560)
 	}
 }
 
@@ -194,7 +194,6 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 					blocks_to_plot = blockset_to_plot, plot_window=plot_window, save_formats=save_formats, figset_name=fs_name, draw_timescales=fs.draw_timescales, draw_explorations=fs.draw_explorations
 				)
 
-	pdb.set_trace()
 	# Making CF history plots
 	fs.cf_stats = {}
 
@@ -233,12 +232,16 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 
 		fs.cf_stats[rs.name] = _cf_stats
 
+	if "MNIST" in fs.name:
+		ld.report_steepness(fs.cf_stats, depths=[3], metric="avg", ylog_steepness=False, ylog_maxval=False, normalize=False, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[3], metric="tot", ylog_steepness=False, ylog_maxval=True, normalize=False, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+
 	if "tree_depth" in fs.name:
 		bf = int(args.bf_ratio*args.artificial_seq_len)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", normalize=True, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", normalize=True, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
-		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", ylog_steepness=False, ylog_maxval=False, normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		#ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="avg", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", ylog_steepness=False, ylog_maxval=True, normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
+		#ld.report_steepness(fs.cf_stats, depths=[4,5,6], metric="tot", normalize=False, bf=bf, confidence=cf_conf, save_formats=save_formats, figset_name=fs_name)
 
 		if rb2_norm:
 			#### NORMALIZES THE CF PROFILES OF THE ULTRAMETRIC SEQUENCES TO THOSE THE CORRESPONDING RANDOM BLOCKS SCENARIOS ####
@@ -269,20 +272,14 @@ def make_CFfigures(fs, blocks, save_formats=['svg', 'pdf'], blocksets_to_plot=['
 		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_ald_cf"][200]
 		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_ald_cf"][500]
 
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_raw_cf"][500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_raw_cf"][1000]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_raw_cf"][2500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_raw_cf"][500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_raw_cf"][1000]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_raw_cf"][2500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_ald_cf"][500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_ald_cf"][1000]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["tot_ald_cf"][2500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_ald_cf"][500]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_ald_cf"][1000]
-		del fs.cf_stats["artificial_d5UltraMixed20bits"]["data"]["avg_ald_cf"][2500]
-
-		pdb.set_trace()
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["tot_raw_cf"][1000]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["tot_raw_cf"][2500]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["avg_raw_cf"][1000]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["avg_raw_cf"][2500]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["tot_ald_cf"][1000]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["tot_ald_cf"][2500]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["avg_ald_cf"][1000]
+		del fs.cf_stats["artificial_d6UltraMixed20bits"]["data"]["avg_ald_cf"][2500]
 
 		####################################################################################################################
 

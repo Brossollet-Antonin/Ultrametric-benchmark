@@ -678,9 +678,9 @@ def make_perfplot_unit(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, max_iter=max_iter, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
 
-	make_perfplot(rs, max_iter=max_iter, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -939,7 +939,7 @@ def make_perfplot_matrix(
 ### Catastrophic Forgetting Score graphs functions ###
 ######################################################
 
-def get_cf(lbl_seq, acc_orig, acc_shfl1, n_labels, plot=False):
+def get_cf(lbl_seq, acc_orig, acc_shfl1, n_labels, conv_crit=0.005, plot=False):
 	"""
 	Computes the PLTS score based on a sequence, the accuracy curve of the original sequence and the accuracy score of the fully shuffled (block size 1) sequence
 
@@ -988,7 +988,7 @@ def get_cf(lbl_seq, acc_orig, acc_shfl1, n_labels, plot=False):
 	#	pdb.set_trace()
 
 	for test_id in range(n_tests):
-		if (acc_orig[test_id] > 99.5) and (acc_shfl1[test_id] > 99.5):
+		if (acc_orig[test_id] > 100*(1-conv_crit)) and (acc_shfl1[test_id] > 100*(1-conv_crit)):
 			n_tests_to_convergence = test_id
 			break
 
@@ -1035,6 +1035,11 @@ def get_cf_history(rs, blocks,
 	avg_ald_cf_std = {}
 	avg_ald_cf_ci = {}
 
+	if 'MNIST' in rs.name:
+		conv_crit=0.015
+	else:
+		conv_crit=0.005
+
 	xtick_pos = xtick_scale*np.arange((rs.n_tests//xtick_scale)+1)
 	xtick_labels = int(rs.seq_length/((rs.n_tests//xtick_scale)))*np.arange((rs.n_tests//xtick_scale)+1)
 
@@ -1054,7 +1059,8 @@ def get_cf_history(rs, blocks,
 			seq,
 			rs.var_acc_orig[seq_id][:,0],
 			rs.var_acc_shfl[1][seq_id][:,0],
-			rs.n_classes
+			rs.n_classes,
+			conv_crit=conv_crit,
 		)
 
 		if n_tests_to_fullexplr is not None:
@@ -1074,7 +1080,8 @@ def get_cf_history(rs, blocks,
 					seq,
 					rs.var_acc_shfl[block_sz][seq_id][:,0],
 					rs.var_acc_shfl[1][seq_id][:,0],
-					rs.n_classes
+					rs.n_classes,
+					conv_crit=conv_crit
 				)
 
 				cf_aligned = np.concatenate([
@@ -1100,6 +1107,7 @@ def get_cf_history(rs, blocks,
 	tot_cf_std[0] = rs.seq_length*np.mean(cf_std)
 	tot_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*tot_cf_std[0]
 
+	#pdb.set_trace()
 	avg_cf[0] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_mean) # This is where we turn an area between curves history into an AVERAGE area between curves, computed FROM START OF SEQUENCE TO CONVERGENCE POINT
 	avg_cf_std[0] = (rs.seq_length/(n_tests_to_convergence*rs.res_temp))*np.mean(cf_std)
 	avg_cf_ci[0] = scipy.stats.t.ppf(q=1-0.5*confidence,df=rs.n_seqs[0])*avg_cf_std[0]
@@ -1564,7 +1572,7 @@ def fit_profile(cf_stat, version='sigmoid'):
 		cf_stat['model_fit'][stat_type]['norm_max_steepness'] = norm_max_steepness
 
 
-def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, confidence=0.05, ylog=True, save_formats=None, figset_name=default_figset_name):
+def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, confidence=0.05, ylog_steepness=False, ylog_maxval=False, save_formats=None, figset_name=default_figset_name):
 
 	def get_top_barplot_value(barplots):
 		top_height = 0
@@ -1586,11 +1594,11 @@ def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, conf
 	if normalize:
 		steepness_data = 'norm_max_steepness'
 		params_cov = 'norm_params_cov'
-		ylbl = r"Steepness of sigmoid fitter to normalized $PL_{TS}$ data"
+		ylbl = r"Inverses of steepness of sigmoid fitted to normalized $PL_{TS}$ data"
 	else:
 		steepness_data = 'max_steepness'
 		params_cov = 'params_cov'
-		ylbl = r"Steepness of sigmoid fitted to $PL_{TS}$ data"
+		ylbl = r"Inverse of steepness of sigmoid fitted to $PL_{TS}$ data"
 
 	steepness_bars = []
 	maxval_bars = []
@@ -1615,6 +1623,7 @@ def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, conf
 			plts_maxval[stat_ci_name][seq_type] = []
 			for depth_id, depth in enumerate(depths):
 				rs_name = "artificial_d{depth_:d}{seq_type_:s}Mixed{bf_:d}bits".format(depth_ = depth, seq_type_ = seq_type, bf_ = bf)
+				pdb.set_trace()
 				rs = cf_stats[rs_name]["rs"]
 
 				plts_steepness[stat_name][seq_type].append(cf_stats[rs_name]['model_fit'][stat_name][steepness_data])
@@ -1681,12 +1690,13 @@ def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, conf
 			ha='center', va='bottom'
 		)
 
-	if ylog:
+	if ylog_steepness:
 		steepness_ax.set_yscale("log")
+	if ylog_maxval:
 		maxval_ax.set_yscale("log")
 
 	steepness_ax.set_ylabel(ylbl, fontsize=24)
-	maxval_ax.set_ylabel(r"PL_{TS} of original sequence (%)", fontsize=24)
+	maxval_ax.set_ylabel(r"$PL_{TS}$ of original sequence (%)", fontsize=24)
 
 	# Saving figure
 	if save_formats is not None:

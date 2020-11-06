@@ -34,6 +34,7 @@ do
     hidden_sizes)         hidden_sizes=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
+    batch_sz)             batch_sz=${VALUE} ;;
     nonlin)               nonlin=${VALUE} ;;
 
     ## Shuffle params
@@ -125,6 +126,10 @@ if [ -z ${lr+x} ]; then
   echo "No learning rate provided. Will use LR=0.01 by default"
   lr=0.01;
 fi
+if [ -z ${batch_sz+x} ]; then
+  echo "No natch size provided. Will use batch_sz=10 by default"
+  batch_sz=10;
+fi
 if [ -z ${nonlin+x} ]; then
   echo "Model will use no nonlinearity"
   nonlin="none";
@@ -143,7 +148,7 @@ do
         do
           sbatch -J ${jobname} --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
           individual_simu.sh \
-          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" "" ${verbose}
+          ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${batch_sz} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" "" ${verbose}
           sleep 1
         done
       done
