@@ -517,7 +517,7 @@ class ResultSet:
 ### Functions to output accuracy=f(iteration) plots ###
 #######################################################
 
-def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3, draw_timescales=False, draw_explorations=False):
+def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3, draw_timescales=False, draw_explorations=False, hyper_param=None):
 	"""
 	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
 
@@ -534,6 +534,8 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 		if True, confidence intervals for confidence level 95% will be printed.
 		Defaults to False
 		Note that because of the stochastic nature of sequence generation, the time of discovery of the different classes of the problem varies a lot, resulting in artificially exacerbated variance.
+	hyper_param: str
+		a string with the hyperparameter value for ploting hyperparameter sweep
 	"""
 
 	x_labels = rs.var_acc_orig[0][:,1]
@@ -586,12 +588,18 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 	n_orig = len(rs.var_acc_orig)
 	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
 	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
+	if uniform: 
+		label_original = "Uniform sequence"
+	if hyper_param:
+		label_original = hyper_param
+	else:
+		label_original = "Uniform sequence"
 	ax.plot(
 			x_labels, var_acc_orig,
 			ls = 'solid' if not uniform else '--',
 			linewidth = linewidth,
 			color = hsv_to_rgb(rs.hsv_orig),
-			label='No shuffle' if not uniform else 'Uniform sequence'
+			label=label_original
 		)
 
 	if plt_confinter:
