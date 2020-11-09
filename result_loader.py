@@ -15,6 +15,7 @@ import re
 import getpass
 import datetime
 import math
+from pathlib import Path
 
 import utils
 
@@ -203,14 +204,14 @@ class ResultSet:
 		self.block_sizes = []
 
 		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
-		folderpath = os.path.join(
-			paths['simus'],
-			self.sim_struct,
-			self.dataset_name,
-			self.nn_config,
-			self.sim_battery_params['folder']
-		)
-		with open(os.path.join(folderpath, 'parameters.json'), 'r') as param_file:
+		folderpath = Path(paths['simus'])
+		# folderpath.joinpath(self.sim_struct,
+		# 	self.dataset_name,
+		# 	self.nn_config,
+		# 	self.sim_battery_params['folder']
+		# )
+		folderpath = folderpath / self.dataset_name / self.nn_config / self.sim_battery_params['folder']
+		with open(folderpath / 'parameters.json', 'r') as param_file:
 			self.params = json.load(param_file)
 
 		self.n_tests = self.params["Number of tests"]
@@ -250,25 +251,25 @@ class ResultSet:
 		
 		self.n_seqs = {}
 
-		simuset_list = [simuset for simuset in os.listdir(folderpath) if os.path.isdir(os.path.join(folderpath, simuset))]
+		simuset_list = [simuset for simuset in folderpath.iterdir() if (folderpath/simuset).is_dir()]
 		for simuset in simuset_list:
-			simuset_path = os.path.join(folderpath, simuset)
+			simuset_path = folderpath / simuset
 
-			with open(os.path.join(simuset_path, 'train_labels_orig.pickle'), 'rb') as file:
+			with open(simuset_path / 'train_labels_orig.pickle', 'rb') as file:
 				self.train_labels_orig.append(pickle.load(file))
 
-			with open(os.path.join(simuset_path, 'distribution_train.pickle'), 'rb') as file:
+			with open(simuset_path / 'distribution_train.pickle', 'rb') as file:
 				self.dstr_train.append(pickle.load(file))
 
-			self.classes_templates.append(np.load(os.path.join(simuset_path, 'classes_templates.npy'), allow_pickle=True))
+			self.classes_templates.append(np.load(simuset_path / 'classes_templates.npy', allow_pickle=True))
 
 			if load_evals:
-				self.eval_orig.append(np.load(os.path.join(simuset_path, 'evaluation_original.npy'), allow_pickle=True))
-			self.var_acc_orig.append(np.load(os.path.join(simuset_path, 'var_original_accuracy.npy'), allow_pickle=True))
-			self.var_pred_orig.append(np.load(os.path.join(simuset_path, 'var_original_classes_prediction.npy'), allow_pickle=True))
+				self.eval_orig.append(np.load(simuset_path / 'evaluation_original.npy', allow_pickle=True))
+			self.var_acc_orig.append(np.load(simuset_path / 'var_original_accuracy.npy', allow_pickle=True))
+			self.var_pred_orig.append(np.load(simuset_path / 'var_original_classes_prediction.npy', allow_pickle=True))
 
 			if load_htmp:
-				with open(os.path.join(simuset_path, 'labels_heatmap_shfl.pickle'), 'rb') as file:
+				with open(simuset_path / 'labels_heatmap_shfl.pickle', 'rb') as file:
 					self.lbl_htmp_orig.append(pickle.load(file))
 
 			if load_shuffle:
@@ -283,17 +284,17 @@ class ResultSet:
 						self.var_acc_shfl[shuffle_sz] = []
 						self.var_pred_shfl[shuffle_sz] = []
 
-					with open(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'train_labels_shfl.pickle'), 'rb') as file:
+					with open(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'train_labels_shfl.pickle', 'rb') as file:
 						self.train_labels_shfl[shuffle_sz].append(pickle.load(file))
 
 					if load_htmp:
-						with open(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'labels_heatmap_shfl.pickle'), 'rb') as file:
+						with open(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'labels_heatmap_shfl.pickle', 'rb') as file:
 							self.lbl_htmp_shfl[shuffle_sz].append(pickle.load(file))
 
 					if load_evals:
-						self.eval_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'evaluation_shuffled.npy'), allow_pickle=True))
-					self.var_acc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_accuracy.npy')))
-					self.var_pred_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'var_shuffle_classes_prediction.npy'), allow_pickle=True))
+						self.eval_shfl[shuffle_sz].append(np.load(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'evaluation_shuffled.npy', allow_pickle=True))
+					self.var_acc_shfl[shuffle_sz].append(np.load(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'var_shuffle_accuracy.npy'))
+					self.var_pred_shfl[shuffle_sz].append(np.load(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'var_shuffle_classes_prediction.npy', allow_pickle=True))
 
 			self.n_seqs[0] = len(self.train_labels_orig)
 			for block_sz, train_labels in self.train_labels_shfl.items():
@@ -301,11 +302,11 @@ class ResultSet:
 
 
 			if load_atc:
-				self.atc_orig.append(np.load(simuset_path+'autocorr_original.npy'))
+				self.atc_orig.append(np.load(simuset_path /'autocorr_original.npy'))
 				if load_shuffle:
 					for shuffle_sz in self.shuffle_sizes:
 						self.atc_shfl[shuffle_sz] = []
-						self.atc_shfl[shuffle_sz].append(np.load(os.path.join(simuset_path, 'shuffle_{:d}'.format(shuffle_sz), 'autocorr_shuffle.npy')))
+						self.atc_shfl[shuffle_sz].append(np.load(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'autocorr_shuffle.npy'))
 
 		if load_atc:
 			print("load_atc set to True. Autocorrelations loaded.")

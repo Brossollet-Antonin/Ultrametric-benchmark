@@ -4,30 +4,31 @@ import inspect
 import ast
 import copy
 from torchvision import transforms
+from pathlib import Path
 
 import numpy as np
 
 def get_project_paths():
     paths = {}
     if getpass.getuser() == 'slebst':
-        paths['root'] = '/Users/slebst/ultrametric_benchmark/Ultrametric-benchmark/'
+        paths['root'] = Path('/Users/slebst/ultrametric_benchmark/Ultrametric-benchmark/')
     elif getpass.getuser() == 'sl4744':
-        paths['root'] = '/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/'
+        paths['root'] = Path('/rigel/theory/users/sl4744/projects/Ultrametric-benchmark/')
     elif getpass.getuser() == 'ab4877':
-        paths['root'] = '/rigel/theory/users/ab4877/Ultrametric-benchmark/'
+        paths['root'] = Path('/rigel/theory/users/ab4877/Ultrametric-benchmark/')
     elif getpass.getuser() == 'Antonin':
-        paths['root'] = 'C:/Users/Antonin/Documents/Documents/ENS 2A/Stage M1/Code/github/Ultrametric-benchmark/'
-    paths['plots'] = paths['root'] + 'plots/'
-    paths['simus'] = paths['root'] + 'Results/'
-    paths['nb'] = paths['root'] + 'notebooks/'
-    paths['jobs'] = paths['root'] + 'cluster_job/'
-    paths['misc'] = paths['root'] + 'misc/'
+        paths['root'] = Path('C:/Users/Antonin/Documents/Documents/ENS 2A/Stage M1/Code/github/Ultrametric-benchmark/')
+    paths['plots'] = paths['root'] / 'plots/'
+    paths['simus'] = paths['root'] / 'Results/'
+    paths['nb'] = paths['root'] / 'notebooks/'
+    paths['jobs'] = paths['root'] / 'cluster_job/'
+    paths['misc'] = paths['root'] / 'misc/'
     
     return paths
 
 def get_simus_directory():
     paths = get_project_paths()
-    with open(paths['simus']+'simu_mapping_compact.txt', 'r', encoding='utf-8') as filenames:
+    with open(paths['simus'] / 'simu_mapping_compact.txt', 'r', encoding='utf-8') as filenames:
         filenames_dct_txt = filenames.read().replace('\n', '')
         
     sim_directory = ast.literal_eval(filenames_dct_txt)
