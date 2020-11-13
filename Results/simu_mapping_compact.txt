@@ -1,374 +1,363 @@
 {
     "1toM": {
-        "artificial_8": {
-            "FCL20": {
-                "ultrametric_ratio20": {
-                    "key": "T",
-                    0.225:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.225,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio20_noclshfl": {
-                    "key": "T",
-                    0.225:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.225,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio26": {
-                    "key": "T",
-                    0.225:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.225,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio26_noclshfl": {
-                    "key": "T",
-                    0.225:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.225,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio20": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio20_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio26": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio26_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "uniform_ratio20": {
-                    "key": "none",
-                    0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio26": {
-                    "key": "none",
-                    0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.0
-                    }
-                }
-            }
-        },
         "artificial_16": {
-            "FCL10": {
+            "FCL10_celu": {
                 "ultrametric_ratio20": {
                     "key": "T",
                     0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05,
+                        "folder": "ultrametric_length240000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
                         "seq_var_ratio": 20,
-                        "seq_length": 300000,
+                        "seq_length": 240000,
                         "T": 0.4,
-                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200)
+                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 76800, 153600)
                     }
                 },
                 "random_blocks2_ratio20": {
                     "key": "block_size",
                     150:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength150",
+                        "folder": "random_blocks2_length240000_batches10_optimsgd_seqlen200_ratio20_splitlength150",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "block_size": 150,
+                        "shuffle_sizes": (1, 25, 50, 75, 100, 150, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 76800, 153600)                    }
+                },
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length240000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.0
+                    }
+                }
+            },
+            "FCL10_celu_temperature_sweep": {
+                "T_0.280": {
+                    "key": "T",
+                    0.280:{
+                        "folder": "Tsweep_0.280",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.280,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.310": {
+                    "key": "T",
+                    0.310:{
+                        "folder": "Tsweep_0.310",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.310,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.340": {
+                    "key": "T",
+                    0.340:{
+                        "folder": "Tsweep_0.340",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.340,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.370": {
+                    "key": "T",
+                    0.370:{
+                        "folder": "Tsweep_0.370",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.370,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.400": {
+                    "key": "T",
+                    0.400:{
+                        "folder": "Tsweep_0.400",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.400,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.430": {
+                    "key": "T",
+                    0.430:{
+                        "folder": "Tsweep_0.430",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.430,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.460": {
+                    "key": "T",
+                    0.460:{
+                        "folder": "Tsweep_0.460",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.460,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.490": {
+                    "key": "T",
+                    0.490:{
+                        "folder": "Tsweep_0.490",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.490,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "T_0.520": {
+                    "key": "T",
+                    0.520:{
+                        "folder": "Tsweep_0.520",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.520,
+                        "shuffle_sizes": ()
+                    }
+                }
+            },
+            "FCL10_celu_minibatch_sweep": {
+                "BS_10": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length240000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "BS_50": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length240000_batches50_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "BS_100": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length240000_batches100_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "BS_500": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length240000_batches500_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "BS_1000": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length240000_batches1000_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                }
+            },
+            "FCL10_celu_LR_sweep": {
+                "LR_0.0005_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.0005_",
+                        "lr": 0.0005,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "LR_0.001_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.001_",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "LR_0.005_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.005_",
+                        "lr": 0.005,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "LR_0.01_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.01_",
+                        "lr": 0.01,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "LR_0.05_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.05_",
                         "lr": 0.05,
                         "seq_var_ratio": 20,
-                        "seq_length": 300000,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "LR_0.1_": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "LR_0.1_",
+                        "lr": 0.1,
+                        "seq_var_ratio": 20,
+                        "seq_length": 240000,
+                        "T": 0.4,
+                        "shuffle_sizes": ()
+                    }
+                }
+            },
+            "FCL10_linear": {
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length30000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01,
+                        "seq_var_ratio": 20,
+                        "seq_length": 30000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 10800, 19200, 39600, 79200)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    150:{
+                        "folder": "random_blocks2_length30000_batches10_optimsgd_seqlen200_ratio20_splitlength150",
+                        "lr": 0.01,
+                        "seq_var_ratio": 20,
+                        "seq_length": 30000,
                         "block_size": 150,
-                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 6000, 8400, 10800, 19200, 39600, 79200)
+                        "shuffle_sizes": (1, 25, 75, 150, 300, 600, 1200, 2400, 4800, 10800, 19200, 39600, 79200)
                     }
                 },
                 "uniform_ratio20": {
                     "key": "none",
                     0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
+                        "folder": "uniform_length30000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01, 
                         "seq_var_ratio": 20,
-                        "seq_length": 300000,
+                        "seq_length": 30000,
                         "T": 0.0
                     }
                 }
             }
         },
         "artificial_32": {
-            "FCL20": {
-                "ultrametric_ratio8": {
+            "FCL20_celu": {
+            	"ultrametric_ratio20": {
                     "key": "T",
                     0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
+                        "folder": "ultrametric_length600000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 600000,
                         "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                        "shuffle_sizes": (1, 200, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000)
                     }
                 },
-                "ultrametric_ratio8_noclshfl": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    1000:{
+                        "folder": "random_blocks2_length600000_batches10_optimsgd_seqlen200_ratio20_splitlength1000",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 600000,
+                        "block_size": 1000,
+                        "shuffle_sizes": (1, 200, 400, 500, 600, 800, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000)
                     }
                 },
-                "ultrametric_ratio14": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio14",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length600000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 600000,
+                        "T": 0.0
                     }
-                },
-                "ultrametric_ratio14_noclshfl": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio14_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
+                }
+            },
+            "FCL20_linear": {
                 "ultrametric_ratio20": {
                     "key": "T",
                     0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05,
+                        "folder": "ultrametric_length300000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01,
                         "seq_var_ratio": 20,
                         "seq_length": 300000,
                         "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio20_noclshfl": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio26": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "ultrametric_ratio26_noclshfl": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.4,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio8": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength1000",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    },
-                    1600:{
-                        "folder": "random_blocks2_200227",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 200000,
-                        "block_size": 1600,
-                        "shuffle_sizes": (1, 100, 200, 400, 800, 1600, 8000)
-                    }
-                },
-                "random_blocks2_ratio8_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio14": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio14_splitlength1000",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio14_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio14_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "block_size": 1000,
                         "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
                     }
                 },
                 "random_blocks2_ratio20": {
                     "key": "block_size",
                     1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000",
-                        "lr": 0.05,
+                        "folder": "random_blocks2_length300000_batches10_optimsgd_seqlen200_ratio20_splitlength1000",
+                        "lr": 0.01,
                         "seq_var_ratio": 20,
                         "seq_length": 300000,
                         "block_size": 1000,
                         "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio20_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio26": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "random_blocks2_ratio26_noclshfl": {
-                    "key": "block_size",
-                    1000:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength1000_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 200, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000, 40000, 80000)
-                    }
-                },
-                "uniform_ratio8": {
-                    "key": "none",
-                    0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05, 
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio14": {
-                    "key": "none",
-                    0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio14",
-                        "lr": 0.05, 
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "T": 0.0
                     }
                 },
                 "uniform_ratio20": {
                     "key": "none",
                     0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio26": {
-                    "key": "none",
-                    0.0:{   
-                        "folder": "uniform_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
+                        "folder": "uniform_length300000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01, 
                         "seq_var_ratio": 20,
                         "seq_length": 300000,
                         "T": 0.0
@@ -377,12 +366,46 @@
             }
         },
         "artificial_64": {
-            "FCL40": {
+            "FCL40_celu": {
                 "ultrametric_ratio20": {
                     "key": "T",
                     0.4:{
-                        "folder": "ultrametric_length900000_batches10_seqlen200_ratio20",
-                        "lr": 0.05,
+                        "folder": "ultrametric_length4000000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 4000000,
+                        "T": 0.4,
+                        "shuffle_sizes": (1, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000)
+                    }
+                },
+                "random_blocks2_ratio20": {
+                    "key": "block_size",
+                    5000:{
+                        "folder": "random_blocks2_length4000000_batches10_optimsgd_seqlen200_ratio20_splitlength5000",
+                        "lr": 0.001,
+                        "seq_var_ratio": 20,
+                        "seq_length": 4000000,
+                        "block_size": 5000,
+                        "shuffle_sizes": (1, 500, 1000, 2500, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000)
+                    }
+                },
+                "uniform_ratio20": {
+                    "key": "none",
+                    0.0:{   
+                        "folder": "uniform_length4000000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 4000000,
+                        "T": 0.0
+                    }
+                }
+            },
+            "FCL40_linear": {
+                "ultrametric_ratio20": {
+                    "key": "T",
+                    0.4:{
+                        "folder": "ultrametric_length900000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01,
                         "seq_var_ratio": 20,
                         "seq_length": 900000,
                         "T": 0.4,
@@ -392,8 +415,8 @@
                 "random_blocks2_ratio20": {
                     "key": "block_size",
                     2500:{
-                        "folder": "random_blocks2_length900000_batches10_seqlen200_ratio20_splitlength2500",
-                        "lr": 0.05,
+                        "folder": "random_blocks2_length900000_batches10_optimsgd_seqlen200_ratio20_splitlength2500",
+                        "lr": 0.01,
                         "seq_var_ratio": 20,
                         "seq_length": 900000,
                         "block_size": 2500,
@@ -403,8 +426,8 @@
                 "uniform_ratio20": {
                     "key": "none",
                     0.0:{   
-                        "folder": "uniform_length900000_batches10_seqlen200_ratio20",
-                        "lr": 0.05, 
+                        "folder": "uniform_length900000_batches10_optimsgd_seqlen200_ratio20",
+                        "lr": 0.01, 
                         "seq_var_ratio": 20,
                         "seq_length": 900000,
                         "T": 0.0
@@ -412,304 +435,189 @@
                 }
             }
         },
-        "artificial_128": {
-            "FCL50": {
-                "ultrametric_ratio8": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio8_noclshfl": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio14": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio14",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio14_noclshfl": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio14_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio20": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio20_noclshfl": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio20_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio26": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "ultrametric_ratio26_noclshfl": {
-                    "key": "T",
-                    0.6:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio26_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "T": 0.6,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio8": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength328",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio8_noclshfl": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio8_splitlength328_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio14": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio14_splitlength328",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio14_noclshfl": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio14_splitlength328_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio20": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength328",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio20_noclshfl": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio20_splitlength328_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio26": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength328",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "random_blocks2_ratio26_noclshfl": {
-                    "key": "block_size",
-                    328:{
-                        "folder": "random_blocks2_length300000_batches10_seqlen200_ratio26_splitlength328_noclassreshuffle",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 300000,
-                        "block_size": 328,
-                        "shuffle_sizes": (1, 82, 164, 328, 1312, 5248, 20992, 41984, 83968)
-                    }
-                },
-                "uniform_ratio8": {
-                    "key": "none",
-                    0.0:{
-                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 200000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio14": {
-                    "key": "none",
-                    0.0:{
-                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 14,
-                        "seq_length": 200000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio20": {
-                    "key": "none",
-                    0.0:{
-                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 20,
-                        "seq_length": 200000,
-                        "T": 0.0
-                    }
-                },
-                "uniform_ratio26": {
-                    "key": "none",
-                    0.0:{
-                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 26,
-                        "seq_length": 200000,
-                        "T": 0.0
-                    }
-                }
-            }
-        },
-        "artificial_1024": {
-            "FCL100": {
-                "ultrametric_ratio8": {
-                    "key": "T",
-                    0.85:{
-                        "folder": "ultrametric_length300000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
-                        "seq_var_ratio": 8,
-                        "seq_length": 300000,
-                        "T": 0.85,
-                        "shuffle_sizes": (1)
-                    }
-                }
-            }
-        },
         "MNIST_8": {
-            "FCL256": {
+            "FCL256_celu": {
                 "ultrametric": {
                     "key": "T",
                     0.225:{
-                        "folder": "ultrametric_length1000000_batches10_optimsgd",
-                        "lr": 0.01,
-                        "seq_length": 1000000,
+                        "folder": "ultrametric_length4000000_batches10_optimsgd",
+                        "lr": 0.001,
+                        "seq_length": 4000000,
                         "T": 0.225,
-                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)
+                        "shuffle_sizes": (1, 90, 180, 360, 720, 1440, 2880, 5760, 11520, 23040, 46080, 92160, 184320, 368640, 737280, 1474560)
                     }
                 },
                 "random_blocks2": {
                     "key": "block_size", 
-                    1000:{
-                        "folder": "random_blocks2_length1000000_batches10_optimsgd_splitlength1000",
-                        "lr": 0.01, 
-                        "seq_var_ratio": 8,
-                        "seq_length": 1000000,
+                    360:{
+                        "folder": "random_blocks2_length4000000_batches10_optimsgd_splitlength360",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 4000000,
                         "T": 0.225,
-                        "block_size": 1000,
-                        "shuffle_sizes": (1, 100, 500, 1000, 10000, 100000)                        
+                        "block_size": 360,
+                        "shuffle_sizes": (1, 90, 180, 360, 720, 1440, 2880, 5760, 11520, 23040, 46080, 92160, 184320, 368640, 737280, 1474560)               
                     }  
                 },
                 "uniform": {
                     "key": "none", 
                     0.0:{
-                        "folder": "uniform_length1000000_batches10_optimsgd",
+                        "folder": "uniform_length4000000_batches10_optimsgd",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 20,
+                        "seq_length": 4000000,
+                        "T": 0.0,
+                    }
+                },
+                "test_ultrametric_SGD": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10_optimsgd_lr001",
+                        "lr": 0.01,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_SGD_smLR": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10_optimsgd_lr0001",
+                        "lr": 0.001,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_Adam": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10_optimadam",
+                        "lr": 0.01,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_SGD_relu": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length1000000_batches10_optimsgd_lr001_nonlinRelu",
+                        "lr": 0.01,
+                        "seq_length": 1000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "ultrametric_SGD_long": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length10000000_batches10_optimsgd_lr001",
+                        "lr": 0.01,
+                        "seq_length": 10000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_SGD_smLR_long": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length10000000_batches10_optimsgd_lr0001",
+                        "lr": 0.001,
+                        "seq_length": 10000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_Adam_long": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length10000000_batches10_optimadam",
+                        "lr": 0.01,
+                        "seq_length": 10000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_ultrametric_SGD_relu_long": {
+                    "key": "T",
+                    0.225:{
+                        "folder": "ultrametric_length10000000_batches10_optimsgd_lr001_nonlinRelu",
+                        "lr": 0.01,
+                        "seq_length": 10000000,
+                        "T": 0.225,
+                        "shuffle_sizes": ()
+                    }
+                },
+                "test_uniform_SGD_lr001": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimsgd_lr001",
+                        "lr": 0.01, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.0,
+                    }
+                },
+                "test_uniform_SGD_lr0001": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimsgd_lr0001",
+                        "lr": 0.001, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.0,
+                    }
+                },
+                "test_uniform_SGD_lr00001": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimsgd_lr00001",
+                        "lr": 0.0001, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 1000000,
+                        "T": 0.0,
+                    }
+                },
+                "test_uniform_Adam": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimadam",
                         "lr": 0.01, 
                         "seq_var_ratio": 8,
                         "seq_length": 1000000,
                         "T": 0.0,
                     }   
-                }             
-            }
-        }
-    },
-    "1to1": {
-        "artificial_32": {
-            "FCL20": {
-                "uniform": {
-                    "key": "none",
+                },
+                "test_uniform_SGD_long_lr001": {
+                    "key": "none", 
                     0.0:{
-                        "folder": "uniform_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
+                        "folder": "uniform_length1000000_batches10_optimsgd_lr001",
+                        "lr": 0.01, 
                         "seq_var_ratio": 8,
-                        "seq_length": 200000,
-                        "T": 0.0
-                    }
-                }
-            }
-        },
-        "MNIST_8": {
-            "CNN": {
-                "uniform": {
-                    "key": "T",
-                    0.4:{
-                        "folder": "ultrametric_length200000_batches10_seqlen200_ratio8",
-                        "lr": 0.05,
+                        "seq_length": 10000000,
+                        "T": 0.0,
+                    }   
+                },
+                "test_uniform_SGD_long_lr0001": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length1000000_batches10_optimsgd_lr0001",
+                        "lr": 0.001, 
                         "seq_var_ratio": 8,
-                        "seq_length": 200000,
-                        "T": 0.4
-                    }
+                        "seq_length": 10000000,
+                        "T": 0.0,
+                    }   
+                },
+                "test_uniform_Adam_long": {
+                    "key": "none", 
+                    0.0:{
+                        "folder": "uniform_length10000000_batches10_optimadam",
+                        "lr": 0.01, 
+                        "seq_var_ratio": 8,
+                        "seq_length": 10000000,
+                        "T": 0.0,
+                    }   
                 }
             }
         }
