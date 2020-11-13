@@ -4,8 +4,8 @@
 slurm-*.out
 .DS_Store
 plots/
-Results/
-Results/simu_mapping_compact.txt
+./Results/
+./Results/simu_mapping_compact.txt
 
 ## General
 
