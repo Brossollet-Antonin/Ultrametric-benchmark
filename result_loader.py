@@ -1550,7 +1550,7 @@ def fit_profile(cf_stat, version='sigmoid'):
 		norm_popt, norm_pcov = curve_fit(model, x_data, norm_y_data, norm_p0, method='lm')
 
 		if version=='sigmoid':
-			max_steepness = 1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10)) for actual maximum steepness from PLTS profile fit
+			max_steepness = popt[1]*np.log(10)/popt[2]/#1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10)) for actual maximum steepness from PLTS profile fit
 			norm_max_steepness = 1/norm_popt[2] #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10)) #(norm_popt[0]*norm_popt[2])/4
 		elif version=='sigmoid_primitive':
 			max_steepness = popt[0]
