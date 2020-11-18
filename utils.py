@@ -17,7 +17,7 @@ def get_project_paths():
     elif getpass.getuser() == 'ab4877':
         paths['root'] = Path('/rigel/theory/users/ab4877/Ultrametric-benchmark/')
     elif getpass.getuser() == 'Antonin':
-        paths['root'] = Path('C:/Users/Antonin/Documents/Documents/ENS 2A/Stage M1/Code/github/Ultrametric-benchmark/')
+        paths['root'] = Path('C:/Users/Antonin/Documents/Documents/ENS 2A/Stage M1/Code/')
     paths['plots'] = paths['root'] / 'plots/'
     paths['simus'] = paths['root'] / 'Results/'
     paths['nb'] = paths['root'] / 'notebooks/'
