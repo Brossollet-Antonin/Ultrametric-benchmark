@@ -165,7 +165,7 @@ def run(args):
 		verbose("Running simulations from scratch (default, no checkpoint used)", args.verbose, 0)
 		save_root = os.path.join(
 			paths['simus'],
-			"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_optim{optimizer:s}".format(
+			"{cl_strat:s}/{data_origin:s}_{n_classes:d}/{nnarchi:s}{hidlay_width:s}/{seq_type:s}_length{seq_length:d}_batches{batch_size:d}_lr{lr:f}_optim{optimizer:s}".format(
 				cl_strat = cl_strategy,
 				data_origin = args.data_origin,
 				n_classes = dataset.num_classes,
@@ -174,6 +174,7 @@ def run(args):
 				seq_type = args.sequence_type,
 				seq_length = args.sequence_length,
 				batch_size = args.batch_sz,
+				lr = args.lr,
 				optimizer = args.optimizer
 			)
 		)
