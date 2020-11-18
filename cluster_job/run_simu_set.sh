@@ -149,7 +149,7 @@ do
           sbatch -J ${jobname} --time=${time:-"40:00:00"} --cpus-per-task=${nbr_cpu:-2} --mail-user=${mail:-""} --mem=${mem:-"4gb"} ${gpu:+--gres=gpu} \
           individual_simu.sh \
           ${path} ${dataset} ${tree_depth} ${temperature} ${nnarchi} "${hidden_sizes[*]}" ${optimizer} ${nonlin} ${lr} ${batch_sz} ${seqtype} ${seq_length} ${split_length} ${nbr_tests} ${flip_rate} ${sl} "${block_sizes[*]}" "" ${verbose}
-          sleep 1
+          sleep 0.3
         done
       done
     done

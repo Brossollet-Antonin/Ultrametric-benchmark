@@ -35,6 +35,7 @@ do
     hidden_sizes)         hidden_sizes=${VALUE} ;;
     optimizer)            optimizer=${VALUE} ;;
     lr)                   lr=${VALUE} ;;
+    batch_sz)             batch_sz=${VALUE} ;;
     nonlin)               nonlin=${VALUE} ;;
     
     ## Slurm job params
@@ -114,6 +115,10 @@ if [ -z ${lr+x} ]; then
   echo "No learning rate provided. Will use LR=0.01 by default"
   lr=0.01;
 fi
+if [ -z ${batch_sz+x} ]; then
+  echo "No natch size provided. Will use batch_sz=10 by default"
+  batch_sz=10;
+fi
 if [ -z ${nonlin+x} ]; then
   echo "Model will use no nonlinearity"
   nonlin="none";
@@ -125,7 +130,7 @@ if [ -z ${ultra_root+x} ]; then
   echo "Argument ultra_root was not provided. Will not resume simulations for ultrametric simulations."
 fi
 
-if [ ! -z ${ultra_root} ] ; then
+if [ ! -z ${ultra_root+x} ] ; then
   readarray ultra_subfolders < <(find ${ultra_root} -maxdepth 1 -mindepth 1 -type d)
 fi
 if [ ! -z ${rb2_root+x} ] ; then
@@ -137,10 +142,10 @@ do
 	for bs in ${block_sizes}
 	do
     if [ ! -z ${rb2_root+x} ] ; then
-      bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+      bash resume_simu_set.sh jobname="${jobname}_s${bs}_rb2" block_sizes=${bs} seqtype="random_blocks2" path=${path} resume_subfolders=${rb2_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} batch_sz={batch_sz} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
     fi
-    if [ ! -z ${ultra_root} ] ; then
-      bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
+    if [ ! -z ${ultra_root+x} ] ; then
+      bash resume_simu_set.sh jobname="${jobname}_s${bs}_ultra" block_sizes=${bs} seqtype="ultrametric" path=${path} resume_subfolders=${ultra_subfolders[$sim_id]} dataset=${dataset} tree_depth=${tree_depth} temperature=${temperature} flip_rate=${flip_rate} shuffle_labels=${shuffle_labels} seq_length=${seq_length} split_length=${split_length} nbr_tests=${nbr_tests} nnarchi=${nnarchi} hidden_sizes=${hidden_sizes} optimizer=${optimizer} lr=${lr} batch_sz={batch_sz} nonlin=${nonlin} time=${time} nbr_cpu=${nbr_cpu} mem=${mem} mail=${mail}
     fi
 	done
 done
