@@ -116,7 +116,7 @@ if [ -z ${lr+x} ]; then
   lr=0.01;
 fi
 if [ -z ${batch_sz+x} ]; then
-  echo "No natch size provided. Will use batch_sz=10 by default"
+  echo "No batch size provided. Will use batch_sz=10 by default"
   batch_sz=10;
 fi
 if [ -z ${nonlin+x} ]; then
