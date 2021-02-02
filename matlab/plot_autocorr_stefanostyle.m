@@ -1,4 +1,4 @@
-function [ output_args ] = plot_autocorr_stefanostyle( atc_um_filename, atc_rb2_filename, block_sizes, leg_x, leg_y )
+function [ output_args ] = plot_autocorr_stefanostyle( atc_um_filename, atc_rb2_filename, block_sizes )
 %COMPUTE_AUTOCORR Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -13,6 +13,11 @@ orig_rgb = [1, 0, 0];
 axes_fontsize = 26;
 linewidth = 4;
 
+% PATCH: Rectifying sequences (TO APPLY ONLY UNTIL NEW .mat FILES ARE GENERATED)
+hlocs_stat_ultra = [1 hlocs_stat_ultra];
+hlocs_stat_ultra(1,2:2:end) = sqrt(hlocs_stat_ultra(1,1:2:end-1).*hlocs_stat_ultra(1,3:2:end));
+hlocs_stat_rb = [1 hlocs_stat_rb];
+
 % ------------------------ %
 % 1) Ultrametric sequences %
 % ------------------------ %
@@ -20,6 +25,8 @@ figure(1);
 clf;
 hold on;
 
+ultra_orig = [23, 87, 182]/255;
+rb2_orig = [60, 190, 25]/255;
 
 ultra_cb = [0, 20, 110]/255;
 ultra_ce = [0, 0, 1];
@@ -27,11 +34,11 @@ ultra_colors = [linspace(ultra_cb(1),ultra_ce(1),1+length(block_sizes))', linspa
 
 for block_sz_id = 1:length(block_sizes)
     fig_name = strcat(sprintf('S=%s', int2str(block_sizes(block_sz_id))));
-    h=plot(hlocs_stat_ultra(1+block_sz_id,2:2:end-1)./hlocs_stat_ultra(1+block_sz_id,2),'Color',ultra_colors(1+block_sz_id,:),'LineStyle','-');%,'DisplayName',fig_name);
+    h=plot(hlocs_stat_ultra(1+block_sz_id,1:end), 'Color',ultra_colors(1+block_sz_id,:), 'LineStyle','-');%,'DisplayName',fig_name);
     set(h,'linewidth',linewidth);
 end
 
-h=plot(hlocs_stat_ultra(1,2:2:end-1)./hlocs_stat_ultra(1,2),'Color',orig_rgb,'LineStyle','-');%,'DisplayName','Ultrametric - Original sequence');
+h=plot(hlocs_stat_ultra(1,1:end), 'Color',ultra_orig, 'LineStyle','-');%,'DisplayName','Ultrametric - Original sequence');
 set(h,'linewidth',linewidth);
 
 % Figure configuration
@@ -60,11 +67,22 @@ rb_colors = [linspace(rb_cb(1),rb_ce(1),1+length(block_sizes))', linspace(rb_cb(
 
 for block_sz_id = 1:length(block_sizes)
     fig_name = strcat(sprintf('Shuffled, block size %s', int2str(block_sizes(block_sz_id))));
-    h=plot(hlocs_stat_rb(1+block_sz_id,2:2:end-1)./hlocs_stat_rb(1+block_sz_id,2),'Color',rb_colors(1+block_sz_id,:),'LineStyle','-');%,'DisplayName',fig_name);
+    h=plot(hlocs_stat_rb(1+block_sz_id,1:end), 'Color',rb_colors(1+block_sz_id,:), 'LineStyle','-');%,'DisplayName',fig_name);
     set(h,'linewidth',linewidth);
 end
 
-h=plot(hlocs_stat_rb(1,2:2:end-1)./hlocs_stat_rb(1,2),'Color',orig_rgb,'LineStyle','-');
+h=plot(hlocs_stat_rb(1,1:end), 'Color',rb2_orig, 'LineStyle','-');
+set(h,'linewidth',linewidth);
+
+% Put UM and RB2 atc for original sequences on a same figure
+
+figure(3)
+clf;
+hold on;
+
+h=plot(hlocs_stat_rb, 'Color',ultra_orig, 'LineStyle','-');
+set(h,'linewidth',linewidth);
+h=plot(hlocs_stat_ultra, 'Color',rb2_orig, 'LineStyle','-');%,'DisplayName','Ultrametric - Original sequence');
 set(h,'linewidth',linewidth);
 
 % Figure configuration

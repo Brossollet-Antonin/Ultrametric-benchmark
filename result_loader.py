@@ -60,8 +60,6 @@ class ResultSet:
 	dataroot : str
 		Path to the folder specific to the simulation type, dataset and sequence type that we're studying
 		Ex: '<project_root>/Results/1toM/MNIST_10/CNN/temporal_correlation_length200000_batches10'
-	sim_struct: str
-		Data structure generated for the simulations. If simulations were generated after February 15th 2020, this will be '1toM' (default) 
 	dataset_name: str
 		Identifies the data that you're dealing with.
 		'MNIST' or 'artificial' or perhaps 'CIFAR'. Do not mention the number of classes here.
@@ -74,7 +72,7 @@ class ResultSet:
 		Uniquely identifies the generation strategy for the sequence of labels that your network will be learning on.
 		See simu_mapping dict for details and examples of seq_types. Please name your seq_type in a clear and meaningful way.
 	simset_id: int or float
-		For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
+		For given dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
 		For ultrametric sequences, this is temperature (float)
 		For random_blocks2, this is the size of the shuffling block (int)
 	hsv_orig: tuple (h,s,v)
@@ -118,7 +116,7 @@ class ResultSet:
 		Originally stored as: npy
 	"""
 
-	def __init__(self, rs_name, rs_descr, sim_map_dict, dataset_name, nn_config, seq_type, seq_length, simset_id, hue=0.5, sim_struct='1toM'):
+	def __init__(self, rs_name, rs_descr, sim_map_dict, dataset_name, nn_config, seq_type, seq_type_descr, seq_length, simset_id, hue=0.5):
 		"""Instanciates the ResultSet, identified by a set of hyperparameters
 
 		Parameters
@@ -128,8 +126,6 @@ class ResultSet:
 			Used for legends in the plots that will be generated.
 		sim_map_dict: dict
 			The simu_mapping file parsed into a Python dictionnary. This dict maps simulation configuration to folders containing all simulations for that configuration.
-		sim_struct: str
-			Data structure generated for the simulations. If simulations were generated after February 15th 2020, this will be '1toM' (default) 
 		dataset_name: str
 			Identifies the data that you're dealing with.
 			'MNIST' or 'artificial' or perhaps 'CIFAR'. Do not mention the number of classes here.
@@ -142,7 +138,7 @@ class ResultSet:
 			Uniquely identifies the generation strategy for the sequence of labels that your network will be learning on.
 			See simu_mapping dict for details and examples of seq_types. Please name your seq_type in a clear and meaningful way.
 		simset_id: int or float
-			For given sim_struct, dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
+			For given dataset_name, nn_config and seq_type, each simulation set is identified by the value of an hyperparameter.
 			For ultrametric sequences, this is temperature (float)
 			For random_blocks2, this is the size of the shuffling block (int)
 		hue: int
@@ -154,10 +150,10 @@ class ResultSet:
 		self.name = rs_name
 		self.descr = rs_descr
 		self.sim_map_dict = sim_map_dict
-		self.sim_struct = sim_struct
 		self.dataset_name = dataset_name
 		self.nn_config = nn_config
 		self.seq_type = seq_type
+		self.seq_type_descr = seq_type_descr
 		self.seq_length = seq_length
 		self.simset_id = simset_id
 		self.hue = hue
@@ -203,10 +199,9 @@ class ResultSet:
 
 		self.block_sizes = []
 
-		self.sim_battery_params = self.sim_map_dict[self.sim_struct][self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
+		self.sim_battery_params = self.sim_map_dict[self.dataset_name][self.nn_config][self.seq_type][self.simset_id]
 		folderpath = Path(paths['simus'])
-		# folderpath.joinpath(self.sim_struct,
-		# 	self.dataset_name,
+		# folderpath.joinpath(self.dataset_name,
 		# 	self.nn_config,
 		# 	self.sim_battery_params['folder']
 		# )
@@ -285,7 +280,10 @@ class ResultSet:
 						self.var_pred_shfl[shuffle_sz] = []
 
 					with open(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'train_labels_shfl.pickle', 'rb') as file:
-						self.train_labels_shfl[shuffle_sz].append(pickle.load(file))
+						try:
+							self.train_labels_shfl[shuffle_sz].append(pickle.load(file))
+						except:
+							pdb.set_trace()
 
 					if load_htmp:
 						with open(simuset_path / 'shuffle_{:d}'.format(shuffle_sz) / 'labels_heatmap_shfl.pickle', 'rb') as file:
@@ -517,7 +515,7 @@ class ResultSet:
 ### Functions to output accuracy=f(iteration) plots ###
 #######################################################
 
-def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=3, draw_timescales=False, draw_explorations=False, hyper_param=None):
+def make_perfplot(rs, blocks, ax, plt_confinter=False, seq_type='uniform', linewidth=3, draw_timescales=False, draw_explorations=False):
 	"""
 	Generates a plot of classification accuracy as a function of number of iteration for a given result set. 
 
@@ -562,6 +560,7 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 	for block_sz in blocks:
 		if block_sz not in rs.var_acc_shfl.keys():
 			continue
+		pdb.set_trace()
 		n_shfl = len(rs.var_acc_shfl[block_sz])
 		acc_data = rs.var_acc_shfl[block_sz]
 
@@ -588,15 +587,10 @@ def make_perfplot(rs, blocks, ax, plt_confinter=False, uniform=False, linewidth=
 	n_orig = len(rs.var_acc_orig)
 	var_acc_orig = np.mean([acc[:,0] for acc in rs.var_acc_orig], axis=0)
 	var_acc_orig_std = np.std([acc[:, 0] for acc in rs.var_acc_orig], axis=0)
-	if uniform: 
-		label_original = "Uniform sequence"
-	if hyper_param:
-		label_original = hyper_param
-	else:
-		label_original = "Uniform sequence"
+	label_original = "{:s} sequence".format(seq_type.capitalize())
 	ax.plot(
 			x_labels, var_acc_orig,
-			ls = 'solid' if not uniform else '--',
+			ls = '--' if seq_type=='Uniform' else 'solid',
 			linewidth = linewidth,
 			color = hsv_to_rgb(rs.hsv_orig),
 			label=label_original
@@ -687,9 +681,9 @@ def make_perfplot_unit(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, seq_type='Uniform')
 
-	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs.seq_type_descr)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -779,9 +773,9 @@ def make_perfplot_comparison(
 
 	### 1) UNIFORM + ORIGINAL ###
 	if rs_unif is not None:
-		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, uniform=True)
+		make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, seq_type='Uniform')
 
-	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+	make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=acc_ax, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs.seq_type_descr)
 
 	format_perf_plot(ax=acc_ax, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 		xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -796,9 +790,9 @@ def make_perfplot_comparison(
 			blocks_altr = blocks
 
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, uniform=True)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, seq_type='Uniform')
 
-		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+		make_perfplot(rs_altr, blocks=blocks_altr[blocks_to_plot], ax=acc_ax_altr, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs_altr.seq_type_descr)
 
 		format_perf_plot(ax=acc_ax_altr, title="Accuracy as a function of time for original and shuffled sequence - " + rs.descr, legend_title=rs.descr,
 			xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -810,10 +804,10 @@ def make_perfplot_comparison(
 		axes.append(acc_ax_all)
 
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, uniform=True)
+			make_perfplot(rs_unif, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, seq_type='Uniform')
 
-		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
-		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter)
+		make_perfplot(rs_altr, blocks=blocks_altr['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs_altr.seq_type_descr)
+		make_perfplot(rs, blocks=blocks['acc_plots_shared'], ax=acc_ax_all, plt_confinter=plt_confinter, seq_type=rs.seq_type_descr)
 
 		format_perf_plot(ax=acc_ax_all, title="Comparative accuracy as a function of time for different scenarios", legend_title=rs.descr,
 			xtick_pos=xtick_pos, xtick_labels=xtick_labels, plot_window=plot_window)
@@ -892,9 +886,9 @@ def make_perfplot_matrix(
 	### Diagonal elements
 	for rs_id, rs in enumerate(rs_list):
 		if rs_unif is not None:
-			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, uniform=True)
+			make_perfplot(rs_unif, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, seq_type='Uniform')
 
-		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
+		make_perfplot(rs, blocks=blocks[blocks_to_plot], ax=axes[rs_id, rs_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs.seq_type_descr)
 
 		axes[rs_id, rs_id].set_facecolor((0.87, 0.87, 0.87))
 		axes[rs_id, rs_id].legend()
@@ -909,8 +903,8 @@ def make_perfplot_matrix(
 
 		rs1 = rs_list[rs1_id]
 		rs2 = rs_list[rs2_id]
-		make_perfplot(rs1, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations)
-		make_perfplot(rs2, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter)
+		make_perfplot(rs1, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter, draw_timescales=draw_timescales, draw_explorations=draw_explorations, seq_type=rs1.seq_type_descr)
+		make_perfplot(rs2, blocks=blocks[blocks_to_plot], ax=axes[rs1_id, rs2_id], plt_confinter=plt_confinter, seq_type=rs2.seq_type_descr)
 
 		axes[rs1_id, rs2_id].legend()
 		if plot_window is not None:
@@ -1273,7 +1267,7 @@ def get_cf_history(rs, blocks,
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/history/cfscoreshist_{setname:s}_{date:s}.{fmt:s}".format(
+				"forgetting/history/cfscoreshist_{setname:s}_{date:s}.{fmt:s}".format(
 					setname = rs.name,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					fmt = fmt
@@ -1293,7 +1287,7 @@ def get_cf_history(rs, blocks,
 	return tot_cf, tot_cf_ci, avg_cf, avg_cf_ci, tot_ald_cf, tot_ald_cf_ci, avg_ald_cf, avg_ald_cf_ci
 
 
-def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=None, x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales=False, figset_name=default_figset_name):
+def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=None, x_origpos=3e5, vline_pos=1e5, xlog=False, ylog=False, save_formats=None, cfprof_ymax=None, normalize=False, plot_timescales=False, figset_name=default_figset_name, plot_ci=False, draw_atc=True):
 	"""
 	Produces plots of the CF score as a function of 
 	"""
@@ -1302,11 +1296,16 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 
 	min_y = None
 	max_y = None
+	atc_maxh = int(1e5)
+	set_atc_axis = False
 
 	for rs_name, cf_set in cf_stats.items():
 		rs = cf_set['rs']
 		_cf_data = cf_set['data']
-		_cf_models = cf_set['model_fit']
+		if 'model_fit' in cf_set.keys():
+			_cf_models = cf_set['model_fit']
+		else:
+			_cf_models = {}
 		cf_model_fit = None
 
 		if alignment_method == "raw":
@@ -1346,6 +1345,28 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 				ax_mean_cfs.vlines(x=ts, ymin=0, ymax=1.1*x_origpos, linestyles='--', linewidth=2, color=[0.42,0.74,0.95])
 
 		sorted_block_sizes = [block_sz for block_sz in sorted(cf_data.keys()) if block_sz>0]
+
+		###########################
+		# If autocorrelation functions are available and mode is active, draw atc curve
+		###########################
+
+		if draw_atc and ('atc' in cf_set.keys()):
+			if not set_atc_axis:
+				ax_atc = ax_mean_cfs.twinx()
+				ax_mean_cfs.yaxis.set_label_position("right")
+				ax_mean_cfs.yaxis.tick_right()
+				ax_atc.yaxis.set_label_position("left")
+				ax_atc.yaxis.tick_left()
+				ax_atc.set_ylabel('Autocorrelation', fontsize=24)
+				set_atc_axis = True
+			ax_atc.plot(
+				np.arange(atc_maxh),
+				cf_set['atc'][0:atc_maxh],
+				ls = '--',
+				linewidth=3,
+				color=hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
+			)
+			
 
 		# Plotting fitted models, if any have been computed
 		if cf_model_fit is not None:
@@ -1387,36 +1408,39 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 			markeredgewidth = 3,
 			color = "white"
 		)
-		ax_mean_cfs.fill_between(
-			x = xtick_pos,
-			y1 = [cf_data[k] - cf_ci[k] for k in sorted_block_sizes],
-			y2 = [cf_data[k] + cf_ci[k] for k in sorted_block_sizes],
-			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
-			alpha = 0.08
-		)
 
-		ax_mean_cfs.plot(
-			x_origpos,
-			cf_data[0] - cf_ci[0],
-			marker = '_',
-			markersize = 10,
-			markeredgewidth = 4,
-			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
-		)
-		ax_mean_cfs.plot(
-			x_origpos,
-			cf_data[0] + cf_ci[0],
-			marker = '_',
-			markersize = 10,
-			markeredgewidth = 4,
-			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
-		)
-		ax_mean_cfs.plot(
-			[x_origpos, x_origpos],
-			[cf_data[0] - cf_ci[0], cf_data[0] + cf_ci[0]],
-			color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
-			alpha = 0.08
-		)
+		if plot_ci:
+			ax_mean_cfs.fill_between(
+				x = xtick_pos,
+				y1 = [cf_data[k] - cf_ci[k] for k in sorted_block_sizes],
+				y2 = [cf_data[k] + cf_ci[k] for k in sorted_block_sizes],
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
+				alpha = 0.08
+			)
+
+			ax_mean_cfs.plot(
+				x_origpos,
+				cf_data[0] - cf_ci[0],
+				marker = '_',
+				markersize = 10,
+				markeredgewidth = 4,
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
+			)
+			ax_mean_cfs.plot(
+				x_origpos,
+				cf_data[0] + cf_ci[0],
+				marker = '_',
+				markersize = 10,
+				markeredgewidth = 4,
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]])
+			)
+
+			ax_mean_cfs.plot(
+				[x_origpos, x_origpos],
+				[cf_data[0] - cf_ci[0], cf_data[0] + cf_ci[0]],
+				color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]),
+				alpha = 0.08
+			)
 
 		ax_mean_cfs.plot(
 			x_origpos,
@@ -1436,12 +1460,16 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		)
 
 		#plt.xticks(xtick_pos)
-		ax_mean_cfs.hlines(y=cf_data[0], xmin=0, xmax=1.1*x_origpos, linestyles=':', linewidth=3, color = hsv_to_rgb(rs.hsv_orig))
+		ax_mean_cfs.hlines(y=cf_data[0], xmin=0, xmax=1.1*x_origpos, linestyles='solid', linewidth=3, color = hsv_to_rgb(rs.hsv_shfl_dict[rs.shuffle_sizes[-1]]), alpha=0.4)
 
 		if min_y is None or (np.min(list(cf_data.values())) < min_y):
 			min_y = np.min(list(cf_data.values()))
 		if max_y is None or (np.max(list(cf_data.values())) > max_y):
 			max_y = np.max(list(cf_data.values()))
+
+	if set_atc_axis:
+		ax_atc.set_ylim(5e-2, 1)
+		ax_atc.set_yscale("log")
 
 	##############################
 	# Plot formatting for paper ##
@@ -1478,6 +1506,8 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 		ax_mean_cfs.set_ylim(min_y, cfprof_ymax)
 
 	ax_mean_cfs.vlines(x=np.sqrt(x_origpos*max_blocksz), ymin=min_y, ymax=1.15*max_y, linewidth=3, color="black")
+
+	fig_mean_cfs.tight_layout()
 	#ax_mean_cfs.set_ylim(-5, 12)
 
 	# Saving figure
@@ -1486,7 +1516,7 @@ def plot_cf_profile(cf_stats, alignment_method="raw", metric="mean", rs_names=No
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/profile/{date:s}/{alignment_method:s}_{metric:s}/PLTS_profile_x{xscl:s}_y{yscl:s}_{norm:s}.{fmt:s}".format(
+				"forgetting/PLTS/{date:s}/{alignment_method:s}_{metric:s}/PLTS_profile_x{xscl:s}_y{yscl:s}_{norm:s}.{fmt:s}".format(
 					alignment_method = alignment_method,
 					metric = metric,
 					xscl = "log" if xlog is True else "lin",
@@ -1516,6 +1546,10 @@ def fit_profile(cf_stat, version='sigmoid'):
 		y = L / (1 + np.exp(-k*(np.minimum(np.log10(x), np.log10(xsat))-np.log10(x0))))
 		return (y)
 
+	def half_sigmoid(x, L, x0, k):
+		y = L / (1 + np.exp(-k*(np.minimum(np.log10(x)-np.log10(x0), 0))))
+		return (y)
+
 	def sigmoid(x, L, x0, k):
 	    y = L / (1 + np.exp(-k*(np.log10(x)-np.log10(x0))))
 	    return (y)
@@ -1539,34 +1573,20 @@ def fit_profile(cf_stat, version='sigmoid'):
 		y_data = np.fromiter(cf_stat['data'][stat_type].values(), dtype=float)
 		norm_y_data = y_data/y_data[0]
 
-		if version == 'sigmoid':
+		if version in ('sigmoid', 'half_sigmoid'):
 			p0 = [max(y_data), np.median(x_data), 1] # this is an mandatory initial guess
 			norm_p0 = [1, np.median(x_data), 1]
-			model = sigmoid
-		elif version == 'sigmoid_primitive':
-			p0 = [(y_data[-1] - y_data[-4])/(x_data[-1] - x_data[-4]), np.median(x_data), 1]
-			norm_p0 = [(y_data[-1] - y_data[-4])/(x_data[-1] - x_data[-4]), np.median(x_data), 1]
-			model = sigmoid_primitive
-		elif version == 'cut_sigmoid':
-			y_diff = y_data-np.roll(y_data,1)
-			y_diff[0] = 0
-			x_sat_est = x_data[np.argmax(y_diff)]
-			p0 = [max(y_data), np.median(x_data), 1, x_sat_est] # this is an mandatory initial guess
-			norm_p0 = [1, np.median(x_data), 1, min(y_data), x_sat_est]
-			model = cut_sigmoid
+			if version == 'sigmoid':
+				model = sigmoid
+			elif version == 'half_sigmoid':
+				model = half_sigmoid
 
 		popt, pcov = curve_fit(model, x_data, y_data, p0, method='lm')
 		norm_popt, norm_pcov = curve_fit(model, x_data, norm_y_data, norm_p0, method='lm')
 
-		if version=='sigmoid':
-			max_steepness = popt[1]*np.log(10)/popt[2]/#1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10)) for actual maximum steepness from PLTS profile fit
-			norm_max_steepness = 1/norm_popt[2] #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10)) #(norm_popt[0]*norm_popt[2])/4
-		elif version=='sigmoid_primitive':
-			max_steepness = popt[0]
-			norm_max_steepness = norm_popt[0]
-		else:
-			max_steepness = 1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10))
-			norm_max_steepness = 1/norm_popt[2] #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10))
+		if version in ('sigmoid', 'half_sigmoid'):
+			max_steepness = popt[1]*np.log(10)/popt[2] #1/popt[2] #(popt[0]*popt[2])/(4*popt[1]*np.log(10)) for actual maximum steepness from PLTS profile fit
+			norm_max_steepness = popt[1]*np.log(10)/(popt[0]*popt[2]) #(norm_popt[0]*norm_popt[2])/(4*norm_popt[1]*np.log(10)) #(norm_popt[0]*norm_popt[2])/4
 
 		cf_stat['model_fit'][stat_type] = {}
 
@@ -1581,7 +1601,7 @@ def fit_profile(cf_stat, version='sigmoid'):
 		cf_stat['model_fit'][stat_type]['norm_max_steepness'] = norm_max_steepness
 
 
-def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, confidence=0.05, ylog_steepness=False, ylog_maxval=False, save_formats=None, figset_name=default_figset_name):
+def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, confidence=0.05, ylog_steepness=True, ylog_maxval=False, save_formats=None, nonlin="celu", figset_name=default_figset_name):
 
 	def get_top_barplot_value(barplots):
 		top_height = 0
@@ -1631,8 +1651,8 @@ def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, conf
 			plts_maxval[stat_name][seq_type] = []
 			plts_maxval[stat_ci_name][seq_type] = []
 			for depth_id, depth in enumerate(depths):
-				rs_name = "artificial_d{depth_:d}{seq_type_:s}Mixed{bf_:d}bits".format(depth_ = depth, seq_type_ = seq_type, bf_ = bf)
-				pdb.set_trace()
+				rs_name = "artificial_{nonlin_:s}_d{depth_:d}{seq_type_:s}Mixed{bf_:d}bits".format(nonlin_ = nonlin, depth_ = depth, seq_type_ = seq_type, bf_ = bf)
+				#pdb.set_trace()
 				rs = cf_stats[rs_name]["rs"]
 
 				plts_steepness[stat_name][seq_type].append(cf_stats[rs_name]['model_fit'][stat_name][steepness_data])
@@ -1713,7 +1733,7 @@ def report_steepness(cf_stats, depths, metric="avg", bf=20, normalize=True, conf
 			out_filepath = os.path.join(
 				paths['plots'],
 				figset_name,
-				"CFscore/steepness/{date:s}/PLTS_steepness_{metric_:s}{norm_:s}.{fmt:s}".format(
+				"forgetting/PLTS_steepness/{date:s}/PLTS_steepness_{metric_:s}{norm_:s}.{fmt:s}".format(
 					metric_ = metric,
 					date = datetime.datetime.now().strftime("%Y%m%d"),
 					norm_ = "_norm" if normalize else "",
